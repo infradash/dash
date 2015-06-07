@@ -1,0 +1,143 @@
+[
+    {
+	"domain": "{{.DASH_DOMAIN}}",
+
+	"watch_containers": {
+	    "events": { "tags": ["control-plane"], "repository" : "infradash/mqtt",
+			    "match_container_name":"events-([0-9]+)" },
+	    "nginx": { "tags": ["frontend"], "repository" : "infradash/nginx" },
+	    "postgres": { "tags": ["database"], "repository" : "infradash/postgres", "match_container_port":5432 },
+	    "postgres-service": { "tags": ["database"], "repository" : "infradash/haproxy",
+				  "match_container_name":"postgres-proxy" },
+	    "redis": { "tags": ["database"], "repository" : "infradash/redis", "match_container_port":6379 },
+	    "redis-service": { "tags": ["database"], "repository" : "infradash/haproxy", "match_container_name":"redis-proxy" },
+	    "vdp": { "tags": ["appserver"], "repository" : "infradash/vdp" },
+	    "mqtt": { "tags": ["log"], "repository" : "infradash/mqtt", "match_container_name":"^mqtt$" },
+	    "infradash": { "tags": ["appserver"], "repository" : "infradash/infradash",
+			 "match_container_port":3000, "match_container_name":"infradash-(.*)-(.*)-([0-9]+)" },
+	    "sidekiq": { "tags": ["appserver"], "repository" : "infradash/infradash", "match_container_name":"sidekiq" },
+	    "clockwork": { "tags": ["appserver"], "repository" : "infradash/infradash", "match_container_name":"clockwork" }
+	},
+
+	"vacuums" : {
+	    "infradash": {
+		"tags": ["appserver"],
+		"run_interval_seconds": 10,
+		"export_container" : false,
+		"by_version": { "versions_to_keep" : 2 }
+	    }
+	},
+
+	"schedulers" : {
+	    "events" : {
+		"tags": ["control-plane"],
+		"auth_info_path":"/code.infradash.com/docker/authconfig",
+		"image_path" : "/{{.Domain}}/{{.Service}}",
+		"trigger_path" : "/{{.Domain}}/{{.Service}}/release",
+		"max_attempts": 2,
+		"actions" : [{
+		    "container_name_template": "{{.Service}}-{{.Sequence}}",
+		    "CpuShares": 1,
+		    "Cpuset": "0,1",
+		    "Memory": 512000000,
+		    "Env" : [ "DASH_DOMAIN={{.Domain}}", "ZOOKEEPER_HOSTS={{.ZOOKEEPER_HOSTS}}" ],
+		    "host_config" : { "PortBindings" : { "1883/tcp": [{"HostPort":"1883"}] } }
+		}],
+		"swarm" : {
+		    "max_instances_global" : 1,
+		    "min_instances_global" : 1
+		}
+	    },
+	    "mqtt" : {
+		"tags": ["logs"],
+		"auth_info_path":"/code.infradash.com/docker/authconfig",
+		"image_path" : "/{{.Domain}}/mqtt-dash",
+		"trigger_path" : "/{{.Domain}}/mqtt-dash/release",
+		"max_attempts": 2,
+		"actions" : [{
+		    "container_name_template": "{{.Service}}-{{.Sequence}}",
+		    "Env" : [ "DASH_DOMAIN={{.Domain}}", "ZOOKEEPER_HOSTS={{.ZOOKEEPER_HOSTS}}" ],
+		    "host_config" : { "PortBindings" : { "1883/tcp": [{"HostPort":"1883"}] } }
+		}],
+		"swarm" : {
+		    "max_instances_global" : 1,
+		    "min_instances_global" : 1
+		}
+	    },
+	    "nginx": {
+		"tags" : ["frontend"],
+		"auth_info_path":"/code.infradash.com/docker/authconfig",
+		"image_path" : "/{{.Domain}}/nginx",
+		"trigger_path" : "/{{.Domain}}/nginx/release",
+		"max_attempts": 2,
+		"actions" : [{
+		    "container_name_template": "{{.Service}}-{{.Sequence}}",
+		    "Env" : [ "DASH_DOMAIN={{.Domain}}", "ZOOKEEPER_HOSTS={{.ZOOKEEPER_HOSTS}}" ],
+		    "Cmd" : [ "-config_source_url=http://infradash.github.io/ops-release/dash/profiles/nginx.json" ],
+		    "host_config" : { "PortBindings" : { "443/tcp": [{"HostPort":"443"}] } }
+		}],
+		"swarm" : {
+		    "max_instances_global" : 1,
+		    "min_instances_global" : 1
+		}
+	    },
+	    "infradash": {
+		"tags":["appserver"],
+		"auth_info_path":"/code.infradash.com/docker/authconfig",
+		"image_path" : "/{{.Domain}}/infradash",
+		"trigger_path" : "/{{.Domain}}/infradash/release",
+		"max_attempts": 2,
+		"actions" : [{
+		    "container_name_template": "{{.Service}}-{{.Version}}-{{.Build}}-{{.Sequence}}",
+		    "Env" : [ "DASH_DOMAIN={{.Domain}}", "ZOOKEEPER_HOSTS={{.ZOOKEEPER_HOSTS}}" ],
+		    "Cmd" : [ "-config_source_url=http://infradash.github.io/ops-release/dash/profiles/infradash.json",
+			      "-stdout", "-newline" ],
+		    "host_config" : { "PublishAllPorts" : true }
+		}],
+		"register": { "match_container_port":3000 },
+		"swarm" : {
+		    "min_instances_global" : 1,
+		    "max_instances_global" : 5000,
+		    "min_instances_per_host" : 1,
+		    "max_instances_per_host" : 1
+		}
+	    },
+	    "infradash-dbmigrate": {
+		"tags":["appserver"],
+		"auth_info_path":"/code.infradash.com/docker/authconfig",
+		"image_path" : "/{{.Domain}}/infradash",
+		"trigger_path" : "/{{.Domain}}/infradash-dbmigrate/release",
+		"max_attempts": 1,
+		"idempotent": true,
+		"actions" : [{
+		    "run_once": true,
+		    "container_name_template": "infradash-dbmigrate-{{.Version}}-{{.Build}}-{{.Sequence}}",
+		    "Env" : [ "DASH_DOMAIN={{.Domain}}", "ZOOKEEPER_HOSTS={{.ZOOKEEPER_HOSTS}}" ],
+		    "Cmd" : [ "RUN bundle exec rake db:migrate" ]
+		}],
+		"run_once" : {
+		    "trigger" : "/{{.Domain}}/infradash-dbmigrate/run"
+		}
+	    },
+	    "infradash-dbseed": {
+		"tags":["appserver"],
+		"auth_info_path":"/code.infradash.com/docker/authconfig",
+		"image_path" : "/{{.Domain}}/infradash",
+		"trigger_path" : "/{{.Domain}}/infradash-dbseed/release",
+		"max_attempts": 1,
+		"idempotent": true,
+		"actions" : [{
+		    "run_once": true,
+		    "container_name_template": "infradash-dbseed-{{.Version}}-{{.Build}}-{{.Sequence}}",
+		    "Env" : [ "DASH_DOMAIN={{.Domain}}", "ZOOKEEPER_HOSTS={{.ZOOKEEPER_HOSTS}}" ],
+		    "Cmd" : [ "RUN bundle exec rake db:seed" ]
+		}],
+		"run_once" : {
+		    "trigger" : "/{{.Domain}}/infradash-dbseed/run"
+		}
+	    }
+
+	}
+
+    }
+]

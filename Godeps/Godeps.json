@@ -1,0 +1,137 @@
+{
+	"ImportPath": "github.com/infradash/dash",
+	"GoVersion": "go1.4.2",
+	"Packages": [
+		"./main/...",
+		"./pkg/..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "code.google.com/p/go-uuid/uuid",
+			"Comment": "null-15",
+			"Rev": "35bc42037350f0078e3c974c6ea690f1926603ab"
+		},
+		{
+			"ImportPath": "code.google.com/p/go.net/websocket",
+			"Comment": "null-240",
+			"Rev": "937a34c9de13c766c814510f76bca091dee06028"
+		},
+		{
+			"ImportPath": "git.eclipse.org/gitroot/paho/org.eclipse.paho.mqtt.golang.git",
+			"Comment": "v0.9.1-8-g1d65364",
+			"Rev": "1d6536402dac4b2528bc23f08ecc318c295c320a"
+		},
+		{
+			"ImportPath": "github.com/deckarep/golang-set",
+			"Comment": "v1-26-gef32fa3",
+			"Rev": "ef32fa3046d9f249d399f98ebaf9be944430fd1d"
+		},
+		{
+			"ImportPath": "github.com/dgrijalva/jwt-go",
+			"Comment": "v2.2.0-23-g5ca8014",
+			"Rev": "5ca80149b9d3f8b863af0e2bb6742e608603bd99"
+		},
+		{
+			"ImportPath": "github.com/fsouza/go-dockerclient",
+			"Rev": "b0f4fa94c14794e30cf3b9176e5dc4725d9552ed"
+		},
+		{
+			"ImportPath": "github.com/golang/glog",
+			"Rev": "44145f04b68cf362d9c4df2182967c2275eaefed"
+		},
+		{
+			"ImportPath": "github.com/golang/protobuf/proto",
+			"Rev": "655cdfa588ea190e901bc5590e65d5621688847c"
+		},
+		{
+			"ImportPath": "github.com/gorilla/context",
+			"Rev": "215affda49addc4c8ef7e2534915df2c8c35c6cd"
+		},
+		{
+			"ImportPath": "github.com/gorilla/mux",
+			"Rev": "660d31f8602b95058fed6833debf113e85350868"
+		},
+		{
+			"ImportPath": "github.com/gorilla/securecookie",
+			"Rev": "8e98dd730fc43f1383f19615db6f2e702c9738e8"
+		},
+		{
+			"ImportPath": "github.com/howeyc/fsnotify",
+			"Comment": "v0.9.0-14-g4894fe7",
+			"Rev": "4894fe7efedeeef21891033e1cce3b23b9af7ad2"
+		},
+		{
+			"ImportPath": "github.com/inconshreveable/go-update",
+			"Rev": "68f5725818189545231c1fd8694793d45f2fc529"
+		},
+		{
+			"ImportPath": "github.com/kardianos/osext",
+			"Rev": "8fef92e41e22a70e700a96b29f066cda30ea24ef"
+		},
+		{
+			"ImportPath": "github.com/kr/binarydist",
+			"Rev": "9955b0ab8708602d411341e55fffd7e0700f86bd"
+		},
+		{
+			"ImportPath": "github.com/mssola/user_agent",
+			"Comment": "v0.4.1-2-g35c7f18",
+			"Rev": "35c7f18f5261cc18c698a461053c119aebaf8542"
+		},
+		{
+			"ImportPath": "github.com/nranchev/go-libGeoIP",
+			"Rev": "c78e8bd2dd3599feb21fd30886043979e82fe948"
+		},
+		{
+			"ImportPath": "github.com/qorio/maestro/pkg/circleci",
+			"Comment": "v0.1-2-g3acf61e",
+			"Rev": "3acf61e909364f639f1bb0ee7b188d4cee2804ac"
+		},
+		{
+			"ImportPath": "github.com/qorio/maestro/pkg/docker",
+			"Comment": "v0.1-2-g3acf61e",
+			"Rev": "3acf61e909364f639f1bb0ee7b188d4cee2804ac"
+		},
+		{
+			"ImportPath": "github.com/qorio/maestro/pkg/mqtt",
+			"Comment": "v0.1-2-g3acf61e",
+			"Rev": "3acf61e909364f639f1bb0ee7b188d4cee2804ac"
+		},
+		{
+			"ImportPath": "github.com/qorio/maestro/pkg/zk",
+			"Comment": "v0.1-2-g3acf61e",
+			"Rev": "3acf61e909364f639f1bb0ee7b188d4cee2804ac"
+		},
+		{
+			"ImportPath": "github.com/qorio/omni/api",
+			"Rev": "dad14facaf4040071c7bd8c99019445ed6322032"
+		},
+		{
+			"ImportPath": "github.com/qorio/omni/auth",
+			"Rev": "dad14facaf4040071c7bd8c99019445ed6322032"
+		},
+		{
+			"ImportPath": "github.com/qorio/omni/http",
+			"Rev": "dad14facaf4040071c7bd8c99019445ed6322032"
+		},
+		{
+			"ImportPath": "github.com/qorio/omni/rest",
+			"Rev": "dad14facaf4040071c7bd8c99019445ed6322032"
+		},
+		{
+			"ImportPath": "github.com/qorio/omni/runtime",
+			"Rev": "dad14facaf4040071c7bd8c99019445ed6322032"
+		},
+		{
+			"ImportPath": "github.com/qorio/omni/version",
+			"Rev": "dad14facaf4040071c7bd8c99019445ed6322032"
+		},
+		{
+			"ImportPath": "github.com/samuel/go-zookeeper/zk",
+			"Rev": "d0e0d8e11f318e000a8cc434616d69e329edc374"
+		},
+		{
+			"ImportPath": "gopkg.in/check.v1",
+			"Rev": "64131543e7896d5bcc6bd5a76287eb75ea96c673"
+		}
+	]
+}
