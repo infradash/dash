@@ -16,8 +16,8 @@ machine:
     PATH: $GOPATH/bin:$PATH
     CIRCLE_ENV: test
     DOCKER_ACCOUNT: infradash
-    DOCKER_EMAIL: david@infradash.com
-    DOCKER_AUTH: Ymxpbmtlcjp3cmNRSWswRGxsUTk=
+    DOCKER_EMAIL: docker@infradash.com
+    DOCKER_AUTH: aW5mcmFkYXNoOnd1YzR5NmxiUFpHNA==
     BUILD_LABEL: $CIRCLE_BUILD_NUM
 
 ## Customize dependencies
