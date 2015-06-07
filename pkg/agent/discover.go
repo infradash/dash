@@ -2,8 +2,8 @@ package agent
 
 import (
 	"fmt"
-	. "github.com/infradash/dash/pkg/dash"
 	"github.com/golang/glog"
+	. "github.com/infradash/dash/pkg/dash"
 	"github.com/qorio/maestro/pkg/docker"
 	"regexp"
 	"strings"
@@ -65,6 +65,34 @@ func (this *ContainerMatchRule) GetMatchContainerPort() int {
 	return this.WatchContainerSpec.GetMatchContainerPort()
 }
 
+func (this *ContainerMatchRule) match_by_environment(c *docker.Container) bool {
+	if len(this.MatchContainerEnvironment) == 0 {
+		return true // Don't care
+	}
+
+	// want to match, but have no environments defined:
+	if c.DockerData == nil || c.DockerData.Config == nil || len(c.DockerData.Config.Env) == 0 {
+		return false
+	}
+
+	// name=value (regexp) pairs separated by comma ==> AND'ing
+	to_match := map[string]string{}
+	for _, nv := range this.MatchContainerEnvironment {
+		to_match[nv] = nv
+	}
+
+	for _, env := range c.DockerData.Config.Env {
+		for k, pattern := range to_match {
+			// use the full nv (e.g. FOO=BAR) as regexp
+			if match, _ := regexp.MatchString(pattern, env); match {
+				delete(to_match, k) // remove it so we don't match again
+				break
+			}
+		}
+	}
+	return len(to_match) == 0
+}
+
 func (this *ContainerMatchRule) match_by_name_regexp(c *docker.Container) bool {
 	if this.MatchContainerName == nil {
 		return true // Don't care
@@ -90,7 +118,8 @@ func (this *ContainerMatchRule) match_by_live_port(c *docker.Container) bool {
 }
 
 func (this *ContainerMatchRule) match(c *docker.Container) bool {
-	return ImageMatch(c.Image, &this.Image) && this.match_by_name_regexp(c) && this.match_by_live_port(c)
+	return ImageMatch(c.Image, &this.Image) &&
+		this.match_by_name_regexp(c) && this.match_by_live_port(c) && this.match_by_environment(c)
 }
 
 type CheckContainer func(*docker.Container) (bool, *ContainerMatchRule)

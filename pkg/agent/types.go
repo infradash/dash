@@ -1,8 +1,8 @@
 package agent
 
 import (
-	"github.com/infradash/dash/pkg/executor"
 	. "github.com/infradash/dash/pkg/dash"
+	"github.com/infradash/dash/pkg/executor"
 	"github.com/qorio/maestro/pkg/docker"
 	"github.com/qorio/maestro/pkg/zk"
 	"github.com/qorio/omni/version"
@@ -28,8 +28,9 @@ type Info struct {
 type WatchContainerSpec struct {
 	QualifyByTags
 	docker.Image
-	MatchContainerPort *int    `json:"match_container_port"`
-	MatchContainerName *string `json:"match_container_name"`
+	MatchContainerPort        *int     `json:"match_container_port"`
+	MatchContainerName        *string  `json:"match_container_name"`
+	MatchContainerEnvironment []string `json:"match_container_env"`
 }
 
 // Configuration for the domain
