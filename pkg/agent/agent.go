@@ -2,9 +2,8 @@ package agent
 
 import (
 	"fmt"
-	"github.com/infradash/dash/pkg/executor"
-	. "github.com/infradash/dash/pkg/dash"
 	"github.com/golang/glog"
+	. "github.com/infradash/dash/pkg/dash"
 	"github.com/qorio/maestro/pkg/docker"
 	"github.com/qorio/maestro/pkg/zk"
 	"github.com/qorio/omni/runtime"
@@ -42,7 +41,7 @@ type Agent struct {
 	domains       map[string]*Domain
 	domainConfigs map[string]DomainConfig
 
-	containerMatcher *DiscoveryContainerMatcher
+	//containerMatcher *DiscoveryContainerMatcher
 }
 
 // Checks that all the information required for agent start up is met.
@@ -106,7 +105,7 @@ func (this *Agent) Run() {
 	this.endpoint = endpoint
 
 	matcher := new(DiscoveryContainerMatcher).Init()
-	this.containerMatcher = matcher
+	//this.containerMatcher = matcher
 
 	if this.Initializer != nil {
 		glog.Infoln("Loading configuration from", this.Initializer.SourceUrl)
@@ -330,16 +329,6 @@ func (this *Agent) WatchContainer(domain, service string, spec *WatchContainerSp
 	return d.WatchContainer(ServiceKey(service), spec)
 }
 
-func (this *Agent) GetExecutorConfig(domain, service string) (*executor.ExecutorConfig, error) {
-	key := ServiceKey(service)
-	if domain, has := this.domains[domain]; has {
-		if domain.executorConfigs[key] != nil {
-			return domain.executorConfigs[key], nil
-		}
-	}
-	return nil, ErrNoConfig
-}
-
 func (this *Agent) ConfigureDomain(config *DomainConfig) (*Domain, error) {
 	if config.Domain == "" {
 		return nil, ErrNoDomain
@@ -359,7 +348,6 @@ func (this *Agent) ConfigureDomain(config *DomainConfig) (*Domain, error) {
 			triggers:           NewZkWatcher(this.zk),
 			agent:              this,
 			tracker:            NewContainerTracker(config.Domain),
-			executorConfigs:    make(map[ServiceKey]*executor.ExecutorConfig),
 			schedulers:         make(map[ServiceKey]*Scheduler),
 		}
 

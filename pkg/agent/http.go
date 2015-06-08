@@ -28,7 +28,6 @@ func NewApiEndPoint(agent *Agent) (ep *EndPoint, err error) {
 
 	ep.engine.Bind(
 		rest.SetHandler(Methods[GetInfo], ep.GetInfo),
-		rest.SetHandler(Methods[GetExecutorConfig], ep.GetExecutorConfig),
 		rest.SetHandler(Methods[ListContainers], ep.ListContainers),
 		rest.SetHandler(Methods[WatchContainer], ep.WatchContainer),
 		rest.SetHandler(Methods[ConfigureDomain], ep.ConfigureDomain),
@@ -54,22 +53,6 @@ func (this *EndPoint) GetInfo(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	err := this.engine.MarshalJSON(req, info, resp)
-	if err != nil {
-		this.engine.HandleError(resp, req, "malformed", http.StatusInternalServerError)
-		return
-	}
-}
-
-func (this *EndPoint) GetExecutorConfig(resp http.ResponseWriter, req *http.Request) {
-	domain := this.engine.GetUrlParameter(req, "domain")
-	service := this.engine.GetUrlParameter(req, "service")
-
-	config, err := this.agent.GetExecutorConfig(domain, service)
-	if err != nil {
-		this.engine.HandleError(resp, req, "not-found", http.StatusNotFound)
-		return
-	}
-	err = this.engine.MarshalJSON(req, config, resp)
 	if err != nil {
 		this.engine.HandleError(resp, req, "malformed", http.StatusInternalServerError)
 		return

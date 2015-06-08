@@ -41,13 +41,11 @@ type DomainConfig struct {
 
 	WatchContainers map[ServiceKey]*WatchContainerSpec `json:"watch_containers,omitempty"`
 
-	WatchGoLives map[ServiceKey]*GoLiveAction `json:"watch_golives,omitempty"`
+	//	WatchGoLives map[ServiceKey]*GoLiveAction `json:"watch_golives,omitempty"`
 
-	PostGoLives map[ServiceKey]*PostGoLiveAction `json:"post_golives,omitempty"`
+	//	PostGoLives map[ServiceKey]*PostGoLiveAction `json:"post_golives,omitempty"`
 
 	WatchRegistry map[ServiceKey][]executor.RegistryWatch `json:"watch_registry,omitempty"`
-
-	WatchFiles map[ServiceKey][]executor.TailRequest `json:"watch_files,omitempty"`
 
 	Schedulers map[ServiceKey]*Scheduler `json:"schedulers,omitempty"`
 
@@ -123,19 +121,19 @@ type RunOnceSchedule struct {
 	Trigger string `json:"trigger"`
 }
 
-type GoLiveAction struct {
-	QualifyByTags
+// type GoLiveAction struct {
+// 	QualifyByTags
 
-	RegistryPath string `json:"registry_path"`
-	VerifyLive   func() bool
-}
+// 	RegistryPath string `json:"registry_path"`
+// 	VerifyLive   func() bool
+// }
 
-type PostGoLiveAction struct {
-	QualifyByTags
+// type PostGoLiveAction struct {
+// 	QualifyByTags
 
-	RegistryPath        string               `json:"registry_path"`
-	RemoveOldContainers *RemoveOldContainers `json:"remove_old_containers,omitempty"`
-}
+// 	RegistryPath        string               `json:"registry_path"`
+// 	RemoveOldContainers *RemoveOldContainers `json:"remove_old_containers,omitempty"`
+// }
 
 type RemoveOldContainers struct {
 	NumOldVersionsToKeep int `json:"num_keep_old_versions"`

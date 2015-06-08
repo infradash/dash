@@ -3,9 +3,8 @@ package agent
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/infradash/dash/pkg/executor"
-	. "github.com/infradash/dash/pkg/dash"
 	"github.com/golang/glog"
+	. "github.com/infradash/dash/pkg/dash"
 	"github.com/qorio/maestro/pkg/docker"
 	"github.com/qorio/maestro/pkg/zk"
 	"sync"
@@ -29,9 +28,8 @@ type Domain struct {
 	lock               sync.Mutex
 	container_watchers map[string]chan<- bool
 
-	agent           *Agent
-	tracker         *ContainerTracker
-	executorConfigs map[ServiceKey]*executor.ExecutorConfig
+	agent   *Agent
+	tracker *ContainerTracker
 
 	schedulers       map[ServiceKey]*Scheduler
 	scheduleExecutor *ScheduleExecutor
@@ -124,31 +122,6 @@ func (this *Domain) StartServices(tags QualifyByTags) (*Domain, error) {
 				glog.Infoln("TODO - wire up the stop channel for scheduler:", stop)
 			}
 		}
-	}
-
-	for service, action := range this.Config.PostGoLives {
-		if action.QualifyByTags.Matches(tags.Tags) {
-			glog.Infoln("Service=", service, "Action=", *action)
-		}
-	}
-
-	// For executor configs
-	executorConfigs := this.executorConfigs
-
-	for service, registryWatches := range this.Config.WatchRegistry {
-		k := ServiceKey(service)
-		if _, has := executorConfigs[k]; !has {
-			executorConfigs[k] = new(executor.ExecutorConfig)
-		}
-		executorConfigs[k].RegistryWatch = registryWatches
-	}
-
-	for service, tailRequests := range this.Config.WatchFiles {
-		k := ServiceKey(service)
-		if _, has := executorConfigs[k]; !has {
-			executorConfigs[k] = new(executor.ExecutorConfig)
-		}
-		executorConfigs[k].TailRequest = tailRequests
 	}
 
 	// Vacuums
@@ -249,8 +222,24 @@ func label(this *docker.Container) string {
 	return fmt.Sprintln(this.Image, "@", this.Id[0:12], "(", this.Name, ")")
 }
 
+// Based on the scheduler information, derive the rules for discovery and monitoring of containers
+func (this *Domain) GetContainerMatcher() (*DiscoveryContainerMatcher, error) {
+	matcher := new(DiscoveryContainerMatcher).Init()
+	for svc, watchContainerSpec := range this.Config.WatchContainers {
+		if watchContainerSpec.QualifyByTags.Matches(this.agent.QualifyByTags.Tags) {
+			matcher.C(this.Domain, svc, watchContainerSpec)
+		}
+	}
+	return matcher, nil
+}
+
 func (this *Domain) WatchContainer(service ServiceKey, spec *WatchContainerSpec) error {
 	key := fmt.Sprintf("%s-%s", service, spec.Image)
+
+	containerMatcher, err := this.GetContainerMatcher()
+	if err != nil {
+		return err
+	}
 
 	if this.container_watchers == nil {
 		this.container_watchers = make(map[string]chan<- bool)
@@ -260,7 +249,7 @@ func (this *Domain) WatchContainer(service ServiceKey, spec *WatchContainerSpec)
 	if _, has := this.container_watchers[key]; !has {
 		stop, err := this.docker.WatchContainerMatching(
 
-			this.agent.containerMatcher.MatcherForDomain(this.Domain, string(service)),
+			containerMatcher.MatcherForDomain(this.Domain, string(service)),
 
 			func(action docker.Action, container *docker.Container) {
 
