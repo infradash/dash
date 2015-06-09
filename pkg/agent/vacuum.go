@@ -1,8 +1,8 @@
 package agent
 
 import (
-	. "github.com/infradash/dash/pkg/dash"
 	"github.com/golang/glog"
+	. "github.com/infradash/dash/pkg/dash"
 	"github.com/qorio/maestro/pkg/docker"
 	"time"
 )
@@ -21,6 +21,7 @@ type VacuumByStartTime struct {
 type VacuumConfig struct {
 	QualifyByTags
 
+	RemoveImage        bool   `json:"remove_image,omitempty"`
 	ExportContainer    bool   `json:"export_container,omitempty"`
 	ExportDestination  string `json:"exoprt_destination,omitempty"`
 	RunIntervalSeconds uint32 `json:"run_interval_seconds,omitempty"`
@@ -131,6 +132,14 @@ func (this *Vacuum) do_vacuum() error {
 						err := this.docker.StopContainer(nil, containerId, 10*time.Second)
 						glog.Infoln("StopContainer", "Id=", containerId, "Err=", err)
 					}()
+				case Removed:
+					if this.Config.RemoveImage {
+						go func() {
+							// TODO - remove image
+							glog.Infoln("TODO ====>  Container removed.  Now removing image:", image)
+
+						}()
+					}
 				default:
 					go func() {
 						err := this.docker.RemoveContainer(nil, containerId, false, false)

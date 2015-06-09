@@ -146,11 +146,11 @@ func (this *Agent) DiscoverRunningContainers(check CheckContainer, do OnMatch) e
 }
 
 type DiscoveryContainerMatcher struct {
-	imagesByDomain map[string]map[string]ContainerMatchRule
+	imagesByDomain map[string]map[ServiceKey]ContainerMatchRule
 }
 
 func (this *DiscoveryContainerMatcher) Init() *DiscoveryContainerMatcher {
-	this.imagesByDomain = make(map[string]map[string]ContainerMatchRule)
+	this.imagesByDomain = make(map[string]map[ServiceKey]ContainerMatchRule)
 	return this
 }
 
@@ -161,9 +161,9 @@ func (this *DiscoveryContainerMatcher) C(domain string, service ServiceKey, spec
 		Service:            service,
 	}
 	if _, has := this.imagesByDomain[domain]; !has {
-		this.imagesByDomain[domain] = map[string]ContainerMatchRule{string(service): match_rule}
+		this.imagesByDomain[domain] = map[ServiceKey]ContainerMatchRule{service: match_rule}
 	} else {
-		this.imagesByDomain[domain][string(service)] = match_rule
+		this.imagesByDomain[domain][service] = match_rule
 	}
 	return this
 }
@@ -188,7 +188,7 @@ func findContainerDomain(c *docker.Container) *string {
 	return &v
 }
 
-func (this *DiscoveryContainerMatcher) MatcherForDomain(domain, service string) func(docker.Action, *docker.Container) bool {
+func (this *DiscoveryContainerMatcher) MatcherForDomain(domain string, service ServiceKey) func(docker.Action, *docker.Container) bool {
 	// get the rule
 	if service_rule_map, has_domain := this.imagesByDomain[domain]; has_domain {
 		if rule, has_map := service_rule_map[service]; has_map {

@@ -2,8 +2,8 @@ package agent
 
 import (
 	"bytes"
-	. "github.com/infradash/dash/pkg/dash"
 	"github.com/golang/glog"
+	. "github.com/infradash/dash/pkg/dash"
 	"github.com/qorio/maestro/pkg/docker"
 	"github.com/qorio/maestro/pkg/zk"
 	"strings"
@@ -85,6 +85,16 @@ func AssignContainerImageFromRegistry(global GlobalServiceState, local HostConta
 			Tag:        tag,
 		}, nil
 	}
+}
+
+// Derive the watch container spec based on the scheduler data.
+func (this *Scheduler) GetWatchContainerSpec() *WatchContainerSpec {
+
+	if this.Discover == nil {
+		this.Discover = &WatchContainerSpec{}
+	}
+	// TODO - infer this...
+	return this.Discover
 }
 
 func (this *Scheduler) Run(domain string, service ServiceKey, global GlobalServiceState,

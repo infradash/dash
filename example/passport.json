@@ -2,48 +2,6 @@
     {
         "domain": "{{.DASH_DOMAIN}}",
 
-        "watch_containers": {
-            "passport-fe": {
-	        "tags": ["frontend"],
-		"repository" : "infradash/nginx"
-	    },
-            "passport-db-master": {
-	        "tags": ["database"],
-		"repository" : "infradash/postgres",
-		"match_container_port":5432
-	    },
-            "passport-db-slave": {
-	        "tags": ["database"],
-		"repository" : "infradash/postgres",
-		"match_container_port":5432,
-		"match_container_name":"passport-db-slave-(.*)",
-	    },
-            "passport-db-proxy": {
-	        "tags": ["database"],
-		"repository" : "infradash/haproxy",
-		"match_container_name":"passport-db-proxy"
-	    },
-            "passport": {
-	        "tags": ["appserver"],
-		"repository" : "qorio/passport",
-		"match_container_port":6060,
-		"match_container_name":"passport-(.*)-(.*)-([0-9]+)" },
-            "log-collector": {
-	        "tags": ["logging"],
-		"repository" : "infradash/mqtt",
-		"match_container_name":"^mqtt$"
-	    },
-        },
-
-        "vacuums" : {
-            "passport": {
-                "tags": ["appserver"],
-                "run_interval_seconds": 10,
-                "export_container" : false,
-                "by_version": { "versions_to_keep" : 2 }
-            }
-        },
-
         "schedulers" : {
             "log-collector" : {
                 "tags": ["logging"],
@@ -56,6 +14,10 @@
                     "Env" : [ "DASH_DOMAIN={{.Domain}}", "ZOOKEEPER_HOSTS={{.ZOOKEEPER_HOSTS}}" ],
                     "host_config" : { "PortBindings" : { "1883/tcp": [{"HostPort":"1883"}] } }
                 }],
+		"discover": {
+		    "repository" : "infradash/mqtt",
+		    "match_container_name":"^mqtt$"
+		},
                 "swarm" : {
                     "max_instances_global" : 1,
                     "min_instances_global" : 1
@@ -73,6 +35,10 @@
                     "Cmd" : [ "-config_source_url=http://qoriolabs.github.io/public/dash/passport-fe.json" ],
                     "host_config" : { "PortBindings" : { "443/tcp": [{"HostPort":"443"}] } }
                 }],
+		"discover": {
+		    "repository" : "infradash/nginx",
+		    "match_container_port":443
+		},
                 "swarm" : {
                     "max_instances_global" : 1,
                     "min_instances_global" : 1
@@ -91,7 +57,11 @@
                               "-stdout", "-newline" ],
                     "host_config" : { "PortBindings" : { "5432/tcp": [{"HostPort":"5432"}] } }
                 }],
-                "register": { "match_container_env":[ "DB_MASTER=true" ] },
+                "discover": {
+		    "repository" : "infradash/postgres",
+		    "match_container_port":5432,
+		    "match_container_env":[ "DB_MASTER=true" ]
+		},
                 "swarm" : {
                     "min_instances_global" : 1,
                     "max_instances_global" : 1
@@ -110,11 +80,16 @@
                               "-stdout", "-newline" ],
                     "host_config" : { "PortBindings" : { "5432/tcp": [{"HostPort":"5432"}] } }
                 }],
-                "register": { "match_container_env":[ "DB_SLAVE=true" ] },
+                "discover": {
+		    "repository" : "infradash/postgres",
+		    "match_container_port":5432,
+		    "match_container_name":"passport-db-slave-(.*)",
+		    "match_container_env":[ "DB_SLAVE=true" ]
+		},
                 "swarm" : {
                     "min_instances_global" : 2,
                     "max_instances_global" : 2,
-                    "max_instances_per_host" : 1,
+                    "max_instances_per_host" : 1
                 }
             },
             "passport": {
@@ -130,7 +105,11 @@
                               "-stdout", "-newline" ],
                     "host_config" : { "PublishAllPorts" : true }
                 }],
-                "register": { "match_container_port":6060 },
+		"discover": {
+		    "repository" : "qorio/passport",
+		    "match_container_port":6060,
+		    "match_container_name":"passport-(.*)-(.*)-([0-9]+)"
+		},
                 "swarm" : {
                     "min_instances_global" : 1,
                     "max_instances_global" : 100,
@@ -139,7 +118,7 @@
                 }
             },
             "passport-dbmigrate": {
-                "tags":["appserver"],
+                "tags":["database"],
                 "auth_info_path":"/code.qoriolabs.com/docker/authconfig",
                 "image_path" : "/{{.Domain}}/passport",
                 "trigger_path" : "/{{.Domain}}/passport/release",
@@ -154,6 +133,16 @@
                 "run_once" : {
                     "trigger" : "/{{.Domain}}/infradash-dbmigrate/run"
                 }
+            }
+        },
+
+        "vacuums" : {
+            "passport": {
+                "tags": ["appserver"],
+                "run_interval_seconds": 10,
+                "export_container" : false,
+                "by_version": { "versions_to_keep" : 2 },
+		"remove_image" : true
             }
         }
     }

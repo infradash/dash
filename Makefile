@@ -104,13 +104,13 @@ run-local-agent:
 		--tlscert=$(HOME)/.boot2docker/certs/boot2docker-vm/cert.pem \
 		--tlskey=$(HOME)/.boot2docker/certs/boot2docker-vm/key.pem \
 		--tlsca=$(HOME)/.boot2docker/certs/boot2docker-vm/ca.pem \
-		--config_source_url="file:///Users/david/go/src/github.com/infradash/dash/example/agent.json" \
+		--config_source_url="file:///Users/david/go/src/github.com/infradash/dash/example/passport.json" \
 	agent
 
 run-local-agent-godep:
 	DASH_HOST=`hostname` \
 	DASH_DOMAIN="test.infradash.com" \
-	DASH_TAGS="control-plane" \
+	DASH_TAGS="appserver,frontend" \
 	DASH_DOCKER_NAME="dash" \
 	ZOOKEEPER_HOSTS="localhost:2181" \
 	DOCKER_PORT="tcp://192.168.59.103:2376" \
@@ -119,7 +119,7 @@ run-local-agent-godep:
 		--tlskey=$(HOME)/.boot2docker/certs/boot2docker-vm/key.pem \
 		--tlsca=$(HOME)/.boot2docker/certs/boot2docker-vm/ca.pem \
 		--enable_ui --ui_docroot=/Users/david/go/src/github.com/infradash/dash/docker/dash/www \
-		--config_source_url="file:///Users/david/go/src/github.com/infradash/dash/example/agent.json" \
+		--config_source_url="file:///Users/david/go/src/github.com/infradash/dash/example/passport.json" \
 	agent
 
 

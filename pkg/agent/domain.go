@@ -77,7 +77,12 @@ func (this *Domain) do_register() error {
 
 func (this *Domain) StartServices(tags QualifyByTags) (*Domain, error) {
 	// configure the watches
-	for service, rule := range this.Config.WatchContainers {
+	rules, err := this.GetContainerWatcherSpecs()
+	if err != nil {
+		return this, err
+	}
+
+	for service, rule := range rules {
 		if rule.QualifyByTags.Matches(tags.Tags) {
 
 			glog.Infoln("WatchContainers", "Domain=", this.Domain, "Service=", service, "Rule=", *rule)
@@ -223,23 +228,20 @@ func label(this *docker.Container) string {
 }
 
 // Based on the scheduler information, derive the rules for discovery and monitoring of containers
-func (this *Domain) GetContainerMatcher() (*DiscoveryContainerMatcher, error) {
-	matcher := new(DiscoveryContainerMatcher).Init()
-	for svc, watchContainerSpec := range this.Config.WatchContainers {
-		if watchContainerSpec.QualifyByTags.Matches(this.agent.QualifyByTags.Tags) {
-			matcher.C(this.Domain, svc, watchContainerSpec)
+func (this *Domain) GetContainerWatcherSpecs() (map[ServiceKey]*WatchContainerSpec, error) {
+	matched := map[ServiceKey]*WatchContainerSpec{}
+
+	// Go through all the scheduler settings and derive the WatchContainerSpec
+	for service, scheduler := range this.Config.Schedulers {
+		if scheduler.QualifyByTags.Matches(this.agent.QualifyByTags.Tags) {
+			matched[service] = scheduler.GetWatchContainerSpec()
 		}
 	}
-	return matcher, nil
+	return matched, nil
 }
 
 func (this *Domain) WatchContainer(service ServiceKey, spec *WatchContainerSpec) error {
 	key := fmt.Sprintf("%s-%s", service, spec.Image)
-
-	containerMatcher, err := this.GetContainerMatcher()
-	if err != nil {
-		return err
-	}
 
 	if this.container_watchers == nil {
 		this.container_watchers = make(map[string]chan<- bool)
@@ -247,9 +249,19 @@ func (this *Domain) WatchContainer(service ServiceKey, spec *WatchContainerSpec)
 
 	this.lock.Lock()
 	if _, has := this.container_watchers[key]; !has {
+
+		containerMatcher := new(DiscoveryContainerMatcher).Init()
+		specs, err := this.GetContainerWatcherSpecs()
+		if err != nil {
+			return err
+		}
+		for svc, spec := range specs {
+			containerMatcher.C(this.Domain, svc, spec)
+		}
+
 		stop, err := this.docker.WatchContainerMatching(
 
-			containerMatcher.MatcherForDomain(this.Domain, string(service)),
+			containerMatcher.MatcherForDomain(this.Domain, service),
 
 			func(action docker.Action, container *docker.Container) {
 

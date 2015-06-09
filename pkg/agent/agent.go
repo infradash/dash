@@ -104,9 +104,6 @@ func (this *Agent) Run() {
 
 	this.endpoint = endpoint
 
-	matcher := new(DiscoveryContainerMatcher).Init()
-	//this.containerMatcher = matcher
-
 	if this.Initializer != nil {
 		glog.Infoln("Loading configuration from", this.Initializer.SourceUrl)
 
@@ -130,11 +127,11 @@ func (this *Agent) Run() {
 			per_domain = *applied
 			applied_domain_configs = append(applied_domain_configs, &per_domain)
 
-			for svc, watchContainerSpec := range per_domain.WatchContainers {
-				if watchContainerSpec.QualifyByTags.Matches(this.QualifyByTags.Tags) {
-					matcher.C(per_domain.Domain, svc, watchContainerSpec)
-				}
-			}
+			// for svc, watchContainerSpec := range per_domain.WatchContainers {
+			// 	if watchContainerSpec.QualifyByTags.Matches(this.QualifyByTags.Tags) {
+			// 		matcher.C(per_domain.Domain, svc, watchContainerSpec)
+			// 	}
+			// }
 
 			if _, config_err := this.ConfigureDomain(&per_domain); config_err != nil {
 				panic(config_err)
@@ -142,6 +139,17 @@ func (this *Agent) Run() {
 		}
 
 		glog.Infoln("Start running discovery")
+		matcher := new(DiscoveryContainerMatcher).Init()
+		for _, domain := range this.domains {
+			watches, err := domain.GetContainerWatcherSpecs()
+			if err != nil {
+				panic(err)
+			}
+			for svc, watch := range watches {
+				matcher.C(domain.Domain, svc, watch)
+			}
+		}
+
 		err = this.DiscoverRunningContainers(
 			matcher.Match,
 			func(c *docker.Container, match_rule *ContainerMatchRule) {

@@ -2,7 +2,6 @@ package agent
 
 import (
 	. "github.com/infradash/dash/pkg/dash"
-	"github.com/infradash/dash/pkg/executor"
 	"github.com/qorio/maestro/pkg/docker"
 	"github.com/qorio/maestro/pkg/zk"
 	"github.com/qorio/omni/version"
@@ -39,14 +38,6 @@ type WatchContainerSpec struct {
 type DomainConfig struct {
 	RegistryContainerEntry
 
-	WatchContainers map[ServiceKey]*WatchContainerSpec `json:"watch_containers,omitempty"`
-
-	//	WatchGoLives map[ServiceKey]*GoLiveAction `json:"watch_golives,omitempty"`
-
-	//	PostGoLives map[ServiceKey]*PostGoLiveAction `json:"post_golives,omitempty"`
-
-	WatchRegistry map[ServiceKey][]executor.RegistryWatch `json:"watch_registry,omitempty"`
-
 	Schedulers map[ServiceKey]*Scheduler `json:"schedulers,omitempty"`
 
 	Vacuums map[ServiceKey]*VacuumConfig `json:"vacuums,omitempty"`
@@ -57,7 +48,8 @@ type Scheduler struct {
 
 	Job
 
-	TriggerPath *Trigger `json:"trigger_path,omitempty"`
+	Discover    *WatchContainerSpec `json:"discover,omitempty"`
+	TriggerPath *Trigger            `json:"trigger_path,omitempty"`
 
 	Swarm   *SwarmSchedule   `json:"swarm,omitempty"`
 	RunOnce *RunOnceSchedule `json:"run_once,omitemtpy"`
@@ -119,22 +111,4 @@ type SwarmSchedule struct {
 
 type RunOnceSchedule struct {
 	Trigger string `json:"trigger"`
-}
-
-// type GoLiveAction struct {
-// 	QualifyByTags
-
-// 	RegistryPath string `json:"registry_path"`
-// 	VerifyLive   func() bool
-// }
-
-// type PostGoLiveAction struct {
-// 	QualifyByTags
-
-// 	RegistryPath        string               `json:"registry_path"`
-// 	RemoveOldContainers *RemoveOldContainers `json:"remove_old_containers,omitempty"`
-// }
-
-type RemoveOldContainers struct {
-	NumOldVersionsToKeep int `json:"num_keep_old_versions"`
 }
