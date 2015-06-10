@@ -115,6 +115,7 @@ func (this *Agent) Run() {
 
 		applied_domain_configs := []*DomainConfig{}
 
+		glog.Infoln("Processing configuration")
 		for _, per_domain := range list {
 
 			applied := new(DomainConfig)
@@ -127,18 +128,12 @@ func (this *Agent) Run() {
 			per_domain = *applied
 			applied_domain_configs = append(applied_domain_configs, &per_domain)
 
-			// for svc, watchContainerSpec := range per_domain.WatchContainers {
-			// 	if watchContainerSpec.QualifyByTags.Matches(this.QualifyByTags.Tags) {
-			// 		matcher.C(per_domain.Domain, svc, watchContainerSpec)
-			// 	}
-			// }
-
 			if _, config_err := this.ConfigureDomain(&per_domain); config_err != nil {
 				panic(config_err)
 			}
 		}
 
-		glog.Infoln("Start running discovery")
+		glog.Infoln("Start running discovery / container monitors")
 		matcher := new(DiscoveryContainerMatcher).Init()
 		for _, domain := range this.domains {
 			watches, err := domain.GetContainerWatcherSpecs()
@@ -146,7 +141,12 @@ func (this *Agent) Run() {
 				panic(err)
 			}
 			for svc, watch := range watches {
+
+				glog.Infoln(domain.Domain, svc, "Container matcher for discovery:", *watch)
 				matcher.C(domain.Domain, svc, watch)
+
+				glog.Infoln(domain.Domain, svc, "Set up container monitor:", *watch)
+				domain.WatchContainer(svc, watch)
 			}
 		}
 

@@ -106,6 +106,13 @@ func (this *ContainerMatchRule) match_by_live_port(c *docker.Container) bool {
 	if this.MatchContainerPort == nil {
 		return true // Don't care
 	}
+
+	// When the container isn't running, the port information is erased.
+	// So we count on other conditions to match.
+	if c.DockerData != nil && !c.DockerData.State.Running {
+		return true
+	}
+
 	port := *this.MatchContainerPort
 	if port > 0 {
 		for _, p := range c.Ports {
@@ -118,8 +125,24 @@ func (this *ContainerMatchRule) match_by_live_port(c *docker.Container) bool {
 }
 
 func (this *ContainerMatchRule) match(c *docker.Container) bool {
-	return ImageMatch(c.Image, &this.Image) &&
-		this.match_by_name_regexp(c) && this.match_by_live_port(c) && this.match_by_environment(c)
+	// We need to take into account of the fact that when a container stopped,
+	// its port inforrmation is gone.  Therefore, anything that tries to match
+	// by port number will fail.
+
+	// We first try by matching image. Then by name, environment variable.
+	if !ImageMatch(c.Image, &this.Image) {
+		return false
+	}
+
+	if !this.match_by_name_regexp(c) {
+		return false
+	}
+
+	if !this.match_by_environment(c) {
+		return false
+	}
+
+	return this.match_by_live_port(c)
 }
 
 type CheckContainer func(*docker.Container) (bool, *ContainerMatchRule)
@@ -210,6 +233,7 @@ func (this *DiscoveryContainerMatcher) MatcherForDomain(domain string, service S
 		return false
 	}
 }
+
 func (this *DiscoveryContainerMatcher) match(domain *string, c *docker.Container) (bool, *ContainerMatchRule) {
 	if domain != nil {
 		// Now we have matched by the domain of the container.  Let's see if it's running an image we care about:

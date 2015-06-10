@@ -94,12 +94,12 @@ deploy-git: deploy-git-checkout
 # ssh -i decrypt/keys/bastion.cer -L 8080:zk1.prod.infradash.com:8080  -L 2181:zk1.prod.infradash.com:2181 ubuntu@bastion.infradash.com
 run-local-agent:
 	DASH_HOST=`hostname` \
-	DASH_DOMAIN="test.infradash.com" \
+	DASH_DOMAIN="accounts.qor.io" \
 	DASH_TAGS="appserver,frontend" \
 	DASH_DOCKER_NAME="dash" \
 	ZOOKEEPER_HOSTS="localhost:2181" \
 	DOCKER_PORT="tcp://192.168.59.103:2376" \
-	go run main/dash.go --logtostderr --v=200 --self_register=false \
+	go run main/dash.go --logtostderr --v=500 --self_register=false \
 		--ui_docroot=$(HOME)/go/src/github.com/infradash/dash/www \
 		--tlscert=$(HOME)/.boot2docker/certs/boot2docker-vm/cert.pem \
 		--tlskey=$(HOME)/.boot2docker/certs/boot2docker-vm/key.pem \
@@ -109,12 +109,12 @@ run-local-agent:
 
 run-local-agent-godep:
 	DASH_HOST=`hostname` \
-	DASH_DOMAIN="test.infradash.com" \
+	DASH_DOMAIN="accounts.qor.io" \
 	DASH_TAGS="appserver,frontend" \
 	DASH_DOCKER_NAME="dash" \
 	ZOOKEEPER_HOSTS="localhost:2181" \
 	DOCKER_PORT="tcp://192.168.59.103:2376" \
-	godep go run main/dash.go --logtostderr --v=200 --self_register=false \
+	godep go run main/dash.go --logtostderr --v=500 --self_register=false \
 		--tlscert=$(HOME)/.boot2docker/certs/boot2docker-vm/cert.pem \
 		--tlskey=$(HOME)/.boot2docker/certs/boot2docker-vm/key.pem \
 		--tlsca=$(HOME)/.boot2docker/certs/boot2docker-vm/ca.pem \

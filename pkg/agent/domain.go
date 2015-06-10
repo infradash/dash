@@ -76,24 +76,6 @@ func (this *Domain) do_register() error {
 }
 
 func (this *Domain) StartServices(tags QualifyByTags) (*Domain, error) {
-	// configure the watches
-	rules, err := this.GetContainerWatcherSpecs()
-	if err != nil {
-		return this, err
-	}
-
-	for service, rule := range rules {
-		if rule.QualifyByTags.Matches(tags.Tags) {
-
-			glog.Infoln("WatchContainers", "Domain=", this.Domain, "Service=", service, "Rule=", *rule)
-
-			err := this.WatchContainer(service, rule)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
 	// Schedulers
 	for service, scheduler := range this.Config.Schedulers {
 		if scheduler.QualifyByTags.Matches(tags.Tags) {
@@ -230,7 +212,6 @@ func label(this *docker.Container) string {
 // Based on the scheduler information, derive the rules for discovery and monitoring of containers
 func (this *Domain) GetContainerWatcherSpecs() (map[ServiceKey]*WatchContainerSpec, error) {
 	matched := map[ServiceKey]*WatchContainerSpec{}
-
 	// Go through all the scheduler settings and derive the WatchContainerSpec
 	for service, scheduler := range this.Config.Schedulers {
 		if scheduler.QualifyByTags.Matches(this.agent.QualifyByTags.Tags) {
@@ -255,6 +236,7 @@ func (this *Domain) WatchContainer(service ServiceKey, spec *WatchContainerSpec)
 		if err != nil {
 			return err
 		}
+
 		for svc, spec := range specs {
 			containerMatcher.C(this.Domain, svc, spec)
 		}

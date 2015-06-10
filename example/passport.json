@@ -32,7 +32,7 @@
                 "actions" : [{
                     "container_name_template": "{{.Service}}-{{.Sequence}}",
                     "Env" : [ "DASH_DOMAIN={{.Domain}}", "ZOOKEEPER_HOSTS={{.ZOOKEEPER_HOSTS}}" ],
-                    "Cmd" : [ "-config_source_url=http://qoriolabs.github.io/public/dash/passport-fe.json" ],
+                    "Cmd" : [ "-config_source_url=http://qorio.github.io/public/dash/domain/accounts.qoriolabs.com/frontend.json" ],
                     "host_config" : { "PortBindings" : { "443/tcp": [{"HostPort":"443"}] } }
                 }],
 		"discover": {
@@ -44,6 +44,29 @@
                     "min_instances_global" : 1
                 }
             },
+            "passport": {
+                "tags":["appserver"],
+                "auth_info_path":"/code.qoriolabs.com/docker/authconfig",
+                "image_path" : "/{{.Domain}}/passport",
+                "trigger_path" : "/{{.Domain}}/passport/release",
+                "max_attempts": 2,
+                "actions" : [{
+                    "container_name_template": "{{.Service}}-{{.Version}}-{{.Build}}-{{.Sequence}}",
+                    "Env" : [ "DASH_DOMAIN={{.Domain}}", "ZOOKEEPER_HOSTS={{.ZOOKEEPER_HOSTS}}" ],
+                    "host_config" : { "PublishAllPorts" : true }
+                }],
+		"discover": {
+		    "repository" : "qoriolabs/passport",
+		    "match_container_port":6060,
+		    "match_container_name":"passport-(.*)-(.*)-([0-9]+)"
+		},
+                "swarm" : {
+                    "min_instances_global" : 1,
+                    "max_instances_global" : 100,
+                    "min_instances_per_host" : 1,
+                    "max_instances_per_host" : 1
+                }
+            },
             "passport-db-master": {
                 "tags":["database"],
                 "auth_info_path":"/code.qoriolabs.com/docker/authconfig",
@@ -53,8 +76,6 @@
                 "actions" : [{
                     "container_name_template": "{{.Service}}-{{.Version}}-{{.Build}}-{{.Sequence}}",
                     "Env" : [ "DASH_DOMAIN={{.Domain}}", "ZOOKEEPER_HOSTS={{.ZOOKEEPER_HOSTS}}", "DB_MASTER=true" ],
-                    "Cmd" : [ "-config_source_url=http://qoriolabs.github.io/public/dash/passport-db-master.json",
-                              "-stdout", "-newline" ],
                     "host_config" : { "PortBindings" : { "5432/tcp": [{"HostPort":"5432"}] } }
                 }],
                 "discover": {
@@ -76,8 +97,6 @@
                 "actions" : [{
                     "container_name_template": "{{.Service}}-{{.Version}}-{{.Build}}-{{.Sequence}}",
                     "Env" : [ "DASH_DOMAIN={{.Domain}}", "ZOOKEEPER_HOSTS={{.ZOOKEEPER_HOSTS}}", "DB_SLAVE=true" ],
-                    "Cmd" : [ "-config_source_url=http://qoriolabs.github.io/public/dash/passport-db-slave.json",
-                              "-stdout", "-newline" ],
                     "host_config" : { "PortBindings" : { "5432/tcp": [{"HostPort":"5432"}] } }
                 }],
                 "discover": {
@@ -89,31 +108,6 @@
                 "swarm" : {
                     "min_instances_global" : 2,
                     "max_instances_global" : 2,
-                    "max_instances_per_host" : 1
-                }
-            },
-            "passport": {
-                "tags":["appserver"],
-                "auth_info_path":"/code.qoriolabs.com/docker/authconfig",
-                "image_path" : "/{{.Domain}}/passport",
-                "trigger_path" : "/{{.Domain}}/passport/release",
-                "max_attempts": 2,
-                "actions" : [{
-                    "container_name_template": "{{.Service}}-{{.Version}}-{{.Build}}-{{.Sequence}}",
-                    "Env" : [ "DASH_DOMAIN={{.Domain}}", "ZOOKEEPER_HOSTS={{.ZOOKEEPER_HOSTS}}" ],
-                    "Cmd" : [ "-config_source_url=http://qoriolabs.github.io/public/dash/passport.json",
-                              "-stdout", "-newline" ],
-                    "host_config" : { "PublishAllPorts" : true }
-                }],
-		"discover": {
-		    "repository" : "qorio/passport",
-		    "match_container_port":6060,
-		    "match_container_name":"passport-(.*)-(.*)-([0-9]+)"
-		},
-                "swarm" : {
-                    "min_instances_global" : 1,
-                    "max_instances_global" : 100,
-                    "min_instances_per_host" : 1,
                     "max_instances_per_host" : 1
                 }
             },
@@ -138,7 +132,7 @@
 
         "vacuums" : {
             "passport": {
-                "tags": ["appserver"],
+                "tags": ["appserverx"],
                 "run_interval_seconds": 10,
                 "export_container" : false,
                 "by_version": { "versions_to_keep" : 2 },
