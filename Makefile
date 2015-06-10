@@ -178,13 +178,22 @@ run-publish-env:
 # Run a release
 run-release:
 	ZOOKEEPER_HOSTS="localhost:2181" \
-	go run main/dash.go --logtostderr --commit \
+	godep go run main/dash.go --logtostderr --commit \
 		--release --commit \
 		--domain=test.infradash.com \
 		--service=infradash \
 		--version=develop \
 		--build=4287.133 \
 		--image=infradash/infradash:develop-4287.133 \
+	registry
+
+run-release-scheduler-trigger:
+	ZOOKEEPER_HOSTS="localhost:2181" \
+	godep go run main/dash.go --logtostderr --commit \
+		--release --commit \
+		--image=qorio/passport:v1.0 \
+		--scheduler_trigger_path="/test2.qoriolabs.com/passport/release" \
+		--scheduler_image_path="/test2.qoriolabs.com/passport" \
 	registry
 
 # Run a setlive

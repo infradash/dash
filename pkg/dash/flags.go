@@ -62,6 +62,11 @@ func (this *Registry) BindFlags() {
 	flag.StringVar(&this.WriteValue, "writevalue", "", "The value to write")
 	flag.StringVar(&this.WriteValuePath, "writepath", "", "The path to write")
 
+	flag.IntVar(&this.Retries, "retries", 5, "Retries")
+	flag.IntVar(&this.RetriesWaitSeconds, "retries_wait_seconds", 5, "Wait seconds between retries")
+
+	flag.StringVar(&this.SchedulerTriggerPath, "scheduler_trigger_path", "", "Scheduler trigger path; value is a counter")
+	flag.StringVar(&this.SchedulerImagePath, "scheduler_image_path", "", "Scheduler image path; value is the image.")
 }
 
 func (this *ConfigLoader) BindFlags() {

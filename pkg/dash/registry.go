@@ -13,6 +13,14 @@ type Registry struct {
 	ZkSettings
 	RegistryReleaseEntry
 
+	// Retries
+	Retries            int `json:"retries,omitempty"`
+	RetriesWaitSeconds int `json:"retries_wait_seconds,omitempty"`
+
+	// V2 release syntax
+	SchedulerTriggerPath string `json:"scheduler_trigger_path,omitempty"`
+	SchedulerImagePath   string `json:"scheduler_image_path,omitempty"`
+
 	// For arbitrary read access
 	ReadValue     bool
 	ReadValuePath string
@@ -44,13 +52,15 @@ func (this *Registry) check_input() error {
 		return nil
 	}
 
-	switch {
-	case this.Domain == "":
-		return errors.New("no-domain")
-	case this.Service == "":
-		return errors.New("no-service")
-	case this.Version == "":
-		return errors.New("no-version")
+	if this.SchedulerImagePath == "" && this.SchedulerTriggerPath == "" {
+		switch {
+		case this.Domain == "":
+			return errors.New("no-domain")
+		case this.Service == "":
+			return errors.New("no-service")
+		case this.Version == "":
+			return errors.New("no-version")
+		}
 	}
 	return nil
 }
@@ -63,27 +73,30 @@ func (this *Registry) Connect() {
 	this.zk = zookeeper
 }
 
+func (this *Registry) retry_operation(f func() error) error {
+	for i := 0; i < this.Retries+1; i++ {
+		err := f()
+		if err == nil {
+			return nil
+		} else {
+			glog.Warningln("Operation failed. Err=", err, "Retrying. Attempt=", i)
+			time.Sleep(time.Duration(this.RetriesWaitSeconds) * time.Second)
+		}
+	}
+	glog.Infoln("Operation failed after retries")
+	return errors.New("too-many-retries")
+}
+
 func (this *Registry) PrintReadPathValue() error {
 	if this.zk == nil {
 		this.Connect()
 	}
 	n, err := this.zk.Get(this.ReadValuePath)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	fmt.Println(string(n.Value))
 	return nil
-}
-
-func (this *Registry) GetReadPathValue() string {
-	if this.zk == nil {
-		this.Connect()
-	}
-	n, err := this.zk.Get(this.ReadValuePath)
-	if err != nil {
-		panic(err)
-	}
-	return (string(n.Value))
 }
 
 func (this *Registry) Run() error {
@@ -96,17 +109,21 @@ func (this *Registry) Run() error {
 	}
 
 	if this.ReadValue {
-		this.PrintReadPathValue()
+		glog.Infoln("Reading", this.ReadValuePath)
+		if err := this.retry_operation(func() error {
+			return this.PrintReadPathValue()
+		}); err != nil {
+			panic(err)
+		}
 	}
 
 	if this.WriteValuePath != "" && this.WriteValue != "" {
-		glog.Infoln("Setting", this.WriteValuePath, "to", this.WriteValue)
 		if this.Commit {
-			err := create_or_set(this.zk, this.WriteValuePath, this.WriteValue)
-			if err != nil {
+			glog.Infoln("Setting", this.WriteValuePath, "to", this.WriteValue)
+			if err := this.retry_operation(func() error {
+				return create_or_set(this.zk, this.WriteValuePath, this.WriteValue)
+			}); err != nil {
 				panic(err)
-			} else {
-				glog.Infoln("Committed", this.WriteValuePath)
 			}
 		}
 		return nil
@@ -114,33 +131,56 @@ func (this *Registry) Run() error {
 
 	if this.Release {
 
-		// The actual release entry
-		key, value, err := RegistryKeyValue(KRelease, this)
-		glog.Infoln("Releasing", key, "to", value, "err", err)
-		if err != nil {
-			return err
+		// Support for v2 Scheduler triggers
+		if this.SchedulerTriggerPath != "" && this.SchedulerImagePath != "" {
+			if this.Commit {
+				if err := this.retry_operation(func() error {
+					glog.Infoln("Release updating scheduler image path:", this.SchedulerImagePath, "Image=", this.Image)
+					if err1 := create_or_set(this.zk, this.SchedulerImagePath, this.Image); err1 != nil {
+						return err1
+					}
+					glog.Infoln("Release updating scheduler trigger path:", this.SchedulerTriggerPath)
+					if err2 := increment(this.zk, this.SchedulerTriggerPath, 1); err2 != nil {
+						return err2
+					}
+					return nil
+				}); err != nil {
+					return err
+				}
+			}
 		}
 
-		if this.Commit {
-			err := create_or_set(this.zk, key, value)
-			if err != nil {
-				return err
-			}
-			glog.Infoln("Committed", key, "to", value)
-		}
+		if this.Domain != "" && this.Service != "" && this.Version != "" {
+			// Support for legacy notation
+			if this.Commit {
+				if err := this.retry_operation(func() error {
+					// The actual release entry
+					key, value, err := RegistryKeyValue(KRelease, this)
+					glog.Infoln("Releasing", key, "to", value, "err", err)
+					if err != nil {
+						return err
+					}
+					if err1 := create_or_set(this.zk, key, value); err1 != nil {
+						return err1
+					}
+					// Now set the top level node
+					key, value, err = RegistryKeyValue(KReleaseWatch, this)
+					glog.Infoln("Release: Updating", key, "to", value, "err", err)
+					if err != nil {
+						return err
+					}
+					if err2 := create_or_set(this.zk, key, value); err2 != nil {
+						return err2
+					}
+					glog.Infoln("Committed", key, "to", value)
+					return nil
 
-		// Now set the top level node
-		key, value, err = RegistryKeyValue(KReleaseWatch, this)
-		glog.Infoln("Release: Updating", key, "to", value, "err", err)
-
-		if this.Commit {
-			err := create_or_set(this.zk, key, value)
-			if err != nil {
-				return err
+				}); err != nil {
+					return err
+				}
+			} else {
+				glog.Infoln("Release: Skipped.")
 			}
-			glog.Infoln("Release: Committed", key, "to", value)
-		} else {
-			glog.Infoln("Release: Skipped setting", key, "to", value)
 		}
 	}
 
@@ -199,14 +239,18 @@ func (this *Registry) Run() error {
 			}
 
 			if this.Commit {
-				err := create_or_set(this.zk, key, value)
-				if err != nil {
+				if err := this.retry_operation(func() error {
+					return create_or_set(this.zk, key, value)
+				}); err != nil {
 					return err
 				}
+
 				glog.Infoln("Setlive: Committed", key, "to", value)
 
 				// Now also update the watch node
-				if err := increment(this.zk, watch_key, 1); err != nil {
+				if err := this.retry_operation(func() error {
+					return increment(this.zk, watch_key, 1)
+				}); err != nil {
 					return err
 				} else {
 					glog.Infoln("Setlive: Updated watch node", watch_key)
