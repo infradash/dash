@@ -42,7 +42,7 @@ test:
 ## Customize deployment commands
 deployment:
    docker:
-     branch: /release-.*/
+     branch: /release\/.*/
      commands:
       - cp ./bin/dash $CIRCLE_ARTIFACTS
       - cp ./bin/dash docker/dash
