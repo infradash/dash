@@ -5,9 +5,12 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	. "github.com/infradash/dash/pkg/dash"
 	"github.com/golang/glog"
+	. "github.com/infradash/dash/pkg/dash"
 	"github.com/qorio/maestro/pkg/mqtt"
+	"github.com/qorio/maestro/pkg/pubsub"
+	"github.com/qorio/maestro/pkg/registry"
+	"github.com/qorio/maestro/pkg/workflow"
 	"github.com/qorio/maestro/pkg/zk"
 	"github.com/qorio/omni/runtime"
 	"io"
@@ -56,6 +59,9 @@ type Executor struct {
 	MQTTConnectionRetryWaitTime time.Duration `json:"mqtt_connection_wait_time"`
 	TailFileOpenRetries         int           `json:"tail_file_open_retries"`
 	TailFileRetryWaitTime       time.Duration `json:"tail_file_retry_wait_time"`
+
+	// From maestro's orchestration
+	Task *workflow.Task
 
 	// e.g. [ 'BOOT_TIME', '{{.StartTimestamp}}']
 	// where the value is a template to apply to the state of the Exector object.
@@ -126,13 +132,13 @@ func (this *Executor) EnvFromZk() func() ([]string, map[string]string) {
 		keys := make([]string, 0)
 		env := make(map[string]string)
 		for _, node := range all {
-			key, value, err := Resolve(this.zk, node.GetBasename(), node.GetValueString())
+			key, value, err := zk.Resolve(this.zk, registry.Path(node.GetBasename()), node.GetValueString())
 			if err != nil {
-				panic(errors.New("bad env reference:" + key + "=>" + value))
+				panic(errors.New("bad env reference:" + key.String() + "=>" + value))
 			}
 
-			env[key] = value
-			keys = append(keys, key)
+			env[key.String()] = value
+			keys = append(keys, key.String())
 		}
 		sort.Strings(keys)
 		return keys, env
@@ -302,6 +308,10 @@ func (this *Executor) Exec() error {
 		}
 		for _, t := range executorConfig.TailRequest {
 			this.HandleTailRequest(&t)
+		}
+
+		if executorConfig.Task != nil {
+			this.Task = executorConfig.Task
 		}
 	}
 
@@ -538,7 +548,7 @@ func (this *Executor) HandleTailRequest(req *TailRequest) {
 			var wait time.Duration
 			var addr *string
 			for {
-				addr = Zget(this.zk, tail.RegistryPath)
+				addr = zk.GetValue(this.zk, registry.Path(tail.RegistryPath))
 				if addr != nil || wait >= this.MQTTConnectionTimeout {
 					break
 				} else {
@@ -551,14 +561,14 @@ func (this *Executor) HandleTailRequest(req *TailRequest) {
 				glog.Warningln("Cannot locate MQTT broker. Give up. Path=", tail.RegistryPath)
 				return
 			}
-			mqtt, err := mqtt.Connect(id, *addr, topic)
+			mqtt, err := mqtt.Connect(id, *addr)
 			if err != nil {
 				glog.Warningln("Error starting mqtt client. Err=", err,
 					"Broker path=", tail.RegistryPath, "host:port=", *addr, "topic=", topic)
 				return
 			}
-			out = mqtt
-			glog.Infoln("MQTT client for", tail.Path, "topic=", mqtt.Topic, "ready", out)
+			out = pubsub.AsWriter(pubsub.Topic(topic), mqtt)
+			glog.Infoln("MQTT client for", tail.Path, "topic=", topic, "ready", out)
 
 		default:
 			// other cases include a url for websocket connection to push the output

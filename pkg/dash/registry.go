@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/golang/glog"
+	"github.com/qorio/maestro/pkg/registry"
 	"github.com/qorio/maestro/pkg/zk"
 	"strings"
 	"time"
@@ -121,7 +122,7 @@ func (this *Registry) Run() error {
 		if this.Commit {
 			glog.Infoln("Setting", this.WriteValuePath, "to", this.WriteValue)
 			if err := this.retry_operation(func() error {
-				return create_or_set(this.zk, this.WriteValuePath, this.WriteValue)
+				return zk.CreateOrSet(this.zk, registry.Path(this.WriteValuePath), this.WriteValue)
 			}); err != nil {
 				panic(err)
 			}
@@ -136,11 +137,11 @@ func (this *Registry) Run() error {
 			if this.Commit {
 				if err := this.retry_operation(func() error {
 					glog.Infoln("Release updating scheduler image path:", this.SchedulerImagePath, "Image=", this.Image)
-					if err1 := create_or_set(this.zk, this.SchedulerImagePath, this.Image); err1 != nil {
+					if err1 := zk.CreateOrSet(this.zk, registry.Path(this.SchedulerImagePath), this.Image); err1 != nil {
 						return err1
 					}
 					glog.Infoln("Release updating scheduler trigger path:", this.SchedulerTriggerPath)
-					if err2 := increment(this.zk, this.SchedulerTriggerPath, 1); err2 != nil {
+					if err2 := zk.Increment(this.zk, registry.Path(this.SchedulerTriggerPath), 1); err2 != nil {
 						return err2
 					}
 					return nil
@@ -160,7 +161,7 @@ func (this *Registry) Run() error {
 					if err != nil {
 						return err
 					}
-					if err1 := create_or_set(this.zk, key, value); err1 != nil {
+					if err1 := zk.CreateOrSet(this.zk, registry.Path(key), value); err1 != nil {
 						return err1
 					}
 					// Now set the top level node
@@ -169,7 +170,7 @@ func (this *Registry) Run() error {
 					if err != nil {
 						return err
 					}
-					if err2 := create_or_set(this.zk, key, value); err2 != nil {
+					if err2 := zk.CreateOrSet(this.zk, registry.Path(key), value); err2 != nil {
 						return err2
 					}
 					glog.Infoln("Committed", key, "to", value)
@@ -240,7 +241,7 @@ func (this *Registry) Run() error {
 
 			if this.Commit {
 				if err := this.retry_operation(func() error {
-					return create_or_set(this.zk, key, value)
+					return zk.CreateOrSet(this.zk, registry.Path(key), value)
 				}); err != nil {
 					return err
 				}
@@ -249,7 +250,7 @@ func (this *Registry) Run() error {
 
 				// Now also update the watch node
 				if err := this.retry_operation(func() error {
-					return increment(this.zk, watch_key, 1)
+					return zk.Increment(this.zk, registry.Path(watch_key), 1)
 				}); err != nil {
 					return err
 				} else {

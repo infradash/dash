@@ -2,4 +2,4 @@
 all: test-executor
 
 test-executor:
-	godep go test ./... -check.vv -v -logtostderr
+	${GODEPT} go test ./... -check.vv -v -logtostderr ${TEST_ARGS}

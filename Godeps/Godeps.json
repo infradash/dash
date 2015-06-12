@@ -83,23 +83,23 @@
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/circleci",
-			"Comment": "v0.1-2-g3acf61e",
-			"Rev": "3acf61e909364f639f1bb0ee7b188d4cee2804ac"
+			"Comment": "v0.1-10-gab33520",
+			"Rev": "ab335202e8103fec172f11e750973796f4d5c22f"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/docker",
-			"Comment": "v0.1-2-g3acf61e",
-			"Rev": "3acf61e909364f639f1bb0ee7b188d4cee2804ac"
+			"Comment": "v0.1-10-gab33520",
+			"Rev": "ab335202e8103fec172f11e750973796f4d5c22f"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/mqtt",
-			"Comment": "v0.1-2-g3acf61e",
-			"Rev": "3acf61e909364f639f1bb0ee7b188d4cee2804ac"
+			"Comment": "v0.1-10-gab33520",
+			"Rev": "ab335202e8103fec172f11e750973796f4d5c22f"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/zk",
-			"Comment": "v0.1-2-g3acf61e",
-			"Rev": "3acf61e909364f639f1bb0ee7b188d4cee2804ac"
+			"Comment": "v0.1-10-gab33520",
+			"Rev": "ab335202e8103fec172f11e750973796f4d5c22f"
 		},
 		{
 			"ImportPath": "github.com/qorio/omni/api",

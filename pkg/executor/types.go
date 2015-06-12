@@ -2,6 +2,7 @@ package executor
 
 import (
 	. "github.com/infradash/dash/pkg/dash"
+	"github.com/qorio/maestro/pkg/workflow"
 	"github.com/qorio/omni/version"
 	"time"
 )
@@ -39,7 +40,9 @@ type TailRequest struct {
 	MQTTTopic    string `json:"mqtt_topic,omitempty"`
 }
 
+// TODO - workflow.Task eventually replaces all the other fields.
 type ExecutorConfig struct {
+	Task          *workflow.Task  `json:"task,omitempty"`
 	RegistryKey   string          `json:"registry_key,omitempty"`
 	RegistryValue string          `json:"registry_value,omitempty"`
 	RegistryWatch []RegistryWatch `json:"registry_watch,omitempty"`

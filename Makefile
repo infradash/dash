@@ -62,7 +62,7 @@ LDFLAGS:=\
 
 compile:
 	echo "Building dash"
-	go build -o bin/dash -ldflags "$(LDFLAGS)" main/dash.go
+	${GODEP} go build -o bin/dash -ldflags "$(LDFLAGS)" main/dash.go
 
 godep:
 	echo "Building dash with godep"

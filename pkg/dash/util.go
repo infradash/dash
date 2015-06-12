@@ -3,87 +3,8 @@ package dash
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/golang/glog"
-	"github.com/qorio/maestro/pkg/zk"
-	"strconv"
-	"strings"
 	"text/template"
 )
-
-// If value begins with env:// then automatically resolve the pointer recursively.
-// Returns key, value, error
-func Resolve(zc zk.ZK, key, value string) (string, string, error) {
-	// de-reference the pointer...
-	if strings.Index(value, "env://") == 0 {
-		p := value[len("env://"):]
-		n, err := zc.Get(p)
-		switch {
-		case err == zk.ErrNotExist:
-			return key, "", nil
-		case err != nil:
-			return key, "", err
-		}
-		glog.Infoln("Resolving", key, "=", value, "==>", n.GetValueString())
-		return Resolve(zc, key, n.GetValueString())
-	} else {
-		return key, value, nil
-	}
-}
-
-func Zget(zc zk.ZK, key string) *string {
-	n, err := zc.Get(key)
-	switch {
-	case err == zk.ErrNotExist:
-		return nil
-	case err != nil:
-		return nil
-	}
-	v := n.GetValueString()
-	if v == "" {
-		return nil
-	}
-	return &v
-}
-
-func create_or_set(zc zk.ZK, key, value string) error {
-	n, err := zc.Get(key)
-	switch {
-	case err == zk.ErrNotExist:
-		n, err = zc.Create(key, []byte(value))
-		if err != nil {
-			return err
-		}
-	case err != nil:
-		return err
-	}
-	err = n.Set([]byte(value))
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func increment(zc zk.ZK, key string, increment int) error {
-	n, err := zc.Get(key)
-	switch {
-	case err == zk.ErrNotExist:
-		n, err = zc.Create(key, []byte(strconv.Itoa(0)))
-		if err != nil {
-			return err
-		}
-	case err != nil:
-		return err
-	}
-	count, err := strconv.Atoi(n.GetValueString())
-	if err != nil {
-		count = 0
-	}
-	err = n.Set([]byte(strconv.Itoa(count + 1)))
-	if err != nil {
-		return err
-	}
-	return nil
-}
 
 func EscapeVars(escaped ...string) map[string]interface{} {
 	m := map[string]interface{}{}

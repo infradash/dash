@@ -2,4 +2,4 @@
 all: test-dash
 
 test-dash:
-	godep go test ./... -logtostderr -v -check.vv
+	${GODEP} go test ./... -logtostderr -v -check.vv ${TEST_ARGS}
