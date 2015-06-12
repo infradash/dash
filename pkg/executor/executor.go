@@ -567,7 +567,7 @@ func (this *Executor) HandleTailRequest(req *TailRequest) {
 					"Broker path=", tail.RegistryPath, "host:port=", *addr, "topic=", topic)
 				return
 			}
-			out = pubsub.AsWriter(pubsub.Topic(topic), mqtt)
+			out = pubsub.GetWriter(pubsub.Topic(topic), mqtt)
 			glog.Infoln("MQTT client for", tail.Path, "topic=", topic, "ready", out)
 
 		default:

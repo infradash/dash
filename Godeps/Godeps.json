@@ -2,8 +2,8 @@
 	"ImportPath": "github.com/infradash/dash",
 	"GoVersion": "go1.4.2",
 	"Packages": [
-		"./main/...",
-		"./pkg/..."
+		"./pkg/...",
+		"./main/..."
 	],
 	"Deps": [
 		{
@@ -97,6 +97,21 @@
 			"Rev": "ab335202e8103fec172f11e750973796f4d5c22f"
 		},
 		{
+			"ImportPath": "github.com/qorio/maestro/pkg/pubsub",
+			"Comment": "v0.1-10-gab33520",
+			"Rev": "ab335202e8103fec172f11e750973796f4d5c22f"
+		},
+		{
+			"ImportPath": "github.com/qorio/maestro/pkg/registry",
+			"Comment": "v0.1-10-gab33520",
+			"Rev": "ab335202e8103fec172f11e750973796f4d5c22f"
+		},
+		{
+			"ImportPath": "github.com/qorio/maestro/pkg/workflow",
+			"Comment": "v0.1-10-gab33520",
+			"Rev": "ab335202e8103fec172f11e750973796f4d5c22f"
+		},
+		{
 			"ImportPath": "github.com/qorio/maestro/pkg/zk",
 			"Comment": "v0.1-10-gab33520",
 			"Rev": "ab335202e8103fec172f11e750973796f4d5c22f"
@@ -127,7 +142,7 @@
 		},
 		{
 			"ImportPath": "github.com/samuel/go-zookeeper/zk",
-			"Rev": "d0e0d8e11f318e000a8cc434616d69e329edc374"
+			"Rev": "3b4d6affb56094d1816b766bf627970d287cb350"
 		},
 		{
 			"ImportPath": "gopkg.in/check.v1",
