@@ -7,14 +7,14 @@
 	},
 	"reload_config":{
 		"description" : "nginx",
-        	"config_template_url": "file:///Users/david/go/src/github.com/BlinkerGit/dash/example/nginx.conf",
-        	"config_destination_path":"/Users/david/go/src/github.com/BlinkerGit/dash/example/nginx.applied",
+        	"config_template_url": "file:///Users/david/go/src/github.com/infradash/dash/example/nginx.conf",
+        	"config_destination_path":"/Users/david/go/src/github.com/infradash/dash/example/nginx.applied",
         	"reload_cmd":["service", "nginx", "reload"]
     	}
     }],
-    "tail_file": [
+    "tail": [
         {
-            "path": "/Users/david/go/src/github.com/BlinkerGit/dash/example/test.log",
+            "path": "/Users/david/go/src/github.com/infradash/dash/example/test.log",
 	    "output":"mqtt",
             "registry_path":"/{{.Domain}}/mqtt",
 	    "mqtt_topic":"/{{.Domain}}/test.log/{{.Host}}"

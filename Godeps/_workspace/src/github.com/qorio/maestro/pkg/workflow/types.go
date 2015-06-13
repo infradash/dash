@@ -17,10 +17,11 @@ type Orchestration struct {
 type TaskName string
 type Task struct {
 	// Required
+	Id      string        `json:"id"`
 	Info    registry.Path `json:"info"`
 	Success registry.Path `json:"success"`
 	Error   registry.Path `json:"error"`
-	Status  pubsub.Topic  `json:"status_topic"`
+	Status  pubsub.Topic  `json:"status"`
 
 	// Triggering
 	StartTrigger *registry.Path `json:"start,omitempty"`
@@ -31,7 +32,8 @@ type Task struct {
 	Input  *registry.Path `json:"input,omitempty"`
 	Output *registry.Path `json:"output,omitempty"`
 
-	// Topics (e.g. mqtt://aws-cli/124/stdout)
+	// Topics (e.g. mqtt://localhost:1281/aws-cli/124/stdout)
+	Stdin  *pubsub.Topic `json:"stdin_topic,omitempty"`
 	Stdout *pubsub.Topic `json:"stdout_topic,omitempty"`
 	Stderr *pubsub.Topic `json:"stderr_topic,omitempty"`
 

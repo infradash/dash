@@ -1,22 +1,17 @@
 {
-    "registry_watch": [{
-        "domain":"{{.Domain}}",
-	"service":"test",
-	"value_location":{
-		"path":"/{{.Domain}}/test"
-	},
-	"reload_config":{
-		"description" : "nginx",
-        	"config_template_url": "file:///Users/david/go/src/github.com/BlinkerGit/dash/example/nginx.conf",
-        	"config_destination_path":"/Users/david/go/src/github.com/BlinkerGit/dash/example/nginx.applied",
-        	"reload_cmd":["service", "nginx", "reload"]
-    	}
-    }],
-    "tail_file": [
+    "name": "test_task",
+    "info": "/{{.Domain}}/task/test_task/{{.Id}}",
+    "success": "/{{.Domain}}/task/test_task/{{.Id}}/success",
+    "error": "/{{.Domain}}/task/test_task/{{.Id}}/error",
+    "status": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/test_task/{{.Id}}",
+    "stdout_topic": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/test_task/{{.Id}}/stdout",
+    "stderr_topic": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/test_task/{{.Id}}/stderr",
+
+    "tail": [
         {
-            "path": "/Users/david/go/src/github.com/BlinkerGit/dash/example/test.log",
+            "path": "/Users/david/go/src/github.com/infradash/dash/example/test.log",
 	    "output":"mqtt",
-            "registry_path":"/{{.Domain}}/mqtt/local",
+            "registry_path":"/{{.Domain}}/mqtt",
 	    "mqtt_topic":"/{{.Domain}}/test.log/{{.Host}}"
         }
     ]
