@@ -73,18 +73,27 @@ type Executor struct {
 	processOutputBuffer bytes.Buffer
 }
 
+func (this *Executor) Stdin0() io.Reader {
+	if this.runtime == nil || this.runtime.Stdin() == nil {
+		glog.Infoln("Sourcing process stdin from os.Stdin")
+		return os.Stdin
+	}
+	glog.Infoln("Teeing input to os.Stderr:", this.Task.Stdin)
+	return io.TeeReader(this.runtime.Stdin(), os.Stderr)
+}
+
 func (this *Executor) Stdin() io.Reader {
 	if this.runtime == nil || this.runtime.Stdin() == nil {
 		glog.Infoln("Sourcing process stdin from os.Stdin")
 		return os.Stdin
 	}
-	glog.Infoln("Teeing input to os.Stderr")
-	return io.TeeReader(this.runtime.Stdin(), os.Stderr)
+	glog.Infoln("Teeing input to os.Stderr:", this.Task.Stdin)
+	return io.TeeReader(io.MultiReader(this.runtime.Stdin(), os.Stdin), os.Stderr)
 }
 
 func (this *Executor) Stdout() io.Writer {
 	if this.runtime == nil || this.runtime.Stdout() == nil {
-		glog.Infoln("Sending process stdout to os.Stdout")
+		glog.Infoln("Sending process stdout to os.Stdout:", this.Task.Stdout)
 		return io.MultiWriter(os.Stdout, &this.processOutputBuffer)
 	}
 	return io.MultiWriter(os.Stdout, this.runtime.Stdout(), &this.processOutputBuffer)
@@ -92,7 +101,7 @@ func (this *Executor) Stdout() io.Writer {
 
 func (this *Executor) Stderr() io.Writer {
 	if this.runtime == nil || this.runtime.Stderr() == nil {
-		glog.Infoln("Sending process stdout to os.Stderr")
+		glog.Infoln("Sending process stdout to os.Stderr:", this.Task.Stderr)
 		return os.Stderr
 	}
 	return io.MultiWriter(os.Stderr, this.runtime.Stderr())

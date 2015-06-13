@@ -5,14 +5,5 @@
     "error": "/{{.Domain}}/task/test_task/{{.Id}}/error",
     "status": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/test_task/{{.Id}}",
     "stdout_topic": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/test_task/{{.Id}}/stdout",
-    "stderr_topic": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/test_task/{{.Id}}/stderr",
-
-    "tail": [
-        {
-            "path": "/Users/david/go/src/github.com/infradash/dash/example/test.log",
-	    "output":"mqtt",
-            "registry_path":"/{{.Domain}}/mqtt",
-	    "mqtt_topic":"/{{.Domain}}/test.log/{{.Host}}"
-        }
-    ]
+    "stderr_topic": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/test_task/{{.Id}}/stderr"
 }
