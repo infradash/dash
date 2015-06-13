@@ -88,7 +88,9 @@ func (this *Executor) Stdin() io.Reader {
 		return os.Stdin
 	}
 	glog.Infoln("Teeing input to os.Stderr:", this.Task.Stdin)
-	return io.TeeReader(io.MultiReader(this.runtime.Stdin(), os.Stdin), os.Stderr)
+	//return io.TeeReader(io.MultiReader(this.runtime.Stdin(), os.Stdin), this.runtime.PublishStdin())
+	// TODO - allow stdin to come through a topic subscriber.
+	return io.TeeReader(io.MultiReader(os.Stdin), this.runtime.PublishStdin())
 }
 
 func (this *Executor) Stdout() io.Writer {

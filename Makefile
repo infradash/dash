@@ -145,7 +145,7 @@ run-notty:
 		--service=infradash --version=develop \
 		--daemon=false --ignore_child_process_fails=false \
 		--custom_vars=EXEC_TS="{{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
-		--config_source_url="file:///Users/david/go/src/github.com/infradash/dash/example/task-noninteractive.json" \
+		--config_source_url="file:///Users/david/go/src/github.com/infradash/dash/example/task-notty.json" \
 	exec ${CMD}
 
 run-tty:
