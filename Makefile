@@ -59,14 +59,13 @@ LDFLAGS:=\
 -X github.com/qorio/omni/version.buildTimestamp $(BUILD_TIMESTAMP) \
 -X github.com/qorio/omni/version.buildNumber $(BUILD_NUMBER) \
 
+setup:
+	echo "Install godep, etc."
+	./bin/env.sh
 
-compile:
+compile: setup
 	echo "Building dash"
 	${GODEP} go build -o bin/dash -ldflags "$(LDFLAGS)" main/dash.go
-
-godep:
-	echo "Building dash with godep"
-	godep go build -o bin/dash -ldflags "$(LDFLAGS)" main/dash.go
 
 
 # Deploy the compiled binary to another git repo
