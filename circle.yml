@@ -32,6 +32,8 @@ dependencies:
 
   post:
     - source ./hack/env.sh && make GODEP=godep all
+    - cp $BUILD_DIR/dash $CIRCLE_ARTIFACTS
+    - source ./hack/env.sh && make deploy-git
 
 ## Customize test commands
 test:
@@ -39,13 +41,10 @@ test:
     - echo "Running tests."
     - godep go test ./pkg/... -v -check.vv -logtostderr
 
-
 ## Customize deployment commands
 deployment:
    docker:
-     branch: /release\/.*/
+     branch: /v[0-9]+(\\.[0-9]+)*/
      commands:
-      - cp $BUILD_DIR/dash $CIRCLE_ARTIFACTS
       - cp $BUILD_DIR/dash docker/dash
       - cd docker/dash && make push && cd ..
-      - make deploy-git
