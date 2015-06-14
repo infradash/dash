@@ -42,6 +42,7 @@ encrypt: _pwd_prompt
 	done ; \
 	echo "Encrypted files are in encrypt/`basename $${src}`"
 
+##############################################################################
 
 GIT_REPO:=`git config --get remote.origin.url | sed -e 's/[\/&]/\\&/g'`
 GIT_TAG:=`git describe --abbrev=0 --tags`
@@ -59,6 +60,8 @@ LDFLAGS:=\
 -X github.com/qorio/omni/version.buildTimestamp $(BUILD_TIMESTAMP) \
 -X github.com/qorio/omni/version.buildNumber $(BUILD_NUMBER) \
 
+##############################################################################
+
 setup:
 	echo "Install godep, etc."
 	./hack/env.sh
@@ -70,6 +73,7 @@ compile: setup
 	${GODEP} go build -o build/bin/dash -ldflags "$(LDFLAGS)" main/dash.go
 
 
+##############################################################################
 # Deploy the compiled binary to another git repo
 
 DEPLOY_REPO_URL:=git@github.com:infradash/public.git
@@ -85,8 +89,10 @@ deploy-git-checkout:
 	cd $(DEPLOY_LOCAL_REPO) && git config --global user.email $(DEPLOY_USER_EMAIL) && git config --global user.name $(DEPLOY_USER_NAME) && git checkout $(DEPLOY_REPO_BRANCH)
 
 deploy-git: deploy-git-checkout
-	mkdir -p $(DEPLOY_LOCAL_REPO)/$(DEPLOY_DIR) && cp -r ./bin $(DEPLOY_LOCAL_REPO)/$(DEPLOY_DIR) && echo $(DOCKER_IMAGE) > $(DEPLOY_LOCAL_REPO)/$(DEPLOY_DIR)/DOCKER 
+	mkdir -p $(DEPLOY_LOCAL_REPO)/$(DEPLOY_DIR) && cp -r $(BUILD_DIR) $(DEPLOY_LOCAL_REPO)/$(DEPLOY_DIR) && echo $(DOCKER_IMAGE) > $(DEPLOY_LOCAL_REPO)/$(DEPLOY_DIR)/DOCKER 
 	cd $(DEPLOY_LOCAL_REPO) && git add -v $(DEPLOY_DIR) && git commit -m "Version $(GIT_TAG) Commit $(GIT_COMMIT_HASH) Build $(CIRCLE_BUILD_NUM)" -a && git push
+
+##############################################################################
 
 
 # Simple local example -- assumes localhost zookeeper or SSH tunnel to zookeeper
