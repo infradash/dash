@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/golang/glog"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"strings"
 	"text/template"
@@ -15,9 +16,17 @@ type ConfigLoader struct {
 	Context   interface{} `json:"-"`
 }
 
-func (this *ConfigLoader) Load(prototype interface{}) (err error) {
+func (this *ConfigLoader) Load(prototype interface{}) (loaded bool, err error) {
 	if this.SourceUrl == "" {
-		return nil
+		glog.Infoln("No config URL. Skip.")
+		return false, nil
+	}
+
+	// parse the url
+	_, err = url.Parse(this.SourceUrl)
+	if err != nil {
+		glog.Infoln("Config url is not valid:", this.SourceUrl)
+		return false, err
 	}
 
 	var body string
@@ -26,23 +35,28 @@ func (this *ConfigLoader) Load(prototype interface{}) (err error) {
 		glog.Infoln("Loading from file", file)
 		f, err := os.Open(file)
 		if err != nil {
-			return err
+			return false, err
 		}
 		if buff, err := ioutil.ReadAll(f); err != nil {
-			return err
+			return false, err
 		} else {
 			body = string(buff)
 		}
 	} else {
 		if body, _, err = FetchUrl(this.SourceUrl); err != nil {
-			return err
+			return false, err
 		}
 	}
 	if applied, err := this.applyTemplate(body); err != nil {
-		return err
+		return false, err
 	} else {
 		glog.Infoln("Parsing configuration:", applied)
-		return json.Unmarshal([]byte(applied), prototype)
+		err2 := json.Unmarshal([]byte(applied), prototype)
+		if err2 != nil {
+			return false, err2
+		} else {
+			return true, nil
+		}
 	}
 }
 

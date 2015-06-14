@@ -108,112 +108,116 @@ func (this *Agent) Run() {
 		glog.Infoln("Loading configuration from", this.Initializer.SourceUrl)
 
 		var list []DomainConfig
-		err := this.Initializer.Load(&list)
+		loaded, err := this.Initializer.Load(&list)
 		if err != nil {
 			panic(err)
 		}
 
-		applied_domain_configs := []*DomainConfig{}
+		if loaded {
 
-		glog.Infoln("Processing configuration")
-		for _, per_domain := range list {
+			glog.Infoln("Loaded and applied configuration. Processing.")
 
-			applied := new(DomainConfig)
-			err := ApplyVarSubs(per_domain, applied, MergeMaps(map[string]interface{}{
-				"Domain": per_domain.Domain,
-			}, EscapeVars(ConfigVariables[1:]...)))
-			if err != nil {
-				panic(err)
-			}
-			per_domain = *applied
-			applied_domain_configs = append(applied_domain_configs, &per_domain)
+			applied_domain_configs := []*DomainConfig{}
 
-			if _, config_err := this.ConfigureDomain(&per_domain); config_err != nil {
-				panic(config_err)
-			}
-		}
+			for _, per_domain := range list {
 
-		glog.Infoln("Start running discovery / container monitors")
-		matcher := new(DiscoveryContainerMatcher).Init()
-		for _, domain := range this.domains {
-			watches, err := domain.GetContainerWatcherSpecs()
-			if err != nil {
-				panic(err)
-			}
-			for svc, watch := range watches {
-
-				glog.Infoln(domain.Domain, svc, "Container matcher for discovery:", *watch)
-				matcher.C(domain.Domain, svc, watch)
-
-				glog.Infoln(domain.Domain, svc, "Set up container monitor:", *watch)
-				domain.WatchContainer(svc, watch)
-			}
-		}
-
-		err = this.DiscoverRunningContainers(
-			matcher.Match,
-			func(c *docker.Container, match_rule *ContainerMatchRule) {
-
-				// Need to increment a counter regardless of the container's state
-				cc := get_sequence_by_image(c.Image)
-				glog.V(100).Infoln("Service=", match_rule.Service, "Image=", c.Image, "SequenceCounter=", cc)
-
-				if d, has := this.domains[match_rule.Domain]; has {
-
-					glog.V(100).Infoln("Service=", match_rule.Service, "Id=", c.Id[0:12],
-						"FinishedAt=", c.DockerData.State.FinishedAt)
-
-					// Match the name but we need to take into account if it's running or not.
-					switch {
-
-					case c.DockerData.State.Restarting:
-						d.tracker.Starting(match_rule.Service, c)
-
-					case c.DockerData.State.Running, c.DockerData.State.Restarting:
-						d.tracker.Running(match_rule.Service, c)
-
-						glog.Infoln("Registering container Id=", c.Id, "Image=", c.Image)
-						if entry, err := BuildRegistryEntry(c, match_rule.GetMatchContainerPort()); entry != nil {
-							entry.Domain = match_rule.Domain
-							entry.Service = string(match_rule.Service)
-							entry.Host = this.Host
-
-							err = entry.Register(this.zk)
-
-							if err != nil {
-								glog.Warningln("Error during registration:", err)
-							}
-							k, v, _ := entry.KeyValue()
-							glog.Infoln("Registered", k, v)
-						} else {
-							glog.Warning("Error building registry", err, "for", *c)
-						}
-
-					case c.DockerData.State.FinishedAt.Before(time.Now()):
-						glog.V(100).Infoln("Container", "Id=", c.Id[0:12], "Name=", c.Name, "stopped.")
-						d.tracker.Stopped(match_rule.Service, c)
-					}
+				applied := new(DomainConfig)
+				err := ApplyVarSubs(per_domain, applied, MergeMaps(map[string]interface{}{
+					"Domain": per_domain.Domain,
+				}, EscapeVars(ConfigVariables[1:]...)))
+				if err != nil {
+					panic(err)
 				}
-			})
-		if err != nil {
-			glog.Infoln("Error discovering containers:", err)
-		}
+				per_domain = *applied
+				applied_domain_configs = append(applied_domain_configs, &per_domain)
 
-		// Configure and start up services
-		glog.Infoln("Configure domains")
-		for _, domain := range this.domains {
-			glog.Infoln("Starting services: Domain=", domain.Domain)
-			_, config_err := domain.StartServices(this.QualifyByTags)
-			if config_err != nil {
-				panic(config_err)
+				if _, config_err := this.ConfigureDomain(&per_domain); config_err != nil {
+					panic(config_err)
+				}
 			}
-		}
 
-		glog.Infoln("Synchronize local states with scheduler")
-		for _, domain := range this.domains {
-			err := domain.SynchronizeSchedule()
+			glog.Infoln("Start running discovery / container monitors")
+			matcher := new(DiscoveryContainerMatcher).Init()
+			for _, domain := range this.domains {
+				watches, err := domain.GetContainerWatcherSpecs()
+				if err != nil {
+					panic(err)
+				}
+				for svc, watch := range watches {
+
+					glog.Infoln(domain.Domain, svc, "Container matcher for discovery:", *watch)
+					matcher.C(domain.Domain, svc, watch)
+
+					glog.Infoln(domain.Domain, svc, "Set up container monitor:", *watch)
+					domain.WatchContainer(svc, watch)
+				}
+			}
+
+			err = this.DiscoverRunningContainers(
+				matcher.Match,
+				func(c *docker.Container, match_rule *ContainerMatchRule) {
+
+					// Need to increment a counter regardless of the container's state
+					cc := get_sequence_by_image(c.Image)
+					glog.V(100).Infoln("Service=", match_rule.Service, "Image=", c.Image, "SequenceCounter=", cc)
+
+					if d, has := this.domains[match_rule.Domain]; has {
+
+						glog.V(100).Infoln("Service=", match_rule.Service, "Id=", c.Id[0:12],
+							"FinishedAt=", c.DockerData.State.FinishedAt)
+
+						// Match the name but we need to take into account if it's running or not.
+						switch {
+
+						case c.DockerData.State.Restarting:
+							d.tracker.Starting(match_rule.Service, c)
+
+						case c.DockerData.State.Running, c.DockerData.State.Restarting:
+							d.tracker.Running(match_rule.Service, c)
+
+							glog.Infoln("Registering container Id=", c.Id, "Image=", c.Image)
+							if entry, err := BuildRegistryEntry(c, match_rule.GetMatchContainerPort()); entry != nil {
+								entry.Domain = match_rule.Domain
+								entry.Service = string(match_rule.Service)
+								entry.Host = this.Host
+
+								err = entry.Register(this.zk)
+
+								if err != nil {
+									glog.Warningln("Error during registration:", err)
+								}
+								k, v, _ := entry.KeyValue()
+								glog.Infoln("Registered", k, v)
+							} else {
+								glog.Warning("Error building registry", err, "for", *c)
+							}
+
+						case c.DockerData.State.FinishedAt.Before(time.Now()):
+							glog.V(100).Infoln("Container", "Id=", c.Id[0:12], "Name=", c.Name, "stopped.")
+							d.tracker.Stopped(match_rule.Service, c)
+						}
+					}
+				})
 			if err != nil {
-				glog.Warningln("Failed to synchronize scheduling for Domain=", domain.Identity, "Err=", err)
+				glog.Infoln("Error discovering containers:", err)
+			}
+
+			// Configure and start up services
+			glog.Infoln("Configure domains")
+			for _, domain := range this.domains {
+				glog.Infoln("Starting services: Domain=", domain.Domain)
+				_, config_err := domain.StartServices(this.QualifyByTags)
+				if config_err != nil {
+					panic(config_err)
+				}
+			}
+
+			glog.Infoln("Synchronize local states with scheduler")
+			for _, domain := range this.domains {
+				err := domain.SynchronizeSchedule()
+				if err != nil {
+					glog.Warningln("Failed to synchronize scheduling for Domain=", domain.Identity, "Err=", err)
+				}
 			}
 		}
 	}

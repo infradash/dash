@@ -4,10 +4,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/infradash/dash/pkg/agent"
-	"github.com/infradash/dash/pkg/executor"
-	. "github.com/infradash/dash/pkg/dash"
 	"github.com/golang/glog"
+	"github.com/infradash/dash/pkg/agent"
+	. "github.com/infradash/dash/pkg/dash"
+	"github.com/infradash/dash/pkg/executor"
 	"github.com/qorio/omni/version"
 	"os"
 	"strings"
@@ -60,7 +60,6 @@ func main() {
 	registry.BindFlags()
 
 	initializer := &ConfigLoader{Context: MergeMaps(get_envs(), EscapeVars(ConfigVariables...))}
-
 	initializer.BindFlags()
 
 	agent := &agent.Agent{Initializer: initializer}

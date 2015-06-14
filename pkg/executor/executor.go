@@ -197,25 +197,26 @@ func (this *Executor) Exec() error {
 		this.Initializer.Context = this
 
 		executorConfig := new(ExecutorConfig)
-		err := this.Initializer.Load(executorConfig)
+		loaded, err := this.Initializer.Load(executorConfig)
 		if err != nil {
 			panic(err)
 		}
+		if loaded {
+			this.Task = executorConfig.Task
 
-		this.Task = executorConfig.Task
-
-		if len(executorConfig.RegistryWatch) > 0 {
-			must(this.connect_zk())
-		}
-		for _, w := range executorConfig.RegistryWatch {
-			glog.Infoln("Configuring watch", w)
-			err := this.SaveWatchAction(&w)
-			if err != nil {
-				panic(err)
+			if len(executorConfig.RegistryWatch) > 0 {
+				must(this.connect_zk())
 			}
-		}
-		for _, t := range executorConfig.TailRequest {
-			this.HandleTailRequest(&t)
+			for _, w := range executorConfig.RegistryWatch {
+				glog.Infoln("Configuring watch", w)
+				err := this.SaveWatchAction(&w)
+				if err != nil {
+					panic(err)
+				}
+			}
+			for _, t := range executorConfig.TailRequest {
+				this.HandleTailRequest(&t)
+			}
 		}
 	}
 
