@@ -23,14 +23,14 @@ func (this *DockerSettings) BindFlags() {
 
 func (this *RegistryEntryBase) BindFlags() {
 	flag.StringVar(&this.Domain, "domain", os.Getenv(EnvDomain), "Namespace domain (e.g. integration.foo.com)")
-	flag.StringVar(&this.Service, "service", "", "Namespace service (e.g. web_app)")
-	flag.StringVar(&this.Version, "version", "", "Namespace version (e.g. v1.1.0)")
-	flag.StringVar(&this.Path, "path", "", "Namespace path")
+	flag.StringVar(&this.Service, "service", os.Getenv(EnvService), "Namespace service (e.g. web_app)")
+	flag.StringVar(&this.Version, "version", os.Getenv(EnvVersion), "Namespace version (e.g. v1.1.0)")
+	flag.StringVar(&this.Path, "path", os.Getenv(EnvPath), "Namespace path")
 }
 
 func (this *RegistryReleaseEntry) BindFlags() {
-	flag.StringVar(&this.Image, "image", "", "Image (e.g. infradash/infradash-api")
-	flag.StringVar(&this.Build, "build", "", "Build (e.g. 34)")
+	flag.StringVar(&this.Image, "image", os.Getenv(EnvImage), "Image (e.g. infradash/infradash-api")
+	flag.StringVar(&this.Build, "build", os.Getenv(EnvBuild), "Build (e.g. 34)")
 }
 
 func (this *RegistryContainerEntry) BindFlags() {

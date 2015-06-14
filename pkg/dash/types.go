@@ -8,10 +8,17 @@ const (
 	EnvZookeeper = "ZOOKEEPER_HOSTS"
 	EnvDocker    = "DOCKER_PORT"
 
-	EnvDomain     = "DASH_DOMAIN"
+	EnvDomain  = "DASH_DOMAIN"
+	EnvService = "DASH_SERVICE"
+	EnvVersion = "DASH_VERSION"
+	EnvPath    = "DASH_PATH"
+	EnvTags    = "DASH_TAGS"
+
+	EnvImage = "DASH_IMAGE"
+	EnvBuild = "DASH_BUILD"
+
 	EnvHost       = "DASH_HOST"
 	EnvDockerName = "DASH_DOCKER_NAME"
-	EnvTags       = "DASH_TAGS"
 )
 
 var ConfigVariables = []string{
