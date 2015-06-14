@@ -41,7 +41,7 @@ deployment:
    git:
      branch: /release\/.*/
      commands:
-       - source ./hack/env.sh && make GODEP=godep all
+       - source ./hack/env.sh && make GODEP=godep build
        - cp $BUILD_DIR/dash $CIRCLE_ARTIFACTS
        - source ./hack/env.sh && make deploy-git
 

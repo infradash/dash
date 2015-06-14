@@ -11,7 +11,7 @@ agent:
 executor:
 	cd pkg/executor && $(MAKE)
 
-dash: agent executor compile
+dash: agent executor build
 
 
 setup:
@@ -20,7 +20,7 @@ setup:
 	echo "Clean up previous builds."
 	rm -rf ./build/bin && mkdir -p ./build/bin
 
-compile: setup
+build: setup
 	echo "Building dash"
 	${GODEP} go build -o build/bin/dash -ldflags "$(LDFLAGS)" main/dash.go
 
