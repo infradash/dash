@@ -19,6 +19,7 @@ machine:
     DOCKER_EMAIL: docker@infradash.com
     DOCKER_AUTH: aW5mcmFkYXNoOnd1YzR5NmxiUFpHNA==
     BUILD_LABEL: $CIRCLE_BUILD_NUM
+    BUILD_DIR: build/bin
 
 ## Customize dependencies
 dependencies:
@@ -27,10 +28,10 @@ dependencies:
     # Set up authentication to Docker Registry
     - sed "s/<EMAIL>/$DOCKER_EMAIL/;s/<AUTH>/$DOCKER_AUTH/" < ./docker/dockercfg.template > ~/.dockercfg
   override:
-    - source ./bin/env.sh
+    - source ./hack/env.sh
 
   post:
-    - source ./bin/env.sh && make GODEP=godep all
+    - source ./hack/env.sh && make GODEP=godep all
 
 ## Customize test commands
 test:
@@ -44,7 +45,7 @@ deployment:
    docker:
      branch: /release\/.*/
      commands:
-      - cp ./bin/dash $CIRCLE_ARTIFACTS
-      - cp ./bin/dash docker/dash
+      - cp $BUILD_DIR/dash $CIRCLE_ARTIFACTS
+      - cp $BUILD_DIR/dash docker/dash
       - cd docker/dash && make push && cd ..
       - make deploy-git

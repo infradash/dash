@@ -61,11 +61,13 @@ LDFLAGS:=\
 
 setup:
 	echo "Install godep, etc."
-	./bin/env.sh
+	./hack/env.sh
+	echo "Clean up previous builds."
+	rm -rf ./build/bin && mkdir -p ./build/bin
 
 compile: setup
 	echo "Building dash"
-	${GODEP} go build -o bin/dash -ldflags "$(LDFLAGS)" main/dash.go
+	${GODEP} go build -o build/bin/dash -ldflags "$(LDFLAGS)" main/dash.go
 
 
 # Deploy the compiled binary to another git repo
