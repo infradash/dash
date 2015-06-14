@@ -2,8 +2,8 @@
 	"ImportPath": "github.com/infradash/dash",
 	"GoVersion": "go1.4.2",
 	"Packages": [
-		"./pkg/...",
-		"./main/..."
+		"./main/...",
+		"./pkg/..."
 	],
 	"Deps": [
 		{
@@ -122,6 +122,10 @@
 		},
 		{
 			"ImportPath": "github.com/qorio/omni/auth",
+			"Rev": "dad14facaf4040071c7bd8c99019445ed6322032"
+		},
+		{
+			"ImportPath": "github.com/qorio/omni/common",
 			"Rev": "dad14facaf4040071c7bd8c99019445ed6322032"
 		},
 		{
