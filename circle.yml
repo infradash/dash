@@ -30,7 +30,7 @@ dependencies:
     - source ./bin/env.sh
 
   post:
-    - source ./bin/env.sh && make godep
+    - source ./bin/env.sh && make GODPEP=godep all
 
 ## Customize test commands
 test:
