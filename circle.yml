@@ -27,10 +27,10 @@ dependencies:
     # Set up authentication to Docker Registry
     - sed "s/<EMAIL>/$DOCKER_EMAIL/;s/<AUTH>/$DOCKER_AUTH/" < ./docker/dockercfg.template > ~/.dockercfg
   override:
-    - source ./hack/env.sh
+    - source ./bin/env.sh
 
   post:
-    - source ./hack/env.sh && make godep
+    - source ./bin/env.sh && make godep
 
 ## Customize test commands
 test:
