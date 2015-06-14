@@ -30,11 +30,6 @@ dependencies:
   override:
     - source ./hack/env.sh
 
-  post:
-    - source ./hack/env.sh && make GODEP=godep all
-    - cp $BUILD_DIR/dash $CIRCLE_ARTIFACTS
-    - source ./hack/env.sh && make deploy-git
-
 ## Customize test commands
 test:
   override:
@@ -43,8 +38,15 @@ test:
 
 ## Customize deployment commands
 deployment:
-   docker:
-     branch: /v[0-9]+(\\.[0-9]+)*/
+   git:
+     branch: /release\/*/
      commands:
-      - cp $BUILD_DIR/dash docker/dash
-      - cd docker/dash && make push && cd ..
+       - source ./hack/env.sh && make GODEP=godep all
+       - cp $BUILD_DIR/dash $CIRCLE_ARTIFACTS
+       - source ./hack/env.sh && make deploy-git
+
+   docker:
+     branch: /v[0-9]+(\.[0-9]+)*/
+     commands:
+       - cp $BUILD_DIR/dash docker/dash
+       - cd docker/dash && make push && cd ..
