@@ -73,15 +73,6 @@ type Executor struct {
 	processOutputBuffer bytes.Buffer
 }
 
-func (this *Executor) Stdin0() io.Reader {
-	if this.runtime == nil || this.runtime.Stdin() == nil {
-		glog.Infoln("Sourcing process stdin from os.Stdin")
-		return os.Stdin
-	}
-	glog.Infoln("Teeing input to os.Stderr:", this.Task.Stdin)
-	return io.TeeReader(this.runtime.Stdin(), os.Stderr)
-}
-
 func (this *Executor) Stdin() io.Reader {
 	if this.runtime == nil || this.runtime.Stdin() == nil {
 		glog.Infoln("Sourcing process stdin from os.Stdin")
@@ -90,12 +81,12 @@ func (this *Executor) Stdin() io.Reader {
 	glog.Infoln("Teeing input to os.Stderr:", this.Task.Stdin)
 	//return io.TeeReader(io.MultiReader(this.runtime.Stdin(), os.Stdin), this.runtime.PublishStdin())
 	// TODO - allow stdin to come through a topic subscriber.
-	return io.TeeReader(io.MultiReader(os.Stdin), this.runtime.PublishStdin())
+	return io.TeeReader(io.MultiReader(os.Stdin), this.runtime.Stderr())
 }
 
 func (this *Executor) Stdout() io.Writer {
 	if this.runtime == nil || this.runtime.Stdout() == nil {
-		glog.Infoln("Sending process stdout to os.Stdout:", this.Task.Stdout)
+		glog.Infoln("Sending process stdout to os.Stdout.")
 		return io.MultiWriter(os.Stdout, &this.processOutputBuffer)
 	}
 	return io.MultiWriter(os.Stdout, this.runtime.Stdout(), &this.processOutputBuffer)
@@ -103,7 +94,7 @@ func (this *Executor) Stdout() io.Writer {
 
 func (this *Executor) Stderr() io.Writer {
 	if this.runtime == nil || this.runtime.Stderr() == nil {
-		glog.Infoln("Sending process stdout to os.Stderr:", this.Task.Stderr)
+		glog.Infoln("Sending process stdout to os.Stderr")
 		return os.Stderr
 	}
 	return io.MultiWriter(os.Stderr, this.runtime.Stderr())
@@ -130,12 +121,15 @@ func (this *Executor) connect_zk() error {
 
 func (this *Executor) wait_for_process_finish(done chan error) {
 	err := <-done
+	glog.Infoln("Got done signal:", err, "runtime=", this.runtime)
 	if this.runtime != nil {
 		if err == nil {
 			// write the entire stdout buffer to the output path
-			this.runtime.Success(this.processOutputBuffer.String())
+			zerr := this.runtime.Success(this.processOutputBuffer.String())
+			glog.Infoln("Written to success Err=", zerr)
 		} else {
-			this.runtime.Error(err.Error())
+			zerr := this.runtime.Error(err.Error())
+			glog.Infoln("Written to error Err=", zerr)
 		}
 	}
 	if err != nil && !this.IgnoreChildProcessFails {
