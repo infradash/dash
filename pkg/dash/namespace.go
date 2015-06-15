@@ -62,10 +62,11 @@ type ServiceKey string
 
 // Represents an entry in the Env namespace
 type RegistryEntryBase struct {
-	Domain  string `json:"domain,omitempty"`
-	Service string `json:"service,omitempty"`
-	Version string `json:"version,omitempty"` // git tag
-	Path    string `json:"path,omitempty"`
+	AuthToken string `json:"-"` // bound to flag
+	Domain    string `json:"domain,omitempty"`
+	Service   string `json:"service,omitempty"`
+	Version   string `json:"version,omitempty"` // git tag
+	Path      string `json:"path,omitempty"`
 }
 
 type EnvSource struct {

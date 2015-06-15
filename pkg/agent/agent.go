@@ -105,10 +105,10 @@ func (this *Agent) Run() {
 	this.endpoint = endpoint
 
 	if this.Initializer != nil {
-		glog.Infoln("Loading configuration from", this.Initializer.SourceUrl)
+		glog.Infoln("Loading configuration from", this.Initializer.ConfigUrl)
 
 		var list []DomainConfig
-		loaded, err := this.Initializer.Load(&list)
+		loaded, err := this.Initializer.Load(&list, this.AuthToken, this.zk)
 		if err != nil {
 			panic(err)
 		}

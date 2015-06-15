@@ -22,6 +22,7 @@ func (this *DockerSettings) BindFlags() {
 }
 
 func (this *RegistryEntryBase) BindFlags() {
+	flag.StringVar(&this.AuthToken, "auth_token", os.Getenv(EnvAuthToken), "Auth token")
 	flag.StringVar(&this.Domain, "domain", os.Getenv(EnvDomain), "Namespace domain (e.g. integration.foo.com)")
 	flag.StringVar(&this.Service, "service", os.Getenv(EnvService), "Namespace service (e.g. web_app)")
 	flag.StringVar(&this.Version, "version", os.Getenv(EnvVersion), "Namespace version (e.g. v1.1.0)")
@@ -70,7 +71,7 @@ func (this *Registry) BindFlags() {
 }
 
 func (this *ConfigLoader) BindFlags() {
-	flag.StringVar(&this.SourceUrl, "config_source_url", "", "Initialize config source url")
+	flag.StringVar(&this.ConfigUrl, "config_source_url", os.Getenv(EnvConfigUrl), "Initialize config source url")
 }
 
 func (this *CircleCi) BindFlags() {

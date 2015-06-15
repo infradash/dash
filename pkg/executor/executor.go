@@ -151,7 +151,9 @@ func (this *Executor) Exec() error {
 	vars := make([]string, 0)
 	env := make(map[string]string)
 
-	if !this.NoSourceEnv {
+	if this.NoSourceEnv {
+		glog.Infoln("Not sourcing environment variables.")
+	} else {
 		glog.Infoln("Sourcing environment variables.")
 		if this.ReadStdin {
 			source = this.EnvFromStdin()
@@ -160,8 +162,6 @@ func (this *Executor) Exec() error {
 			source = this.EnvFromZk()
 		}
 		vars, env = source()
-	} else {
-		glog.Infoln("Not sourcing environment variables.")
 	}
 
 	// Inject additional environments
@@ -192,12 +192,12 @@ func (this *Executor) Exec() error {
 	}
 
 	if this.Initializer != nil {
-		glog.Infoln("Loading configuration from", this.Initializer.SourceUrl)
+		glog.Infoln("Loading configuration from", this.Initializer.ConfigUrl)
 		// set up the context for applying the config as a template
 		this.Initializer.Context = this
 
 		executorConfig := new(ExecutorConfig)
-		loaded, err := this.Initializer.Load(executorConfig)
+		loaded, err := this.Initializer.Load(executorConfig, this.AuthToken, this.zk)
 		if err != nil {
 			panic(err)
 		}

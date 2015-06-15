@@ -4,59 +4,50 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/golang/glog"
-	"io/ioutil"
+	"github.com/qorio/maestro/pkg/zk"
 	"net/url"
-	"os"
-	"strings"
 	"text/template"
 )
 
 type ConfigLoader struct {
-	SourceUrl string      `json:"config_source_url"`
+	ConfigUrl string      `json:"config_url"`
 	Context   interface{} `json:"-"`
 }
 
-func (this *ConfigLoader) Load(prototype interface{}) (loaded bool, err error) {
-	if this.SourceUrl == "" {
+func (this *ConfigLoader) Load(prototype interface{}, auth string, zc zk.ZK) (loaded bool, err error) {
+	if this.ConfigUrl == "" {
 		glog.Infoln("No config URL. Skip.")
 		return false, nil
 	}
 
 	// parse the url
-	_, err = url.Parse(this.SourceUrl)
+	_, err = url.Parse(this.ConfigUrl)
 	if err != nil {
-		glog.Infoln("Config url is not valid:", this.SourceUrl)
+		glog.Infoln("Config url is not valid:", this.ConfigUrl)
 		return false, err
 	}
 
-	var body string
-	if strings.Index(this.SourceUrl, "file://") == 0 {
-		file := this.SourceUrl[len("file://"):]
-		glog.Infoln("Loading from file", file)
-		f, err := os.Open(file)
-		if err != nil {
-			return false, err
-		}
-		if buff, err := ioutil.ReadAll(f); err != nil {
-			return false, err
-		} else {
-			body = string(buff)
-		}
-	} else {
-		if body, _, err = FetchUrl(this.SourceUrl); err != nil {
-			return false, err
-		}
+	headers := map[string]string{
+		"Authorization": "Bearer " + auth,
 	}
-	if applied, err := this.applyTemplate(body); err != nil {
+
+	body, _, err := FetchUrl(this.ConfigUrl, headers)
+	if err != nil {
+		return false, err
+	}
+
+	// Treat the entire body as a template
+	applied, err := this.applyTemplate(body)
+	if err != nil {
+		return false, err
+	}
+
+	glog.Infoln("Parsing configuration:", applied)
+	err = json.Unmarshal([]byte(applied), prototype)
+	if err != nil {
 		return false, err
 	} else {
-		glog.Infoln("Parsing configuration:", applied)
-		err2 := json.Unmarshal([]byte(applied), prototype)
-		if err2 != nil {
-			return false, err2
-		} else {
-			return true, nil
-		}
+		return true, nil
 	}
 }
 

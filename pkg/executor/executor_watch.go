@@ -66,7 +66,7 @@ func (this *Executor) SaveWatchAction(watch *RegistryWatch) error {
 				return true // Keep watching
 			}
 
-			configBuff, err := ExecuteTemplateUrl(this.zk, watch.ReloadConfig.ConfigTemplateUrl, data)
+			configBuff, err := ExecuteTemplateUrl(this.zk, watch.ReloadConfig.ConfigTemplateUrl, this.AuthToken, data)
 			if err != nil {
 				return false
 			}
@@ -117,7 +117,7 @@ func (this *Executor) ReloadConfig(watch *RegistryWatch) error {
 		return err
 	}
 
-	configBuff, err := ExecuteTemplateUrl(this.zk, watch.ReloadConfig.ConfigTemplateUrl, data)
+	configBuff, err := ExecuteTemplateUrl(this.zk, watch.ReloadConfig.ConfigTemplateUrl, this.AuthToken, data)
 	if err != nil {
 		return err
 	}
