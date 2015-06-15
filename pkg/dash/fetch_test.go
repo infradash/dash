@@ -48,7 +48,7 @@ func (suite *TestSuiteFetch) TestFetchAndExecuteTemplate(c *C) {
 	c.Log("Data= ", data)
 
 	url := "http://qorio.github.io/public/nginx/nginx.conf"
-	config, err := ExecuteTemplateUrl(nil, url, data)
+	config, err := ExecuteTemplateUrl(nil, url, "", data)
 
 	c.Assert(err, Equals, nil)
 	c.Log("config= ", string(config))
@@ -94,7 +94,7 @@ func (suite *TestSuiteFetch) TestFetchAndExecuteTemplate2(c *C) {
 	c.Assert(err, Equals, nil)
 
 	url := "file://" + config_path
-	applied, err := ExecuteTemplateUrl(nil, url, data)
+	applied, err := ExecuteTemplateUrl(nil, url, "", data)
 
 	c.Assert(err, Equals, nil)
 	c.Log("config= ", string(applied))
