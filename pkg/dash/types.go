@@ -9,7 +9,7 @@ import (
 const (
 	EnvAuthToken = "DASH_AUTH_TOKEN"
 	EnvConfigUrl = "DASH_CONFIG_URL"
-	EnvZookeeper = "DASH_ZOOKEEPER"
+	EnvZkHosts   = "DASH_ZK_HOSTS"
 	EnvDocker    = "DASH_DOCKER_PORT"
 	EnvDomain    = "DASH_DOMAIN"
 	EnvService   = "DASH_SERVICE"

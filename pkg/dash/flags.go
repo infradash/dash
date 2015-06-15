@@ -12,7 +12,7 @@ func (this *Identity) BindFlags() {
 }
 
 func (this *ZkSettings) BindFlags() {
-	flag.StringVar(&this.Hosts, "zookeeper", os.Getenv(EnvZookeeper),
+	flag.StringVar(&this.Hosts, "zk_hosts", os.Getenv(EnvZkHosts),
 		"Comma-delimited zk host:port, e.g. zk1.infradash.io,zk2.infradash.io,zk3.infradash.io:2181")
 	flag.DurationVar(&this.Timeout, "timeout", time.Second, "Connection timeout to zk.")
 }

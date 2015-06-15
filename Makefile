@@ -33,7 +33,7 @@ run-local-agent:
 	DASH_DOMAIN="accounts.qor.io" \
 	DASH_TAGS="appserver,frontend" \
 	DASH_NAME="dash" \
-	DASH_ZOOKEEPER="localhost:2181" \
+	DASH_ZK_HOSTS="localhost:2181" \
 	DOCKER_PORT="tcp://192.168.59.103:2376" \
 	${GODEP} go run main/dash.go --logtostderr --v=500 --self_register=false \
 		--ui_docroot=$(HOME)/go/src/github.com/infradash/dash/www \
@@ -45,7 +45,7 @@ run-local-agent:
 
 run-exec-bash-export:
 	DASH_DOMAIN="test.infradash.com" \
-	DASH_ZOOKEEPER="localhost:2181" \
+	DASH_ZK_HOSTS="localhost:2181" \
 	${GODEP} go run main/dash.go \
 		--service=infradash --version=develop \
 		--custom_vars=EXEC_TS="{{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
@@ -54,7 +54,7 @@ run-exec-bash-export:
 
 run-exec-nginx:
 	DASH_DOMAIN="test.infradash.com" \
-	DASH_ZOOKEEPER="localhost:2181" \
+	DASH_ZK_HOSTS="localhost:2181" \
 	${GODEP} go run main/dash.go --logtostderr \
 		--service=infradash --version=develop \
 		--custom_vars=EXEC_TS="{{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
@@ -65,7 +65,7 @@ run-exec-nginx:
 
 run-local-exec:
 	DASH_DOMAIN="test.com" \
-	DASH_ZOOKEEPER="localhost:2181" \
+	DASH_ZK_HOSTS="localhost:2181" \
 	${GODEP} go run main/dash.go --logtostderr \
 		--service=infradash --version=develop \
 		--custom_vars=EXEC_TS="{{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
@@ -77,7 +77,7 @@ run-local-exec:
 
 run-notty:
 	DASH_DOMAIN="test.com" \
-	DASH_ZOOKEEPER="localhost:2181" \
+	DASH_ZK_HOSTS="localhost:2181" \
 	DASH_NAME="test-notty" \
 	${GODEP} go run main/dash.go --logtostderr \
 		--service=infradash --version=develop \
@@ -88,7 +88,7 @@ run-notty:
 
 run-tty:
 	DASH_DOMAIN="test.com" \
-	DASH_ZOOKEEPER="localhost:2181" \
+	DASH_ZK_HOSTS="localhost:2181" \
 	DASH_NAME="test-tty" \
 	${GODEP} go run main/dash.go --logtostderr \
 		--service=infradash --version=develop \
@@ -99,7 +99,7 @@ run-tty:
 
 # Example: copy env from v0.1.2 to v0.1.3
 run-publish-env:
-	DASH_ZOOKEEPER="localhost:2181" \
+	DASH_ZK_HOSTS="localhost:2181" \
 	${GODEP} go run main/dash.go --logtostderr -publish -overwrite=false \
 		--path=/sandbox.infradash.com/infradash/develop/env \
 		--domain=production.infradash.com --service=infradash --version=develop \
@@ -107,7 +107,7 @@ run-publish-env:
 
 # Run a release
 run-release:
-	DASH_ZOOKEEPER="localhost:2181" \
+	DASH_ZK_HOSTS="localhost:2181" \
 	${GODEP} go run main/dash.go --logtostderr --commit \
 		--release --commit \
 		--domain=test.infradash.com \
@@ -118,7 +118,7 @@ run-release:
 	registry
 
 run-release-scheduler-trigger:
-	DASH_ZOOKEEPER="localhost:2181" \
+	DASH_ZK_HOSTS="localhost:2181" \
 	${GODEP} go run main/dash.go --logtostderr --commit \
 		--release --commit \
 		--image=qorio/passport:v1.0 \
@@ -128,7 +128,7 @@ run-release-scheduler-trigger:
 
 # Run a setlive
 run-setlive:
-	DASH_ZOOKEEPER="localhost:2181" \
+	DASH_ZK_HOSTS="localhost:2181" \
 	${GODEP} go run main/dash.go --logtostderr \
 		--setlive --commit --setlive_nowait \
 		--domain=test.infradash.com \
@@ -139,21 +139,21 @@ run-setlive:
 	registry
 
 run-writepath:
-	DASH_ZOOKEEPER="localhost:2181" \
+	DASH_ZK_HOSTS="localhost:2181" \
 	${GODEP} go run main/dash.go --logtostderr \
 		--commit --writepath=/test.infradash.com/test \
 		--writevalue=test123 \
 	registry
 
 run-readpath:
-	DASH_ZOOKEEPER="localhost:2181" \
+	DASH_ZK_HOSTS="localhost:2181" \
 	${GODEP} go run main/dash.go --logtostderr \
 		--read \
 		--readpath=/code.infradash.com/infradash \
 	registry
 
 run-circleci:
-	DASH_ZOOKEEPER="localhost:2181" \
+	DASH_ZK_HOSTS="localhost:2181" \
 	${GODEP} go run main/dash.go --logtostderr \
 		--circle_user=qorio \
 		--circle_project=passport \
@@ -163,7 +163,7 @@ run-circleci:
 	circleci
 
 run-circleci-zk:
-	DASH_ZOOKEEPER="localhost:2181" \
+	DASH_ZK_HOSTS="localhost:2181" \
 	${GODEP} go run main/dash.go --logtostderr \
 		--circle_auth_zkpath=/code.infradash.com/circleci/passport \
 		--circle_buildnum=213 \
