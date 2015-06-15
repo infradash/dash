@@ -8,8 +8,8 @@ const (
 	EnvAuthToken = "DASH_AUTH_TOKEN"
 	EnvConfigUrl = "DASH_CONFIG_URL"
 
-	EnvZookeeper = "ZOOKEEPER_HOSTS"
-	EnvDocker    = "DOCKER_PORT"
+	EnvZookeeper = "DASH_ZOOKEEPER"
+	EnvDocker    = "DASH_DOCKER_PORT"
 
 	EnvDomain  = "DASH_DOMAIN"
 	EnvService = "DASH_SERVICE"
