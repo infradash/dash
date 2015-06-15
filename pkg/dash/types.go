@@ -1,27 +1,24 @@
 package dash
 
 import (
+	"github.com/qorio/omni/common"
 	"time"
 )
 
 const (
 	EnvAuthToken = "DASH_AUTH_TOKEN"
 	EnvConfigUrl = "DASH_CONFIG_URL"
-
 	EnvZookeeper = "DASH_ZOOKEEPER"
 	EnvDocker    = "DASH_DOCKER_PORT"
-
-	EnvDomain  = "DASH_DOMAIN"
-	EnvService = "DASH_SERVICE"
-	EnvVersion = "DASH_VERSION"
-	EnvPath    = "DASH_PATH"
-	EnvTags    = "DASH_TAGS"
-
-	EnvImage = "DASH_IMAGE"
-	EnvBuild = "DASH_BUILD"
-
-	EnvHost       = "DASH_HOST"
-	EnvDockerName = "DASH_DOCKER_NAME"
+	EnvDomain    = "DASH_DOMAIN"
+	EnvService   = "DASH_SERVICE"
+	EnvVersion   = "DASH_VERSION"
+	EnvPath      = "DASH_PATH"
+	EnvTags      = "DASH_TAGS"
+	EnvName      = "DASH_NAME"
+	EnvHost      = "DASH_HOST"
+	EnvImage     = "DASH_IMAGE"
+	EnvBuild     = "DASH_BUILD"
 )
 
 var ConfigVariables = []string{
@@ -42,4 +39,13 @@ type DockerSettings struct {
 
 type QualifyByTags struct {
 	Tags []string `json:"tags,omitempty"`
+}
+
+type Identity struct {
+	Id   string `json:"id"`
+	Name string `json:"name,omitemtpy"`
+}
+
+func (this *Identity) Assign() {
+	this.Id = common.NewUUID().String()
 }

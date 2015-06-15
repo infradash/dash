@@ -32,20 +32,20 @@ run-local-agent:
 	DASH_HOST=`hostname` \
 	DASH_DOMAIN="accounts.qor.io" \
 	DASH_TAGS="appserver,frontend" \
-	DASH_DOCKER_NAME="dash" \
-	ZOOKEEPER_HOSTS="localhost:2181" \
+	DASH_NAME="dash" \
+	DASH_ZOOKEEPER="localhost:2181" \
 	DOCKER_PORT="tcp://192.168.59.103:2376" \
 	${GODEP} go run main/dash.go --logtostderr --v=500 --self_register=false \
 		--ui_docroot=$(HOME)/go/src/github.com/infradash/dash/www \
 		--tlscert=$(HOME)/.boot2docker/certs/boot2docker-vm/cert.pem \
 		--tlskey=$(HOME)/.boot2docker/certs/boot2docker-vm/key.pem \
 		--tlsca=$(HOME)/.boot2docker/certs/boot2docker-vm/ca.pem \
-		--config_source_url="file:///Users/david/go/src/github.com/infradash/dash/example/passport.json" \
+		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/passport.json" \
 	agent
 
 run-exec-bash-export:
 	DASH_DOMAIN="test.infradash.com" \
-	ZOOKEEPER_HOSTS="localhost:2181" \
+	DASH_ZOOKEEPER="localhost:2181" \
 	${GODEP} go run main/dash.go \
 		--service=infradash --version=develop \
 		--custom_vars=EXEC_TS="{{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
@@ -54,50 +54,52 @@ run-exec-bash-export:
 
 run-exec-nginx:
 	DASH_DOMAIN="test.infradash.com" \
-	ZOOKEEPER_HOSTS="localhost:2181" \
+	DASH_ZOOKEEPER="localhost:2181" \
 	${GODEP} go run main/dash.go --logtostderr \
 		--service=infradash --version=develop \
 		--custom_vars=EXEC_TS="{{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
 		--daemon \
 	    	--no_source_env=false \
-		--config_source_url="http://infradash.github.io/ops-release/dash/profiles/test-nginx.json" \
+		--config_url="http://infradash.github.io/ops-release/dash/profiles/test-nginx.json" \
 	exec echo 'now={{.EXEC_TS}} and domain={{.EXEC_DOMAIN}} and db={{.DATABASE_HOST}}'
 
 run-local-exec:
 	DASH_DOMAIN="test.com" \
-	ZOOKEEPER_HOSTS="localhost:2181" \
+	DASH_ZOOKEEPER="localhost:2181" \
 	${GODEP} go run main/dash.go --logtostderr \
 		--service=infradash --version=develop \
 		--custom_vars=EXEC_TS="{{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
 		--daemon=true \
 	    	--no_source_env=false \
 		--stdout --newline \
-		--config_source_url="file:///Users/david/go/src/github.com/infradash/dash/example/executor-local.json" \
+		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/executor-local.json" \
 	exec echo {{.ENVIRONMENT_NAME}}
 
 run-notty:
 	DASH_DOMAIN="test.com" \
-	ZOOKEEPER_HOSTS="localhost:2181" \
+	DASH_ZOOKEEPER="localhost:2181" \
+	DASH_NAME="test-notty" \
 	${GODEP} go run main/dash.go --logtostderr \
 		--service=infradash --version=develop \
 		--daemon=false --ignore_child_process_fails=false \
 		--custom_vars=EXEC_TS="{{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
-		--config_source_url="file:///Users/david/go/src/github.com/infradash/dash/example/task-notty.json" \
+		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/task-notty.json" \
 	exec ${CMD}
 
 run-tty:
 	DASH_DOMAIN="test.com" \
-	ZOOKEEPER_HOSTS="localhost:2181" \
+	DASH_ZOOKEEPER="localhost:2181" \
+	DASH_NAME="test-tty" \
 	${GODEP} go run main/dash.go --logtostderr \
 		--service=infradash --version=develop \
 		--daemon=true --ignore_child_process_fails=true \
 		--custom_vars=EXEC_TS="{{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
-		--config_source_url="file:///Users/david/go/src/github.com/infradash/dash/example/task-tty.json" \
+		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/task-tty.json" \
 	exec ${CMD}
 
 # Example: copy env from v0.1.2 to v0.1.3
 run-publish-env:
-	ZOOKEEPER_HOSTS="localhost:2181" \
+	DASH_ZOOKEEPER="localhost:2181" \
 	${GODEP} go run main/dash.go --logtostderr -publish -overwrite=false \
 		--path=/sandbox.infradash.com/infradash/develop/env \
 		--domain=production.infradash.com --service=infradash --version=develop \
@@ -105,7 +107,7 @@ run-publish-env:
 
 # Run a release
 run-release:
-	ZOOKEEPER_HOSTS="localhost:2181" \
+	DASH_ZOOKEEPER="localhost:2181" \
 	${GODEP} go run main/dash.go --logtostderr --commit \
 		--release --commit \
 		--domain=test.infradash.com \
@@ -116,7 +118,7 @@ run-release:
 	registry
 
 run-release-scheduler-trigger:
-	ZOOKEEPER_HOSTS="localhost:2181" \
+	DASH_ZOOKEEPER="localhost:2181" \
 	${GODEP} go run main/dash.go --logtostderr --commit \
 		--release --commit \
 		--image=qorio/passport:v1.0 \
@@ -126,7 +128,7 @@ run-release-scheduler-trigger:
 
 # Run a setlive
 run-setlive:
-	ZOOKEEPER_HOSTS="localhost:2181" \
+	DASH_ZOOKEEPER="localhost:2181" \
 	${GODEP} go run main/dash.go --logtostderr \
 		--setlive --commit --setlive_nowait \
 		--domain=test.infradash.com \
@@ -137,21 +139,21 @@ run-setlive:
 	registry
 
 run-writepath:
-	ZOOKEEPER_HOSTS="localhost:2181" \
+	DASH_ZOOKEEPER="localhost:2181" \
 	${GODEP} go run main/dash.go --logtostderr \
 		--commit --writepath=/test.infradash.com/test \
 		--writevalue=test123 \
 	registry
 
 run-readpath:
-	ZOOKEEPER_HOSTS="localhost:2181" \
+	DASH_ZOOKEEPER="localhost:2181" \
 	${GODEP} go run main/dash.go --logtostderr \
 		--read \
 		--readpath=/code.infradash.com/infradash \
 	registry
 
 run-circleci:
-	ZOOKEEPER_HOSTS="localhost:2181" \
+	DASH_ZOOKEEPER="localhost:2181" \
 	${GODEP} go run main/dash.go --logtostderr \
 		--circle_user=qorio \
 		--circle_project=passport \
@@ -161,7 +163,7 @@ run-circleci:
 	circleci
 
 run-circleci-zk:
-	ZOOKEEPER_HOSTS="localhost:2181" \
+	DASH_ZOOKEEPER="localhost:2181" \
 	${GODEP} go run main/dash.go --logtostderr \
 		--circle_auth_zkpath=/code.infradash.com/circleci/passport \
 		--circle_buildnum=213 \

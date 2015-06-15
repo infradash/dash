@@ -8,7 +8,6 @@ import (
 	. "github.com/infradash/dash/pkg/dash"
 	"github.com/qorio/maestro/pkg/workflow"
 	"github.com/qorio/maestro/pkg/zk"
-	"github.com/qorio/omni/common"
 	"github.com/qorio/omni/runtime"
 	"io"
 	"net/http"
@@ -20,12 +19,14 @@ import (
 )
 
 type Executor struct {
+	Identity
+
 	QualifyByTags
 	ZkSettings
 	EnvSource
 
-	Id            string
 	StartTimeUnix int64
+	Name          string
 
 	NoSourceEnv bool
 
@@ -139,7 +140,6 @@ func (this *Executor) wait_for_process_finish(done chan error) {
 
 func (this *Executor) Exec() error {
 
-	this.Id = common.NewUUID().String()
 	this.StartTimeUnix = time.Now().Unix()
 	this.Host, _ = os.Hostname()
 

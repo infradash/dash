@@ -98,9 +98,9 @@ type RegistryLiveEntry struct {
 }
 
 type RegistryContainerEntry struct {
+	Identity
 	RegistryReleaseEntry
 
-	Name        string `json:"name,omitempty"` // docker name
 	Host        string `json:"host,omitempty"`
 	ContainerId string `json:"container_id,omitempty"`
 	docker.Port

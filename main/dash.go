@@ -35,6 +35,9 @@ func main() {
 		flag.PrintDefaults()
 	}
 
+	identity := &Identity{}
+	identity.BindFlags()
+
 	zkSettings := &ZkSettings{}
 	zkSettings.BindFlags()
 
@@ -89,6 +92,7 @@ func main() {
 	switch verb {
 	case "exec":
 
+		executor.Identity = identity
 		executor.QualifyByTags.Tags = tags
 		executor.ZkSettings = *zkSettings
 		envSource.RegistryEntryBase = *regEntryBase
@@ -120,6 +124,7 @@ func main() {
 
 	case "agent":
 
+		agent.Identity = identity
 		agent.QualifyByTags.Tags = tags
 		agent.ZkSettings = *zkSettings
 		agent.DockerSettings = *dockerSettings

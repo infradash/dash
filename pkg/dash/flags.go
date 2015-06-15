@@ -7,6 +7,10 @@ import (
 	"time"
 )
 
+func (this *Identity) BindFlags() {
+	flag.StringVar(&this.Name, "name", os.Getenv(EnvName), "Name")
+}
+
 func (this *ZkSettings) BindFlags() {
 	flag.StringVar(&this.Hosts, "zookeeper", os.Getenv(EnvZookeeper),
 		"Comma-delimited zk host:port, e.g. zk1.infradash.io,zk2.infradash.io,zk3.infradash.io:2181")
@@ -35,7 +39,6 @@ func (this *RegistryReleaseEntry) BindFlags() {
 }
 
 func (this *RegistryContainerEntry) BindFlags() {
-	flag.StringVar(&this.Name, "name", os.Getenv(EnvDockerName), "Docker name")
 	flag.StringVar(&this.Host, "host", os.Getenv(EnvHost), "Hostname")
 }
 
