@@ -36,6 +36,7 @@ func main() {
 	}
 
 	identity := &Identity{}
+	identity.Init()
 	identity.BindFlags()
 
 	zkSettings := &ZkSettings{}
@@ -92,7 +93,7 @@ func main() {
 	switch verb {
 	case "exec":
 
-		executor.Identity = identity
+		executor.Identity = *identity
 		executor.QualifyByTags.Tags = tags
 		executor.ZkSettings = *zkSettings
 		envSource.RegistryEntryBase = *regEntryBase
@@ -105,11 +106,29 @@ func main() {
 			executor.Args = flag.Args()[2:]
 		}
 
-		glog.Infoln("Exec:", executor)
+		glog.Infoln(buildInfo.Notice())
+		glog.Infoln("Exec:", executor, executor.Identity.String(), executor.Initializer.Context)
 		err := executor.Exec()
 		if err != nil {
 			panic(err)
 		}
+
+	case "agent":
+
+		agent.Id = identity.Id
+		agent.Name = identity.Name
+
+		agent.QualifyByTags.Tags = tags
+		agent.ZkSettings = *zkSettings
+		agent.DockerSettings = *dockerSettings
+		agent.RegistryContainerEntry = *regContainerEntry
+		agent.RegistryContainerEntry.RegistryReleaseEntry = *regReleaseEntry
+		agent.RegistryContainerEntry.RegistryReleaseEntry.RegistryEntryBase = *regEntryBase
+
+		glog.Infoln(buildInfo.Notice())
+		glog.Infoln("Starting agent:", *agent, agent.Identity.String(), agent.Initializer.Context)
+
+		agent.Run() // blocks
 
 	case "env":
 
@@ -121,21 +140,6 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-
-	case "agent":
-
-		agent.Identity = identity
-		agent.QualifyByTags.Tags = tags
-		agent.ZkSettings = *zkSettings
-		agent.DockerSettings = *dockerSettings
-		agent.RegistryContainerEntry = *regContainerEntry
-		agent.RegistryContainerEntry.RegistryReleaseEntry = *regReleaseEntry
-		agent.RegistryContainerEntry.RegistryReleaseEntry.RegistryEntryBase = *regEntryBase
-
-		glog.Infoln(buildInfo.Notice())
-		glog.Infoln("Starting agent:", *agent, agent.Initializer.Context)
-
-		agent.Run() // blocks
 
 	case "registry":
 

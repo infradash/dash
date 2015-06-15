@@ -1,6 +1,7 @@
 package dash
 
 import (
+	"fmt"
 	"github.com/qorio/omni/common"
 	"time"
 )
@@ -42,10 +43,20 @@ type QualifyByTags struct {
 }
 
 type Identity struct {
-	Id   string `json:"id"`
-	Name string `json:"name,omitemtpy"`
+	Id           string `json:"id"`
+	Name         string `json:"name,omitemtpy"`
+	Registration string `json:"registration,omitempty"`
 }
 
-func (this *Identity) Assign() {
+func (this *Identity) Init() {
 	this.Id = common.NewUUID().String()
+}
+
+func (this *Identity) String() string {
+	s := fmt.Sprintf("%s/%s", this.Name, this.Id)
+	if this.Registration != "" {
+		return s + fmt.Sprintf("[%s]", this.Registration)
+	} else {
+		return s
+	}
 }

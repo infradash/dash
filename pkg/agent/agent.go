@@ -21,8 +21,7 @@ type Agent struct {
 
 	RegistryContainerEntry
 
-	Identity   string `json:"identity"`
-	ListenPort int    `json:"listen_port"`
+	ListenPort int `json:"listen_port"`
 
 	UiDocRoot string `json:"ui_doc_root,omitempty"`
 	EnableUI  bool   `json:"enable_ui,omitempty"`
@@ -311,7 +310,7 @@ func (this *Agent) _register() error {
 			err = n.Set([]byte(value))
 			if err == nil {
 				// Update this only on successful registration
-				this.Identity = key
+				this.Registration = key
 			}
 		}
 	} else {

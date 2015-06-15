@@ -1,9 +1,9 @@
 {
-    "name": "test_task",
-    "info": "/{{.Domain}}/task/test_task/{{.Id}}",
-    "success": "/{{.Domain}}/task/test_task/{{.Id}}/success",
-    "error": "/{{.Domain}}/task/test_task/{{.Id}}/error",
-    "status": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/test_task/{{.Id}}",
-    "stdout_topic": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/test_task/{{.Id}}/stdout",
-    "stderr_topic": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/test_task/{{.Id}}/stderr"
+    "name": "{{.Identity.Name}}",
+    "info": "/{{.Domain}}/task/{{.Identity.Name}}/{{.Id}}",
+    "success": "/{{.Domain}}/task/{{.Identity.Name}}/{{.Id}}/success",
+    "error": "/{{.Domain}}/task/{{.Identity.Name}}/{{.Id}}/error",
+    "status": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Identity.Name}}/{{.Id}}",
+    "stdout_topic": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Identity.Name}}/{{.Id}}/stdout",
+    "stderr_topic": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Identity.Name}}/{{.Id}}/stderr"
 }
