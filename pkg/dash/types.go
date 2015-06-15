@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	EnvAuthToken       = "DASH_AUTH_TOKEN"
+	EnvAuthToken = "DASH_AUTH_TOKEN"
 	EnvConfigUrl = "DASH_CONFIG_URL"
 
 	EnvZookeeper = "ZOOKEEPER_HOSTS"

@@ -71,7 +71,7 @@ func (this *Registry) BindFlags() {
 }
 
 func (this *ConfigLoader) BindFlags() {
-	flag.StringVar(&this.ConfigUrl, "config_source_url", os.Getenv(EnvConfigUrl), "Initialize config source url")
+	flag.StringVar(&this.ConfigUrl, "config_url", os.Getenv(EnvConfigUrl), "Initialize config source url")
 }
 
 func (this *CircleCi) BindFlags() {
