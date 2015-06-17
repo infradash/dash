@@ -10,6 +10,7 @@ import (
 	"io"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -31,6 +32,7 @@ type Runtime struct {
 	options interface{}
 	done    bool
 	ready   bool
+	lock    sync.Mutex
 }
 
 func (this *Task) Validate() error {
@@ -57,7 +59,6 @@ func (this *Task) Init(zkc zk.ZK, options ...interface{}) (*Runtime, error) {
 	if len(options) > 0 {
 		task.options = options[0]
 	}
-
 	task.status = make(chan []byte)
 
 	if task.Task.Stdout != nil {
@@ -78,6 +79,9 @@ func (this *Task) Init(zkc zk.ZK, options ...interface{}) (*Runtime, error) {
 }
 
 func (this *Runtime) Stop() {
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
 	if this.done {
 		return
 	}
@@ -161,6 +165,25 @@ func (this *Runtime) Running() bool {
 }
 
 func (this *Runtime) Start() (stdout, stderr chan<- []byte, err error) {
+	this.lock.Lock()
+	defer this.lock.Unlock()
+
+	_, _, err = this.start_streams()
+	if err != nil {
+		return nil, nil, err
+	}
+	this.ready = true
+	return this.stdout, this.stderr, nil
+}
+
+func (this *Runtime) start_triggers() error {
+	if this.StartTrigger == nil {
+		return nil
+	}
+	return nil
+}
+
+func (this *Runtime) start_streams() (stdout, stderr chan<- []byte, err error) {
 	if this.ready {
 		return this.stdout, this.stderr, nil
 	}
@@ -214,7 +237,6 @@ func (this *Runtime) Start() (stdout, stderr chan<- []byte, err error) {
 		}()
 		this.Log("Sending stderr to", this.Task.Stderr.Path())
 	}
-	this.ready = true
 	return this.stdout, this.stderr, nil
 }
 

@@ -1,13 +1,13 @@
 package workflow
 
 import (
-	"fmt"
 	"github.com/qorio/maestro/pkg/pubsub"
 	"github.com/qorio/maestro/pkg/registry"
 	"time"
 )
 
 type Orchestration struct {
+	Id          string `json:"id"`
 	Name        string `json:"name,omitempty"`
 	Description string `json:"description,omitempty"`
 
@@ -24,9 +24,8 @@ type Task struct {
 	Status  pubsub.Topic  `json:"status"`
 
 	// Triggering
-	StartTrigger *registry.Path `json:"start,omitempty"`
-	Condition    *Condition     `json:"condition,omitempty"`
-	WorkerPolicy *WorkerPolicy  `json:"workers,omitempty"`
+	StartTrigger *registry.Conditions `json:"conditions,omitempty"`
+	WorkerPolicy *WorkerPolicy        `json:"workers,omitempty"`
 
 	// registry.Paths for storing input/output
 	Input  *registry.Path `json:"input,omitempty"`
@@ -54,26 +53,3 @@ type TaskStat struct {
 type WorkerPolicy string
 
 type Reference string
-
-type Timeout time.Duration
-
-type Condition struct {
-	Timeout     *Timeout       `json:"timeout,omitempty"`
-	Exists      *registry.Path `json:"exists,omitempty"`
-	Changes     *registry.Path `json:"changes,omitempty"`
-	MinChildren int            `json:"min_children"`
-}
-
-func (this *Timeout) UnmarshalJSON(s []byte) error {
-	// unquote the string
-	d, err := time.ParseDuration(string(s[1 : len(s)-1]))
-	if err != nil {
-		return err
-	}
-	*this = Timeout(d)
-	return nil
-}
-
-func (this *Timeout) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf("\"%s\"", time.Duration(*this).String())), nil
-}
