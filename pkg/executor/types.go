@@ -2,7 +2,7 @@ package executor
 
 import (
 	. "github.com/infradash/dash/pkg/dash"
-	"github.com/qorio/maestro/pkg/workflow"
+	"github.com/qorio/maestro/pkg/task"
 	"github.com/qorio/omni/version"
 	"time"
 )
@@ -14,9 +14,9 @@ type Info struct {
 	Executor *Executor     `json:"executor"`
 }
 
-// TODO - workflow.Task eventually replaces all the other fields.
+// TODO - task.Task eventually replaces all the other fields.
 type ExecutorConfig struct {
-	*workflow.Task
+	*task.Task
 
 	TailRequest   []TailRequest   `json:"tail,omitempty"`
 	RegistryWatch []RegistryWatch `json:"registry_watch,omitempty"`

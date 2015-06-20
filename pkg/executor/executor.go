@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/golang/glog"
 	. "github.com/infradash/dash/pkg/dash"
-	"github.com/qorio/maestro/pkg/workflow"
+	"github.com/qorio/maestro/pkg/task"
 	"github.com/qorio/maestro/pkg/zk"
 	"github.com/qorio/omni/runtime"
 	"io"
@@ -56,8 +56,8 @@ type Executor struct {
 	TailFileRetryWaitTime       time.Duration `json:"tail_file_retry_wait_time"`
 
 	// From maestro's orchestration
-	Task    *workflow.Task
-	runtime *workflow.Runtime
+	Task    *task.Task
+	runtime *task.Runtime
 
 	// e.g. [ 'BOOT_TIME', '{{.StartTimestamp}}']
 	// where the value is a template to apply to the state of the Exector object.
