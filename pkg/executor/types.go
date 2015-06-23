@@ -2,6 +2,7 @@ package executor
 
 import (
 	. "github.com/infradash/dash/pkg/dash"
+	"github.com/qorio/maestro/pkg/pubsub"
 	"github.com/qorio/maestro/pkg/task"
 	"github.com/qorio/omni/version"
 	"time"
@@ -32,10 +33,10 @@ type RegistryWatch struct {
 }
 
 type TailFile struct {
-	Path         string `json:"path,omitempty"`
-	Output       string `json:"output,omitempty"`
-	RegistryPath string `json:"registry_path,omitempty"` // Where to look for actual host:port
-	MQTTTopic    string `json:"mqtt_topic,omitempty"`
+	Path   string       `json:"path,omitempty"`
+	Topic  pubsub.Topic `json:"topic,omitempty"`
+	Stdout bool         `json:"stdout,omitempty"`
+	Stderr bool         `json:"stderr,omitempty"`
 }
 
 type Reload struct {

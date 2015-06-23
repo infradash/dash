@@ -4,62 +4,40 @@ import (
 	"fmt"
 	"github.com/golang/glog"
 	. "github.com/infradash/dash/pkg/dash"
-	"github.com/qorio/maestro/pkg/mqtt"
+	_ "github.com/qorio/maestro/pkg/mqtt"
 	"github.com/qorio/maestro/pkg/pubsub"
-	"github.com/qorio/maestro/pkg/registry"
 	"github.com/qorio/maestro/pkg/zk"
 	"io"
+	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strconv"
 	"time"
 )
 
 // This executes asynchronously
 func (this *Executor) HandleTailFile(req *TailFile) {
-	tail := *req // copy
+	tail := *req
 	go func() {
-		var out io.Writer = os.Stdout
-		switch {
-		case tail.Output == "stderr":
-			glog.Infoln("Tailing", tail.Path, "sending to stderr")
-			out = os.Stderr
-		case tail.Output == "mqtt":
-			id := fmt.Sprintf("/%s/%s/%s", this.Domain, filepath.Base(tail.Path), this.Host)
-			topic := id
-			if tail.MQTTTopic != "" {
-				topic = tail.MQTTTopic
-			}
+		var out io.Writer = ioutil.Discard // goes to /dev/null
 
-			glog.Infoln("Tailing", tail.Path, "sending to mqtt as", topic)
-			var wait time.Duration
-			var addr *string
-			for {
-				addr = zk.GetString(this.zk, registry.Path(tail.RegistryPath))
-				if addr != nil || wait >= this.MQTTConnectionTimeout {
-					break
-				} else {
-					glog.Infoln("Waiting for MQTT broker to become available -- path=", tail.RegistryPath)
-					time.Sleep(this.MQTTConnectionRetryWaitTime)
-					wait += this.MQTTConnectionRetryWaitTime
-				}
-			}
-			if addr == nil {
-				glog.Warningln("Cannot locate MQTT broker. Give up. Path=", tail.RegistryPath)
-				return
-			}
-			mqtt, err := mqtt.Connect(id, *addr)
+		if tail.Stdout {
+			glog.Infoln(tail.Path, "==> stdout")
+			out = io.MultiWriter(out, os.Stdout)
+		}
+
+		if tail.Stderr {
+			glog.Infoln(tail.Path, "==> stderr")
+			out = io.MultiWriter(out, os.Stderr)
+		}
+
+		if len(tail.Topic) > 0 {
+			glog.Infoln(tail.Path, "==>", tail.Topic)
+			broker, err := tail.Topic.Broker().PubSub(this.Id)
 			if err != nil {
-				glog.Warningln("Error starting mqtt client. Err=", err,
-					"Broker path=", tail.RegistryPath, "host:port=", *addr, "topic=", topic)
-				return
+				glog.Warningln("Cannot connect to pubsub.  Not publishing to", tail.Topic)
+			} else {
+				out = io.MultiWriter(out, pubsub.GetWriter(tail.Topic, broker))
 			}
-			out = pubsub.GetWriter(pubsub.Topic(topic), mqtt)
-			glog.Infoln("MQTT client for", tail.Path, "topic=", topic, "ready", out)
-
-		default:
-			// other cases include a url for websocket connection to push the output
-			glog.Infoln("Tailing", tail.Path, "sending to stdout")
 		}
 		this.TailFile(tail.Path, out)
 	}()

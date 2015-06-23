@@ -1,5 +1,5 @@
 {
-    "xtrigger":{
+    "trigger":{
 	"registry": {
 	    "change": "/{{.Domain}}/task/executor-trigger"
 	}
@@ -31,9 +31,8 @@
     "tail": [
         {
             "path": "/Users/david/go/src/github.com/infradash/dash/example/test.log",
-	    "output":"mqtt",
-            "registry_path":"/{{.Domain}}/mqtt",
-	    "mqtt_topic":"/{{.Domain}}/test.log/{{.Host}}"
+	    "stderr": true,
+	    "topic": "mqtt://iot.eclipse.org:1883/{{.Domain}}/{{.Service}}/{{.Host}}/test.log"
         }
     ]
 }
