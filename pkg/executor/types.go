@@ -18,8 +18,8 @@ type Info struct {
 type ExecutorConfig struct {
 	*task.Task
 
-	TailRequest   []TailRequest   `json:"tail,omitempty"`
-	RegistryWatch []RegistryWatch `json:"registry_watch,omitempty"`
+	TailFiles     []TailFile      `json:"tail,omitempty"`
+	RegistryWatch []RegistryWatch `json:"watch,omitempty"`
 }
 
 type RegistryWatch struct {
@@ -28,22 +28,22 @@ type RegistryWatch struct {
 	// If provided, look in here for the actual value instead
 	ValueLocation      *RegistryEntryBase `json:"value_location,omitempty"`
 	MatchContainerPort *int               `json:"match_container_port,omitempty"`
-	ReloadConfig       *ReloadConfig      `json:"reload_config,omitempty"`
+	Reload             *Reload            `json:"reload,omitempty"`
 }
 
-type ReloadConfig struct {
-	Description string `json:"description,omitempty"`
-
-	// Url that serves the template e.g. github pages or S3
-	ConfigTemplateUrl     string `json:"config_template_url,omitempty"`
-	ConfigDestinationPath string `json:"config_destination_path,omitempty"`
-
-	ReloadCmd []string `json:"reload_cmd,omitempty"`
-}
-
-type TailRequest struct {
+type TailFile struct {
 	Path         string `json:"path,omitempty"`
 	Output       string `json:"output,omitempty"`
 	RegistryPath string `json:"registry_path,omitempty"` // Where to look for actual host:port
 	MQTTTopic    string `json:"mqtt_topic,omitempty"`
+}
+
+type Reload struct {
+	Description string `json:"description,omitempty"`
+
+	// Url that serves the template e.g. github pages or S3
+	ConfigUrl             string `json:"config_url,omitempty"`
+	ConfigDestinationPath string `json:"config_destination,omitempty"`
+
+	Cmd []string `json:"cmd,omitempty"`
 }

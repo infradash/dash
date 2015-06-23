@@ -6,18 +6,14 @@ import (
 )
 
 func (this *Executor) BindFlags() {
+	flag.IntVar(&this.Runs, "runs", 0, "Number of command executions; -1 means indefinite; > 0 is finite times.")
 	flag.BoolVar(&this.NoSourceEnv, "no_source_env", false, "True to skip sourcing env")
-	flag.BoolVar(&this.WriteStdout, "stdout", false, "Wrtie to stdout")
-	flag.BoolVar(&this.EscapeWhiteSpaces, "escape", false, "Escape space")
-	flag.BoolVar(&this.Newline, "newline", false, "New line")
-	flag.BoolVar(&this.GenerateBashExport, "bash_export", false, "Bash export")
-	flag.BoolVar(&this.Daemon, "daemon", false, "True to block as daemon: useful for docker.")
+	flag.BoolVar(&this.Daemon, "daemon", false, "True to start api server.")
 	flag.BoolVar(&this.IgnoreChildProcessFails, "ignore_child_process_fails", false, "True to ignore child process fail")
-
-	flag.StringVar(&this.QuoteChar, "quote", "", "Quote character")
 	flag.StringVar(&this.CustomVarsCommaSeparated, "custom_vars", "BOOT_TIMESTAMP={{.StartTimeUnix}}", "Custom variables")
-
+	flag.IntVar(&this.TimeoutSeconds, "timeout_seconds", -1, "Timeout in seconds")
 	flag.IntVar(&this.ListenPort, "listen", 25658, "Listening port for executor")
+	flag.StringVar(&this.Dir, "work_dir", "", "Working directory to execute the cmd")
 
 	flag.DurationVar(&this.MQTTConnectionTimeout, "mqtt_connect_timeout", time.Duration(10*time.Minute), "MQTT connection timeout")
 	flag.DurationVar(&this.MQTTConnectionRetryWaitTime, "mqtt_connect_retry_wait_time", time.Duration(1*time.Minute), "MQTT connection wait time before retry")

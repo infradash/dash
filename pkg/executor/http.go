@@ -1,8 +1,8 @@
 package executor
 
 import (
-	. "github.com/infradash/dash/pkg/dash"
 	"github.com/golang/glog"
+	. "github.com/infradash/dash/pkg/dash"
 	"github.com/qorio/omni/rest"
 	"github.com/qorio/omni/version"
 	"net/http"
@@ -24,10 +24,10 @@ func NewApiEndPoint(executor *Executor) (ep *EndPoint, err error) {
 	}
 
 	ep.engine.Bind(
-		rest.SetHandler(Methods[GetInfo], ep.GetInfo),
-		rest.SetHandler(Methods[SaveWatchAction], ep.SaveWatchAction),
-		rest.SetHandler(Methods[GetWatchAction], ep.GetWatchAction),
-		rest.SetHandler(Methods[TailFile], ep.TailFile),
+		rest.SetHandler(Methods[ApiGetInfo], ep.GetInfo),
+		rest.SetHandler(Methods[ApiSaveWatchAction], ep.SaveWatchAction),
+		rest.SetHandler(Methods[ApiGetWatchAction], ep.GetWatchAction),
+		rest.SetHandler(Methods[ApiTailFile], ep.TailFile),
 	)
 	return ep, nil
 }
@@ -55,7 +55,7 @@ func (this *EndPoint) GetInfo(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (this *EndPoint) SaveWatchAction(resp http.ResponseWriter, req *http.Request) {
-	watch := Methods[SaveWatchAction].RequestBody(req).(*RegistryWatch)
+	watch := Methods[ApiSaveWatchAction].RequestBody(req).(*RegistryWatch)
 	err := this.engine.UnmarshalJSON(req, watch)
 	if err != nil {
 		glog.Warningln("Error", err)
@@ -101,12 +101,12 @@ func (this *EndPoint) GetWatchAction(resp http.ResponseWriter, req *http.Request
 }
 
 func (this *EndPoint) TailFile(resp http.ResponseWriter, req *http.Request) {
-	tail := Methods[TailFile].RequestBody(req).(*TailRequest)
+	tail := Methods[ApiTailFile].RequestBody(req).(*TailFile)
 	if err := this.engine.UnmarshalJSON(req, tail); err != nil {
 		glog.Warningln("Error", err)
 		this.engine.HandleError(resp, req, err.Error(), http.StatusBadRequest)
 		return
 	}
-	this.executor.HandleTailRequest(tail)
+	this.executor.HandleTailFile(tail)
 	return
 }

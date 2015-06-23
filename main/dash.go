@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"github.com/golang/glog"
 	"github.com/infradash/dash/pkg/agent"
+	"github.com/infradash/dash/pkg/circleci"
 	. "github.com/infradash/dash/pkg/dash"
+	"github.com/infradash/dash/pkg/env"
 	"github.com/infradash/dash/pkg/executor"
+	"github.com/infradash/dash/pkg/registry"
 	"github.com/qorio/omni/version"
 	"os"
 	"strings"
@@ -54,13 +57,13 @@ func main() {
 	regContainerEntry := &RegistryContainerEntry{}
 	regContainerEntry.BindFlags()
 
-	env := &Env{}
+	env := &env.Env{}
 	env.BindFlags()
 
 	regReleaseEntry := &RegistryReleaseEntry{}
 	regReleaseEntry.BindFlags()
 
-	registry := &Registry{}
+	registry := &registry.Registry{}
 	registry.BindFlags()
 
 	initializer := &ConfigLoader{Context: MergeMaps(get_envs(), EscapeVars(ConfigVariables...))}
@@ -72,7 +75,7 @@ func main() {
 	executor := &executor.Executor{Initializer: initializer}
 	executor.BindFlags()
 
-	circleci := &CircleCi{}
+	circleci := &circleci.CircleCi{}
 	circleci.BindFlags()
 
 	flag.Parse()
@@ -115,9 +118,7 @@ func main() {
 
 	case "agent":
 
-		agent.Id = identity.Id
-		agent.Name = identity.Name
-
+		agent.Identity = *identity
 		agent.QualifyByTags.Tags = tags
 		agent.ZkSettings = *zkSettings
 		agent.DockerSettings = *dockerSettings

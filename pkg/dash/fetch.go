@@ -15,18 +15,6 @@ import (
 	"text/template"
 )
 
-// // Wrapper to allow loading from zk
-// func FetchUrl2(zc zk.ZK) func(string) (string, string, error) {
-// 	return func(urlRef string) (string, string, error) {
-// 		glog.Infoln("Fetching from", urlRef)
-
-// 		if strings.Index(urlRef, "env://") == 0 {
-// 		} else {
-// 			return FetchUrl(urlRef)
-// 		}
-// 	}
-// }
-
 func FetchUrl(urlRef string, headers map[string]string, zc ...zk.ZK) (body string, mime string, err error) {
 	switch {
 	case strings.Index(urlRef, "http://") == 0, strings.Index(urlRef, "https://") == 0:

@@ -16,7 +16,7 @@ import (
 )
 
 // This executes asynchronously
-func (this *Executor) HandleTailRequest(req *TailRequest) {
+func (this *Executor) HandleTailFile(req *TailFile) {
 	tail := *req // copy
 	go func() {
 		var out io.Writer = os.Stdout

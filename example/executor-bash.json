@@ -1,4 +1,20 @@
 {
+    "trigger":{
+	"registry": {
+	    "change": "/{{.Domain}}/task/bash"
+	}
+    },
+
+    "cmd": {
+	"path" : "ls",
+	"args" : [ "-al" ]
+    },
+
+
+    "info": "/{{.Domain}}/task/bash/{{.Id}}",
+    "status": "mqtt://iot.eclipse.org:1883/test.com/task/bash/{{.Id}}",
+    "stdin": "mqtt://iot.eclipse.org:1883/test.com/task/bash/{{.Id}}/stdin",
+
     "watch": [{
         "domain":"{{.Domain}}",
 	"service":"test",

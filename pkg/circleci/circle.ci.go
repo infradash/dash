@@ -1,8 +1,9 @@
-package dash
+package circleci
 
 import (
 	"encoding/json"
 	"github.com/golang/glog"
+	. "github.com/infradash/dash/pkg/dash"
 	"github.com/qorio/maestro/pkg/circleci"
 	"github.com/qorio/maestro/pkg/zk"
 	"strings"

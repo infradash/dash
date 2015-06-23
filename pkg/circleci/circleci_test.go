@@ -1,4 +1,4 @@
-package dash
+package circleci
 
 import (
 	"github.com/qorio/maestro/pkg/circleci"

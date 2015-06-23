@@ -6,15 +6,15 @@ import (
 )
 
 const (
-	GetInfo api.ServiceMethod = iota
-	SaveWatchAction
-	GetWatchAction
-	TailFile
+	ApiGetInfo api.ServiceMethod = iota
+	ApiSaveWatchAction
+	ApiGetWatchAction
+	ApiTailFile
 )
 
 var Methods = api.ServiceMethods{
 
-	GetInfo: api.MethodSpec{
+	ApiGetInfo: api.MethodSpec{
 		Doc: `
 Returns information about the server.
 `,
@@ -24,7 +24,7 @@ Returns information about the server.
 		ResponseBody: Types.Info,
 	},
 
-	SaveWatchAction: api.MethodSpec{
+	ApiSaveWatchAction: api.MethodSpec{
 		Doc: `
 Schedules a watch and performs action on value change
 `,
@@ -34,7 +34,7 @@ Schedules a watch and performs action on value change
 		RequestBody:  Types.RegistryWatch,
 	},
 
-	GetWatchAction: api.MethodSpec{
+	ApiGetWatchAction: api.MethodSpec{
 		Doc: `
 Returns the current config rule by id
 `,
@@ -44,23 +44,23 @@ Returns the current config rule by id
 		ResponseBody: Types.RegistryWatch,
 	},
 
-	TailFile: api.MethodSpec{
+	ApiTailFile: api.MethodSpec{
 		Doc: `
 Tail a file and direct the output to specified location 'stdout, stderr, or websocket url
 `,
 		UrlRoute:     "/v1/tail",
 		HttpMethod:   "POST",
 		ContentTypes: []string{"application/json"},
-		RequestBody:  Types.TailRequest,
+		RequestBody:  Types.TailFile,
 	},
 }
 
 var Types = struct {
 	Info          func(*http.Request) interface{}
 	RegistryWatch func(*http.Request) interface{}
-	TailRequest   func(*http.Request) interface{}
+	TailFile      func(*http.Request) interface{}
 }{
 	Info:          func(*http.Request) interface{} { return &Info{} },
 	RegistryWatch: func(*http.Request) interface{} { return &RegistryWatch{} },
-	TailRequest:   func(*http.Request) interface{} { return &TailRequest{} },
+	TailFile:      func(*http.Request) interface{} { return &TailFile{} },
 }

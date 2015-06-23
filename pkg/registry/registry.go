@@ -1,9 +1,10 @@
-package dash
+package registry
 
 import (
 	"errors"
 	"fmt"
 	"github.com/golang/glog"
+	. "github.com/infradash/dash/pkg/dash"
 	"github.com/qorio/maestro/pkg/registry"
 	"github.com/qorio/maestro/pkg/zk"
 	"strings"

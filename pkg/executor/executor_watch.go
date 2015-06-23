@@ -56,7 +56,7 @@ func (this *Executor) SaveWatchAction(watch *RegistryWatch) error {
 
 		containers_path, environments_path := ParseLiveValue(n.GetValueString())
 
-		if watch.ReloadConfig != nil {
+		if watch.Reload != nil {
 			glog.Infoln("Reload config using values in", containers_path, "and environment in", environments_path)
 
 			// fetch from containers path
@@ -66,23 +66,23 @@ func (this *Executor) SaveWatchAction(watch *RegistryWatch) error {
 				return true // Keep watching
 			}
 
-			configBuff, err := ExecuteTemplateUrl(this.zk, watch.ReloadConfig.ConfigTemplateUrl, this.AuthToken, data)
+			configBuff, err := ExecuteTemplateUrl(this.zk, watch.Reload.ConfigUrl, this.AuthToken, data)
 			if err != nil {
 				return false
 			}
 			glog.V(100).Infoln("Config template:", string(configBuff))
 
-			err = ioutil.WriteFile(watch.ReloadConfig.ConfigDestinationPath, configBuff, 0777)
+			err = ioutil.WriteFile(watch.Reload.ConfigDestinationPath, configBuff, 0777)
 			if err != nil {
-				glog.Warningln("Cannot write config to", watch.ReloadConfig.ConfigDestinationPath, err)
+				glog.Warningln("Cannot write config to", watch.Reload.ConfigDestinationPath, err)
 				return false
 			}
 
-			if len(watch.ReloadConfig.ReloadCmd) > 0 {
-				cmd := exec.Command(watch.ReloadConfig.ReloadCmd[0], watch.ReloadConfig.ReloadCmd[1:]...)
+			if len(watch.Reload.Cmd) > 0 {
+				cmd := exec.Command(watch.Reload.Cmd[0], watch.Reload.Cmd[1:]...)
 				output, err := cmd.CombinedOutput()
 				if err != nil {
-					glog.Warningln("Failed to reload:", watch.ReloadConfig.ReloadCmd, err)
+					glog.Warningln("Failed to reload:", watch.Reload.Cmd, err)
 					return false
 				}
 				glog.Infoln("Output of config reload", string(output))
@@ -93,7 +93,7 @@ func (this *Executor) SaveWatchAction(watch *RegistryWatch) error {
 	})
 }
 
-func (this *Executor) ReloadConfig(watch *RegistryWatch) error {
+func (this *Executor) Reload(watch *RegistryWatch) error {
 	value_location, _, err := watch.Path, "", error(nil)
 	if value_location == "" {
 		value_location, _, err = RegistryKeyValue(KLiveWatch, watch)
@@ -117,23 +117,23 @@ func (this *Executor) ReloadConfig(watch *RegistryWatch) error {
 		return err
 	}
 
-	configBuff, err := ExecuteTemplateUrl(this.zk, watch.ReloadConfig.ConfigTemplateUrl, this.AuthToken, data)
+	configBuff, err := ExecuteTemplateUrl(this.zk, watch.Reload.ConfigUrl, this.AuthToken, data)
 	if err != nil {
 		return err
 	}
 	glog.V(100).Infoln("Config template:", string(configBuff))
 
-	err = ioutil.WriteFile(watch.ReloadConfig.ConfigDestinationPath, configBuff, 0777)
+	err = ioutil.WriteFile(watch.Reload.ConfigDestinationPath, configBuff, 0777)
 	if err != nil {
-		glog.Warningln("Cannot write config to", watch.ReloadConfig.ConfigDestinationPath, err)
+		glog.Warningln("Cannot write config to", watch.Reload.ConfigDestinationPath, err)
 		return err
 	}
 
-	if len(watch.ReloadConfig.ReloadCmd) > 0 {
-		cmd := exec.Command(watch.ReloadConfig.ReloadCmd[0], watch.ReloadConfig.ReloadCmd[1:]...)
+	if len(watch.Reload.Cmd) > 0 {
+		cmd := exec.Command(watch.Reload.Cmd[0], watch.Reload.Cmd[1:]...)
 		output, err := cmd.CombinedOutput()
 		if err != nil {
-			glog.Warningln("Failed to reload:", watch.ReloadConfig.ReloadCmd, err)
+			glog.Warningln("Failed to reload:", watch.Reload.Cmd, err)
 			return err
 		}
 		glog.Infoln("Output of config reload", string(output))

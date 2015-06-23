@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"github.com/golang/glog"
-	"github.com/qorio/maestro/pkg/docker"
 	"github.com/qorio/maestro/pkg/zk"
 	"path/filepath"
 	"strings"
@@ -56,55 +55,6 @@ const (
 {{define "VALUE"}}{{.Host}}:{{.HostPort}}{{end}}
 `
 )
-
-type DomainKey string
-type ServiceKey string
-
-// Represents an entry in the Env namespace
-type RegistryEntryBase struct {
-	AuthToken string `json:"-"` // bound to flag
-	Domain    string `json:"domain,omitempty"`
-	Service   string `json:"service,omitempty"`
-	Version   string `json:"version,omitempty"` // git tag
-	Path      string `json:"path,omitempty"`
-}
-
-type EnvSource struct {
-	RegistryEntryBase
-	ReadStdin bool `json:"stdin"`
-}
-
-func (this *RegistryEntryBase) CheckRequires() bool {
-	return (this.Domain != "" && this.Service != "" && this.Version != "") || this.Path != ""
-}
-
-type RegistryEnvEntry struct {
-	RegistryEntryBase
-	EnvValue string `json:"value"`
-	EnvName  string `json:"env"`
-}
-
-type RegistryReleaseEntry struct {
-	RegistryEntryBase
-
-	Image string `json:"image,omitempty"`
-	Build string `json:"build,omitempty"`
-}
-
-type RegistryLiveEntry struct {
-	RegistryReleaseEntry
-
-	Live bool `json:"live"`
-}
-
-type RegistryContainerEntry struct {
-	Identity
-	RegistryReleaseEntry
-
-	Host        string `json:"host,omitempty"`
-	ContainerId string `json:"container_id,omitempty"`
-	docker.Port
-}
 
 var templates = make(map[string]*template.Template)
 

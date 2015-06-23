@@ -4,7 +4,7 @@
     "success": "/{{.Domain}}/task/test_task/{{.Id}}/success",
     "error": "/{{.Domain}}/task/test_task/{{.Id}}/error",
     "status": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/test_task/{{.Id}}",
-    "stdin_topic": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/test_task/stdin",
-    "stdout_topic": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/test_task/{{.Id}}/stdout",
-    "stderr_topic": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/test_task/{{.Id}}/stderr"
+    "stdin": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/test_task/stdin",
+    "stdout": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/test_task/{{.Id}}/stdout",
+    "stderr": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/test_task/{{.Id}}/stderr"
 }

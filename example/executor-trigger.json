@@ -1,4 +1,20 @@
 {
+    "xtrigger":{
+	"registry": {
+	    "change": "/{{.Domain}}/task/executor-trigger"
+	}
+    },
+
+    "cmd": {
+	"path" : "ls",
+	"args" : [ "-al" ]
+    },
+
+    "runs": 5,
+
+    "info": "/{{.Domain}}/task/executor-trigger/{{.Id}}",
+    "status": "mqtt://iot.eclipse.org:1883/test.com/task/executor-trigger/{{.Id}}",
+
     "watch": [{
         "domain":"{{.Domain}}",
 	"service":"test",

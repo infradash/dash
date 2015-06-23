@@ -69,11 +69,34 @@ run-local-exec:
 	${GODEP} go run main/dash.go --logtostderr \
 		--service=infradash --version=develop \
 		--custom_vars=EXEC_TS="{{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
-		--daemon=true \
+		--daemon=true --run_once=true \
 	    	--no_source_env=false \
-		--stdout --newline \
-		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/executor-local.json" \
-	exec echo {{.ENVIRONMENT_NAME}}
+		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/executor.json" \
+	exec echo {{.EXEC_DOMAIN}}
+
+run-local-trigger:
+	DASH_DOMAIN="test.com" \
+	DASH_ID="test1" \
+	DASH_ZK_HOSTS="localhost:2181" \
+	${GODEP} go run main/dash.go --logtostderr --v=100 \
+		--service=infradash --version=develop \
+		--custom_vars=EXEC_TS="{{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
+		--daemon=false --runs=-1 \
+	    	--no_source_env=false \
+		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/executor-trigger.json" \
+	exec #echo {{.EXEC_DOMAIN}}
+
+run-local-bash:
+	DASH_DOMAIN="test.com" \
+	DASH_ID="bash-1" \
+	DASH_ZK_HOSTS="localhost:2181" \
+	${GODEP} go run main/dash.go --logtostderr --v=100 \
+		--service=infradash --version=develop \
+		--custom_vars=EXEC_TS="{{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
+		--daemon=false  \
+	    	--no_source_env=false \
+		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/executor-bash.json" \
+	exec /bin/bash
 
 run-notty:
 	DASH_DOMAIN="test.com" \
