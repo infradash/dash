@@ -2,7 +2,7 @@ package executor
 
 import (
 	"github.com/golang/glog"
-	. "github.com/infradash/dash/pkg/dash"
+	"github.com/qorio/maestro/pkg/template"
 	"github.com/qorio/maestro/pkg/zk"
 	"io/ioutil"
 	"os/exec"
@@ -25,7 +25,7 @@ func (this *Executor) HandleConfigReload(cf *ConfigFile) error {
 }
 
 func (this *Executor) Reload(cf *ConfigFile) error {
-	configBuff, err := ExecuteTemplateUrl(this.zk, cf.Url, this.AuthToken, this)
+	configBuff, err := template.ExecuteTemplateUrl(this.zk, cf.Url, this.AuthToken, this)
 	if err != nil {
 		return err
 	}

@@ -1,4 +1,4 @@
-package dash
+package template
 
 import (
 	"encoding/json"
@@ -200,6 +200,8 @@ func (suite *TestSuiteFetch) TestFetchAndExecuteTemplateNginxConf(c *C) {
 
 	// Reference node
 	zk.CreateOrSet(suite.zc, registry.Path("/test.com/testapp"), "env:///test.com/testapp/v1/containers")
+
+	c.Log("Data inserted into zookeeper")
 
 	path := filepath.Join(os.TempDir(), "nginx.conf")
 	err := ioutil.WriteFile(path, []byte(nginx), 0777)

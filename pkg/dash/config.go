@@ -1,12 +1,11 @@
 package dash
 
 import (
-	"bytes"
 	"encoding/json"
 	"github.com/golang/glog"
+	"github.com/qorio/maestro/pkg/template"
 	"github.com/qorio/maestro/pkg/zk"
 	"net/url"
-	"text/template"
 )
 
 type ConfigLoader struct {
@@ -31,7 +30,7 @@ func (this *ConfigLoader) Load(prototype interface{}, auth string, zc zk.ZK) (lo
 		"Authorization": "Bearer " + auth,
 	}
 
-	body, _, err := FetchUrl(this.ConfigUrl, headers)
+	body, _, err := template.FetchUrl(this.ConfigUrl, headers)
 	if err != nil {
 		return false, err
 	}
@@ -55,16 +54,5 @@ func (this *ConfigLoader) applyTemplate(body string) (string, error) {
 	if this.Context == nil {
 		return body, nil
 	}
-
-	t, err := template.New(body).Parse(body)
-	if err != nil {
-		return "", err
-	}
-
-	var buff bytes.Buffer
-	if err := t.Execute(&buff, this.Context); err != nil {
-		return "", err
-	} else {
-		return buff.String(), nil
-	}
+	return template.ApplyTemplate(body, this.Context)
 }

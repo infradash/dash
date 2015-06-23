@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/golang/glog"
 	"github.com/qorio/maestro/pkg/registry"
+	"github.com/qorio/maestro/pkg/template"
 	"github.com/qorio/maestro/pkg/zk"
 	"io"
 	"sort"
@@ -27,7 +28,7 @@ func (this *EnvSource) Source(authToken string, zc zk.ZK) func() ([]string, map[
 
 func (this *EnvSource) EnvFromUrl(url string, authToken string, zc zk.ZK) func() ([]string, map[string]interface{}) {
 	return func() ([]string, map[string]interface{}) {
-		body, _, err := FetchUrl(url, map[string]string{"Authorization": "Bearer " + authToken}, zc)
+		body, _, err := template.FetchUrl(url, map[string]string{"Authorization": "Bearer " + authToken}, zc)
 		if err != nil {
 			return []string{}, map[string]interface{}{}
 		}
