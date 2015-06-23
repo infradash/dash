@@ -3,14 +3,11 @@ package executor
 import (
 	"fmt"
 	"github.com/golang/glog"
-	. "github.com/infradash/dash/pkg/dash"
 	_ "github.com/qorio/maestro/pkg/mqtt"
 	"github.com/qorio/maestro/pkg/pubsub"
-	"github.com/qorio/maestro/pkg/zk"
 	"io"
 	"io/ioutil"
 	"os"
-	"strconv"
 	"time"
 )
 
@@ -95,35 +92,4 @@ func (this *Executor) TailFile(path string, outstream io.Writer) error {
 	}()
 
 	return nil
-}
-
-func (this *Executor) hostport_list_from_zk(containers_path string, service_port *int) (interface{}, error) {
-	n, err := this.zk.Get(containers_path)
-	if err != nil {
-		return nil, err
-	}
-	all, err := n.VisitChildrenRecursive(func(z *zk.Node) bool {
-		_, port := ParseHostPort(z.GetBasename())
-		return z.IsLeaf() || (service_port != nil && port == strconv.Itoa(*service_port) && z.IsLeaf())
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	list := make([]interface{}, 0)
-	for _, c := range all {
-		host, port := ParseHostPort(c.GetValueString())
-		list = append(list, struct {
-			Host string
-			Port string
-		}{
-			Host: host,
-			Port: port,
-		})
-	}
-	return struct {
-		HostPortList []interface{}
-	}{
-		HostPortList: list,
-	}, nil
 }

@@ -76,10 +76,11 @@ run-local-exec:
 
 run-local-trigger:
 	DASH_DOMAIN="test.com" \
+	DASH_SERVICE="testapp" \
 	DASH_ID="test1" \
 	DASH_ZK_HOSTS="localhost:2181" \
 	${GODEP} go run main/dash.go --logtostderr --v=10 \
-		--service=infradash --version=develop \
+		--version=develop \
 		--custom_vars=EXEC_TS="{{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
 		--daemon=false --runs=-1 \
 	    	--no_source_env=false \

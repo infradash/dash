@@ -133,15 +133,11 @@ func (this *Executor) Exec() error {
 		if loaded {
 			taskFromInitializer = executorConfig.Task
 
-			if len(executorConfig.RegistryWatch) > 0 {
+			if len(executorConfig.ConfigFiles) > 0 {
 				must(this.connect_zk())
 			}
-			for _, w := range executorConfig.RegistryWatch {
-				glog.Infoln("Configuring watch", w)
-				err := this.SaveWatchAction(&w)
-				if err != nil {
-					panic(err)
-				}
+			for _, c := range executorConfig.ConfigFiles {
+				this.HandleConfigReload(&c)
 			}
 			for _, t := range executorConfig.TailFiles {
 				this.HandleTailFile(&t)

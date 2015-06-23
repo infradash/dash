@@ -1,8 +1,8 @@
 package executor
 
 import (
-	. "github.com/infradash/dash/pkg/dash"
 	"github.com/qorio/maestro/pkg/pubsub"
+	"github.com/qorio/maestro/pkg/registry"
 	"github.com/qorio/maestro/pkg/task"
 	"github.com/qorio/omni/version"
 	"time"
@@ -19,17 +19,8 @@ type Info struct {
 type ExecutorConfig struct {
 	*task.Task
 
-	TailFiles     []TailFile      `json:"tail,omitempty"`
-	RegistryWatch []RegistryWatch `json:"watch,omitempty"`
-}
-
-type RegistryWatch struct {
-	RegistryReleaseEntry
-
-	// If provided, look in here for the actual value instead
-	ValueLocation      *RegistryEntryBase `json:"value_location,omitempty"`
-	MatchContainerPort *int               `json:"match_container_port,omitempty"`
-	Reload             *Reload            `json:"reload,omitempty"`
+	TailFiles   []TailFile   `json:"tail,omitempty"`
+	ConfigFiles []ConfigFile `json:"configs"`
 }
 
 type TailFile struct {
@@ -39,12 +30,10 @@ type TailFile struct {
 	Stderr bool         `json:"stderr,omitempty"`
 }
 
-type Reload struct {
-	Description string `json:"description,omitempty"`
-
-	// Url that serves the template e.g. github pages or S3
-	ConfigUrl             string `json:"config_url,omitempty"`
-	ConfigDestinationPath string `json:"config_destination,omitempty"`
-
-	Cmd []string `json:"cmd,omitempty"`
+type ConfigFile struct {
+	Url         string          `json:"url,omitempty"`
+	Path        string          `json:"path,omitempty"`
+	Description string          `json:"description,omitempty"`
+	Reload      registry.Change `json:"reload"`
+	ReloadCmd   []string        `json:"reload_cmd,omitempty"`
 }

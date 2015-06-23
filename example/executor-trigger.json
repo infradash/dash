@@ -15,22 +15,18 @@
     "info": "/{{.Domain}}/task/executor-trigger/{{.Id}}",
     "status": "mqtt://iot.eclipse.org:1883/test.com/task/executor-trigger/{{.Id}}",
 
-    "watch": [{
-        "domain":"{{.Domain}}",
-	"service":"test",
-	"value_location":{
-		"path":"/{{.Domain}}/test"
-	},
-	"reload":{
-		"description" : "nginx",
-        	"config_url": "file:///Users/david/go/src/github.com/infradash/dash/example/nginx.conf",
-        	"config_destination":"/Users/david/go/src/github.com/infradash/dash/example/nginx.applied",
-        	"cmd":["service", "nginx", "reload"]
-    	}
-    }],
+    "configs": [
+	{
+	    "description":"nginx conf",
+            "url": "file:///Users/david/go/src/github.com/infradash/dash/example/nginx.conf",
+            "path":"/Users/david/go/src/github.com/infradash/dash/example/nginx.applied",
+	    "reload": "/{{.Domain}}/{{.Service}}/live/watch",
+            "reload_cmd":["cat", "/Users/david/go/src/github.com/infradash/dash/example/nginx.applied"]
+	}
+    ],
     "tail": [
         {
-            "path": "/Users/david/go/src/github.com/infradash/dash/example/test.log",
+            "path": "/Users/david/go/src/github.com/infradash/dash/example/test2.log",
 	    "stderr": true,
 	    "topic": "mqtt://iot.eclipse.org:1883/{{.Domain}}/{{.Service}}/{{.Host}}/test.log"
         }

@@ -1,8 +1,6 @@
 package executor
 
 import (
-	"github.com/golang/glog"
-	. "github.com/infradash/dash/pkg/dash"
 	"github.com/qorio/omni/rest"
 	"github.com/qorio/omni/version"
 	"net/http"
@@ -25,9 +23,6 @@ func NewApiEndPoint(executor *Executor) (ep *EndPoint, err error) {
 
 	ep.engine.Bind(
 		rest.SetHandler(Methods[ApiGetInfo], ep.GetInfo),
-		rest.SetHandler(Methods[ApiSaveWatchAction], ep.SaveWatchAction),
-		rest.SetHandler(Methods[ApiGetWatchAction], ep.GetWatchAction),
-		rest.SetHandler(Methods[ApiTailFile], ep.TailFile),
 	)
 	return ep, nil
 }
@@ -52,61 +47,4 @@ func (this *EndPoint) GetInfo(resp http.ResponseWriter, req *http.Request) {
 		this.engine.HandleError(resp, req, "malformed", http.StatusInternalServerError)
 		return
 	}
-}
-
-func (this *EndPoint) SaveWatchAction(resp http.ResponseWriter, req *http.Request) {
-	watch := Methods[ApiSaveWatchAction].RequestBody(req).(*RegistryWatch)
-	err := this.engine.UnmarshalJSON(req, watch)
-	if err != nil {
-		glog.Warningln("Error", err)
-		this.engine.HandleError(resp, req, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	watch.Domain = this.engine.GetUrlParameter(req, "domain")
-	watch.Service = this.engine.GetUrlParameter(req, "service")
-
-	err = this.executor.SaveWatchAction(watch)
-	if err != nil {
-		glog.Warningln("Error", err)
-		this.engine.HandleError(resp, req, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	return
-}
-
-func (this *EndPoint) GetWatchAction(resp http.ResponseWriter, req *http.Request) {
-	domain := this.engine.GetUrlParameter(req, "domain")
-	service := this.engine.GetUrlParameter(req, "service")
-
-	key, _, err := RegistryKeyValue(KLive, map[string]string{
-		"Service": service,
-		"Domain":  domain,
-	})
-
-	watch, err := this.executor.GetWatchAction(key)
-	if err != nil {
-		this.engine.HandleError(resp, req, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if watch == nil {
-		this.engine.HandleError(resp, req, "not-found", http.StatusNotFound)
-		return
-	}
-	err = this.engine.MarshalJSON(req, watch, resp)
-	if err != nil {
-		this.engine.HandleError(resp, req, "malformed", http.StatusInternalServerError)
-		return
-	}
-}
-
-func (this *EndPoint) TailFile(resp http.ResponseWriter, req *http.Request) {
-	tail := Methods[ApiTailFile].RequestBody(req).(*TailFile)
-	if err := this.engine.UnmarshalJSON(req, tail); err != nil {
-		glog.Warningln("Error", err)
-		this.engine.HandleError(resp, req, err.Error(), http.StatusBadRequest)
-		return
-	}
-	this.executor.HandleTailFile(tail)
-	return
 }

@@ -3,16 +3,20 @@ package dash
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/qorio/maestro/pkg/registry"
+	"github.com/qorio/maestro/pkg/zk"
 	. "gopkg.in/check.v1"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestFetch(t *testing.T) { TestingT(t) }
 
 type TestSuiteFetch struct {
+	zc zk.ZK
 }
 
 var _ = Suite(&TestSuiteFetch{})
@@ -21,9 +25,13 @@ var _ = Suite(&TestSuiteFetch{})
 // psql> create role ubuntu login password 'password';
 // psql> create database circle_ci with owner ubuntu encoding 'UTF8';
 func (suite *TestSuiteFetch) SetUpSuite(c *C) {
+	zc, err := zk.Connect([]string{"localhost:2181"}, 1*time.Second)
+	c.Assert(err, Equals, nil)
+	suite.zc = zc
 }
 
 func (suite *TestSuiteFetch) TearDownSuite(c *C) {
+	suite.zc.Close()
 }
 
 func (suite *TestSuiteFetch) TestFetchAndExecuteTemplate(c *C) {
@@ -113,4 +121,95 @@ func (suite *TestSuiteFetch) TestFetchAndExecuteTemplate2(c *C) {
 	buff, err := ioutil.ReadAll(f)
 	c.Assert(err, Equals, nil)
 	c.Assert(string(buff), Equals, content)
+}
+
+var nginx = `
+upstream backend {
+  {{range containers "/{{.Domain}}/{{.Service}}/live" "3000"}}
+    server {{.Host}}:{{.Port}};
+  {{end}}
+}
+
+server {
+
+       listen 443;
+       server_name *.infradash.com;
+
+       ssl on;
+       ssl_certificate {{file "env:///code.qor.io/ssl/qor.io.cert"}};
+       ssl_certificate_key {{file "env:///code.qor.io/ssl/qor.io.key"}};
+
+       root /var/www/infradash/public;
+       try_files $uri/index.html $uri @backend;
+
+       location @backend {
+
+             # Support for CORS
+	     # OPTIONS indicates a CORS pre-flight request
+	     if ($request_method = 'OPTIONS') {
+	       add_header 'Access-Control-Allow-Origin' "*";
+	       add_header 'Access-Control-Allow-Credentials' 'true';
+	       add_header 'Access-Control-Max-Age' 1728000;
+	       add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, OPTIONS, DELETE';
+	       add_header 'Access-Control-Allow-Headers' 'Authorization,Content-Type,Accept,Origin,User-Agent,DNT,Cache-Control,X-Mx-ReqToken,Keep-Alive,X-Requested-With,If-Modified-Since';
+	       add_header 'Content-Length' 0;
+	       add_header 'Content-Type' 'text/plain charset=UTF-8';
+	       return 204;
+	     }
+	     # non-OPTIONS indicates a normal CORS request
+	     if ($request_method = 'GET') {
+	       add_header 'Access-Control-Allow-Origin' "*";
+	       add_header 'Access-Control-Allow-Credentials' 'true';
+	     }
+	     if ($request_method = 'POST') {
+	       add_header 'Access-Control-Allow-Origin' "*";
+	       add_header 'Access-Control-Allow-Credentials' 'true';
+	     }
+	     if ($request_method = 'PUT') {
+	       add_header 'Access-Control-Allow-Origin' "*";
+	       add_header 'Access-Control-Allow-Credentials' 'true';
+	     }
+	     if ($request_method = 'DELETE') {
+	       add_header 'Access-Control-Allow-Origin' "*";
+	       add_header 'Access-Control-Allow-Credentials' 'true';
+	     }
+
+	     add_header 'X-infradash-Nginx-Template' 'v0.1';
+
+	     proxy_set_header Host $http_host;
+	     proxy_set_header X-Real-IP $remote_addr;
+	     proxy_set_header Client-IP $remote_addr;
+	     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+	     proxy_pass http://backend;
+	 }
+
+	 error_page 500 502 503 /500.html;
+  	 error_page 504 /504.html;
+	 client_max_body_size 1G;
+	 keepalive_timeout 10;
+}
+
+`
+
+func (suite *TestSuiteFetch) TestFetchAndExecuteTemplateNginxConf(c *C) {
+	// create some nodes
+	zk.CreateOrSet(suite.zc, registry.Path("/test.com/testapp/v1/containers/c1:3000"), "host1:8130")
+	zk.CreateOrSet(suite.zc, registry.Path("/test.com/testapp/v1/containers/c2:3000"), "host2:8131")
+	zk.CreateOrSet(suite.zc, registry.Path("/test.com/testapp/v1/containers/c3:3000"), "host3:8132")
+	zk.CreateOrSet(suite.zc, registry.Path("/test.com/testapp/v1/containers/c4:3100"), "host4:8133")
+
+	// Reference node
+	zk.CreateOrSet(suite.zc, registry.Path("/test.com/testapp"), "env:///test.com/testapp/v1/containers")
+
+	path := filepath.Join(os.TempDir(), "nginx.conf")
+	err := ioutil.WriteFile(path, []byte(nginx), 0777)
+	c.Assert(err, Equals, nil)
+	content_url := "file://" + path
+
+	applied, err := ExecuteTemplateUrl(suite.zc, content_url, "", map[string]string{
+		"Domain": "test.com", "Service": "testapp",
+	})
+
+	c.Assert(err, Equals, nil)
+	c.Log("config= ", string(applied))
 }
