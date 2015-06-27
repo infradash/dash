@@ -79,7 +79,7 @@ func main() {
 	circleci := &circleci.CircleCi{}
 	circleci.BindFlags()
 
-	terraform := &terraform.Terraform{}
+	terraform := &terraform.Terraform{Initializer: initializer}
 	terraform.BindFlags()
 
 	flag.Parse()
@@ -101,7 +101,6 @@ func main() {
 	case "terraform":
 
 		terraform.Identity = *identity
-		terraform.RegistryContainerEntry = *regContainerEntry
 
 		glog.Infoln(buildInfo.Notice())
 		glog.Infoln("Starting terraform:", *terraform, terraform.Identity.String(), terraform.Initializer.Context)

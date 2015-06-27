@@ -25,6 +25,12 @@ build: setup
 	${GODEP} go build -o build/bin/dash -ldflags "$(LDFLAGS)" main/dash.go
 
 
+run-local-terraform:
+	DASH_IP=10.0.0.2 \
+	${GODEP} go run main/dash.go --logtostderr --v=500 \
+		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/terraform-config.json" \
+	terraform
+
 # Simple local example -- assumes localhost zookeeper or SSH tunnel to zookeeper
 # Local ssh tunnel:
 # ssh -i decrypt/keys/bastion.cer -L 8080:zk1.prod.infradash.com:8080  -L 2181:zk1.prod.infradash.com:2181 ubuntu@bastion.infradash.com

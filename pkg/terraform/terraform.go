@@ -2,7 +2,7 @@ package terraform
 
 import (
 	"fmt"
-	_ "github.com/golang/glog"
+	"github.com/golang/glog"
 	. "github.com/infradash/dash/pkg/dash"
 )
 
@@ -16,6 +16,8 @@ type Terraform struct {
 }
 
 func (this *Terraform) Run() error {
+
+	glog.Infoln("ServerIp=", this.Ip)
 
 	if this.Initializer == nil {
 		return ErrNoConfig
