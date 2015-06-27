@@ -18,12 +18,23 @@ import (
 
 var (
 	ErrNotSupportedProtocol = errors.New("protocol-not-supported")
+	ErrNotConnectedToZk     = errors.New("not-connected-to-zk")
 )
 
-func ApplyTemplate(body string, context interface{}) (string, error) {
-	t, err := template.New(body).Parse(body)
-	if err != nil {
-		return "", err
+func ApplyTemplate(body string, context interface{}, funcs ...template.FuncMap) (string, error) {
+	var t *template.Template
+	var err error
+
+	if len(funcs) > 0 {
+		t, err = template.New(body).Funcs(funcs[0]).Parse(body)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		t, err = template.New(body).Parse(body)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	var buff bytes.Buffer
@@ -84,12 +95,16 @@ func FetchUrl(urlRef string, headers map[string]string, zc ...zk.ZK) (body strin
 		} else {
 			return string(buff), "text/plain", nil
 		}
+
 	case strings.Index(urlRef, "env://") == 0:
 		if len(zc) == 0 {
-			return "", "", errors.New("no-zk-client")
+			return "", "", ErrNotConnectedToZk
 		}
 		path := urlRef[len("env://"):]
 		n, err := zc[0].Get(path)
+		if err != nil {
+			return "", "", err
+		}
 		glog.Infoln("Content from environment: Path=", urlRef, "Err=", err)
 		// try resolve
 		_, v, err := zk.Resolve(zc[0], registry.Path(path), n.GetValueString())
@@ -115,7 +130,7 @@ func apply_template(key, tmpl string, data interface{}, funcMap ...template.Func
 	return buff.Bytes(), err
 }
 
-func ExecuteTemplateUrl(zc zk.ZK, url string, authToken string, data interface{}) ([]byte, error) {
+func ExecuteTemplateUrl(zc zk.ZK, url string, authToken string, data interface{}, funcs ...template.FuncMap) ([]byte, error) {
 	headers := map[string]string{
 		"Authorization": "Bearer " + authToken,
 	}
@@ -176,6 +191,12 @@ func ExecuteTemplateUrl(zc zk.ZK, url string, authToken string, data interface{}
 			}
 			return path, nil
 		},
+	}
+
+	if len(funcs) > 0 {
+		for k, f := range funcs[0] {
+			funcMap[k] = f
+		}
 	}
 
 	config_template, err := template.New(url).Funcs(funcMap).Parse(config_template_text)

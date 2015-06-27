@@ -11,6 +11,7 @@ import (
 	"github.com/infradash/dash/pkg/env"
 	"github.com/infradash/dash/pkg/executor"
 	"github.com/infradash/dash/pkg/registry"
+	"github.com/infradash/dash/pkg/terraform"
 	"github.com/qorio/omni/version"
 	"os"
 	"strings"
@@ -78,6 +79,9 @@ func main() {
 	circleci := &circleci.CircleCi{}
 	circleci.BindFlags()
 
+	terraform := &terraform.Terraform{}
+	terraform.BindFlags()
+
 	flag.Parse()
 
 	tags := strings.Split(*TagsList, ",")
@@ -94,6 +98,19 @@ func main() {
 	verb := flag.Args()[0]
 
 	switch verb {
+	case "terraform":
+
+		terraform.Identity = *identity
+		terraform.RegistryContainerEntry = *regContainerEntry
+
+		glog.Infoln(buildInfo.Notice())
+		glog.Infoln("Starting terraform:", *terraform, terraform.Identity.String(), terraform.Initializer.Context)
+
+		err := terraform.Run()
+		if err != nil {
+			panic(err)
+		}
+
 	case "exec":
 
 		executor.Identity = *identity

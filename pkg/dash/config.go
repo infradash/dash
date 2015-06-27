@@ -6,6 +6,7 @@ import (
 	"github.com/qorio/maestro/pkg/template"
 	"github.com/qorio/maestro/pkg/zk"
 	"net/url"
+	gotemplate "text/template"
 )
 
 type ConfigLoader struct {
@@ -13,7 +14,7 @@ type ConfigLoader struct {
 	Context   interface{} `json:"-"`
 }
 
-func (this *ConfigLoader) Load(prototype interface{}, auth string, zc zk.ZK) (loaded bool, err error) {
+func (this *ConfigLoader) Load(prototype interface{}, auth string, zc zk.ZK, funcs ...gotemplate.FuncMap) (loaded bool, err error) {
 	if this.ConfigUrl == "" {
 		glog.Infoln("No config URL. Skip.")
 		return false, nil
@@ -36,7 +37,7 @@ func (this *ConfigLoader) Load(prototype interface{}, auth string, zc zk.ZK) (lo
 	}
 
 	// Treat the entire body as a template
-	applied, err := this.applyTemplate(body)
+	applied, err := this.applyTemplate(body, funcs...)
 	if err != nil {
 		return false, err
 	}
@@ -50,9 +51,9 @@ func (this *ConfigLoader) Load(prototype interface{}, auth string, zc zk.ZK) (lo
 	}
 }
 
-func (this *ConfigLoader) applyTemplate(body string) (string, error) {
+func (this *ConfigLoader) applyTemplate(body string, funcs ...gotemplate.FuncMap) (string, error) {
 	if this.Context == nil {
 		return body, nil
 	}
-	return template.ApplyTemplate(body, this.Context)
+	return template.ApplyTemplate(body, this.Context, funcs...)
 }

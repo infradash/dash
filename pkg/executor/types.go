@@ -35,5 +35,6 @@ type ConfigFile struct {
 	Path        string          `json:"path,omitempty"`
 	Description string          `json:"description,omitempty"`
 	Reload      registry.Change `json:"reload"`
-	ReloadCmd   []string        `json:"reload_cmd,omitempty"`
+
+	ReloadCmd []string `json:"reload_cmd,omitempty"`
 }

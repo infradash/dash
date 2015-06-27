@@ -16,6 +16,7 @@ const (
 	EnvService   = "DASH_SERVICE"
 	EnvVersion   = "DASH_VERSION"
 	EnvId        = "DASH_ID"
+	EnvIp        = "DASH_IP"
 	EnvPath      = "DASH_PATH"
 	EnvTags      = "DASH_TAGS"
 	EnvName      = "DASH_NAME"
