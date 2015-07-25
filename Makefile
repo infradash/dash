@@ -59,15 +59,18 @@ run-exec-bash-export:
 	exec
 
 run-exec-nginx:
-	DASH_DOMAIN="test.infradash.com" \
+	DASH_DOMAIN="ops-test.blinker.com" \
+	DASH_SERVICE="redpill-nginx" \
 	DASH_ZK_HOSTS="localhost:2181" \
-	${GODEP} go run main/dash.go --logtostderr \
-		--service=infradash --version=develop \
+	${GODEP} go run main/dash.go --logtostderr -v=500 \
+		--version=develop \
 		--custom_vars=EXEC_TS="{{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
 		--daemon \
 	    	--no_source_env=false \
-		--config_url="http://infradash.github.io/ops-release/dash/profiles/test-nginx.json" \
+		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/run-exec-nginx.json" \
 	exec echo 'now={{.EXEC_TS}} and domain={{.EXEC_DOMAIN}} and db={{.DATABASE_HOST}}'
+
+#			--config_url="http://BlinkerGit.github.io/ops-maintenance/redpill/nginx/dash.json" \
 
 run-local-exec:
 	DASH_DOMAIN="test.com" \

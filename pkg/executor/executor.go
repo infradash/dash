@@ -45,6 +45,7 @@ type Executor struct {
 	Runs           int  `json:"runs"`
 	Daemon         bool `json:"daemon"`
 	TimeoutSeconds int  `json:"timeout_seconds"`
+	ExecOnly       bool `json:"exec_only,omitempty"`
 
 	ListenPort int          `json:"listen_port"`
 	endpoint   http.Handler `json:"-"`
@@ -154,6 +155,7 @@ func (this *Executor) Exec() error {
 			Args: this.Args,
 			Env:  envlist,
 		},
+		ExecOnly: this.ExecOnly,
 	}
 
 	if taskFromInitializer != nil {

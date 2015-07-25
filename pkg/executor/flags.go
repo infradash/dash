@@ -14,7 +14,7 @@ func (this *Executor) BindFlags() {
 	flag.IntVar(&this.TimeoutSeconds, "timeout_seconds", -1, "Timeout in seconds")
 	flag.IntVar(&this.ListenPort, "listen", 25658, "Listening port for executor")
 	flag.StringVar(&this.Dir, "work_dir", "", "Working directory to execute the cmd")
-
+	flag.BoolVar(&this.ExecOnly, "exec_only", false, "True for exec only -- no orchestration pubsub or znode semaphores")
 	flag.DurationVar(&this.MQTTConnectionTimeout, "mqtt_connect_timeout", time.Duration(10*time.Minute), "MQTT connection timeout")
 	flag.DurationVar(&this.MQTTConnectionRetryWaitTime, "mqtt_connect_retry_wait_time", time.Duration(1*time.Minute), "MQTT connection wait time before retry")
 	flag.IntVar(&this.TailFileOpenRetries, "tail_file_open_retries", 0, "Tail file open retries")
