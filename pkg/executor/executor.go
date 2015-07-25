@@ -7,6 +7,7 @@ import (
 	. "github.com/infradash/dash/pkg/dash"
 	"github.com/qorio/maestro/pkg/task"
 	"github.com/qorio/maestro/pkg/zk"
+	"github.com/qorio/omni/common"
 	"github.com/qorio/omni/runtime"
 	"io"
 	"net/http"
@@ -216,7 +217,11 @@ func (this *Executor) Exec() error {
 	// Keep looping if
 	for runs != 0 {
 
-		glog.Infoln(runs, "Starting Task", "Id=", target.Id, "Cmd=", target.Cmd.Path, "Args=", target.Cmd.Args)
+		if target.Id == "" {
+			target.Id = common.NewUUID().String()
+		}
+		glog.Infoln(runs, "Starting Task", "Id=", target.Id, "Cmd=", target.Cmd.Path, "Args=", target.Cmd.Args,
+			"ExecOnly=", target.ExecOnly)
 
 		taskRuntime, err := target.Init(this.zk)
 		if err != nil {
