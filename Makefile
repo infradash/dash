@@ -87,7 +87,7 @@ run-local-exec:
 	${GODEP} go run main/dash.go --logtostderr \
 		--service=infradash --version=develop \
 		--custom_vars=EXEC_TS="{{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
-		--daemon=true --run_once=true \
+		--daemon=true --runs=-1 \
 	    	--no_source_env=false \
 		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/executor.json" \
 	exec echo {{.EXEC_DOMAIN}}

@@ -87,6 +87,10 @@ func (this *Executor) Stdin() io.Reader {
 
 func (this *Executor) Exec() error {
 
+	if this.Id == "" {
+		this.Id = common.NewUUID().String()
+	}
+
 	this.StartTimeUnix = time.Now().Unix()
 	this.Host, _ = os.Hostname()
 
@@ -217,11 +221,10 @@ func (this *Executor) Exec() error {
 	// Keep looping if
 	for runs != 0 {
 
-		if target.Id == "" {
-			target.Id = common.NewUUID().String()
+		glog.Infoln(runs, "Starting Task", "Id=", target.Id, "ExecOnly=", target.ExecOnly)
+		if target.Cmd != nil {
+			glog.Infoln("Cmd=", target.Cmd.Path, "Args=", target.Cmd.Args)
 		}
-		glog.Infoln(runs, "Starting Task", "Id=", target.Id, "Cmd=", target.Cmd.Path, "Args=", target.Cmd.Args,
-			"ExecOnly=", target.ExecOnly)
 
 		taskRuntime, err := target.Init(this.zk)
 		if err != nil {

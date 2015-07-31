@@ -14,7 +14,10 @@
     "info": "/{{.Domain}}/task/bash/{{.Id}}",
     "status": "mqtt://iot.eclipse.org:1883/test.com/task/bash/{{.Id}}",
     "stdin": "mqtt://iot.eclipse.org:1883/test.com/task/bash/{{.Id}}/stdin",
-
+    "name": "test-bash",
+    "print_pre" : "Starting up the shell",
+    "print_post" : "Finished the shell",
+    "print_err" : "Error from shell",
     "watch": [{
         "domain":"{{.Domain}}",
 	"service":"test",
