@@ -14,7 +14,10 @@ import (
 )
 
 func (this *EnvSource) IsZero() bool {
-	return !this.RegistryEntryBase.CheckRequires() || this.Url == ""
+	if this.RegistryEntryBase.CheckRequires() {
+		return false
+	}
+	return this.Url == ""
 }
 
 func (this *EnvSource) Source(authToken string, zc zk.ZK) func() ([]string, map[string]interface{}) {

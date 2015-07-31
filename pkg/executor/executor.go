@@ -102,7 +102,7 @@ func (this *Executor) Exec() error {
 	env := make(map[string]interface{})
 
 	if this.NoSourceEnv || this.EnvSource.IsZero() {
-		glog.Infoln("Not sourcing environment variables.")
+		glog.Infoln("Not sourcing environment variables.  NoSourceEnv=", this.NoSourceEnv, "EnvSourceIsZero=", this.EnvSource.IsZero())
 	} else {
 		glog.Infoln("Sourcing environment variables.")
 		must(this.connect_zk())
