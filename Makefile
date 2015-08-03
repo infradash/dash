@@ -128,6 +128,31 @@ run-notty:
 		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/task-notty.json" \
 	exec ${CMD}
 
+run-aws-cli:
+	DASH_DOMAIN="test.com" \
+	DASH_ZK_HOSTS="localhost:2181" \
+	DASH_NAME="test-notty" \
+	${GODEP} go run main/dash.go --logtostderr \
+		--no_source_env \
+		--service=infradash --version=develop \
+		--daemon=false --ignore_child_process_fails=false \
+		--custom_vars=EXEC_TS="{{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
+		--context='string://{"Foo":"Bar"}' \
+		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/aws-cli.json" \
+	exec ${CMD}
+
+run-aws-cli2:
+	DASH_DOMAIN="test.com" \
+	DASH_ZK_HOSTS="localhost:2181" \
+	DASH_NAME="test-notty" \
+	${GODEP} go run main/dash.go --logtostderr \
+		--no_source_env \
+		--service=infradash --version=develop \
+		--daemon=false --ignore_child_process_fails=false \
+		--custom_vars=EXEC_TS="{{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
+		--context='string://{"Foo":"Bar"}' --exec_only \
+	exec echo {{.Context.Foo}}
+
 run-tty:
 	DASH_DOMAIN="test.com" \
 	DASH_ZK_HOSTS="localhost:2181" \

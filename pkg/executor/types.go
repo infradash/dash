@@ -15,9 +15,8 @@ type Info struct {
 	Executor *Executor     `json:"executor"`
 }
 
-// TODO - task.Task eventually replaces all the other fields.
 type ExecutorConfig struct {
-	*task.Task
+	task.Task
 
 	TailFiles   []TailFile   `json:"tail,omitempty"`
 	ConfigFiles []ConfigFile `json:"configs"`

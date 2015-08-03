@@ -2,10 +2,12 @@ package executor
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/golang/glog"
 	. "github.com/infradash/dash/pkg/dash"
 	"github.com/qorio/maestro/pkg/task"
+	mtemplate "github.com/qorio/maestro/pkg/template"
 	"github.com/qorio/maestro/pkg/zk"
 	"github.com/qorio/omni/common"
 	"github.com/qorio/omni/runtime"
@@ -24,6 +26,8 @@ type Executor struct {
 	QualifyByTags
 	ZkSettings
 	EnvSource
+
+	Context string `json:"context,omitempty"`
 
 	StartTimeUnix int64
 
@@ -85,6 +89,31 @@ func (this *Executor) Stdin() io.Reader {
 	return os.Stdin
 }
 
+func (this *Executor) load_context() (map[string]interface{}, error) {
+	if this.Context == "" {
+		return nil, nil
+	}
+
+	if strings.Index(this.Context, "env://") == 0 {
+		err := this.connect_zk()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	body, _, err := mtemplate.FetchUrl(this.Context, nil, this.zk)
+	if err != nil {
+		return nil, err
+	}
+
+	context := map[string]interface{}{}
+	err = json.Unmarshal([]byte(body), &context)
+	if err != nil {
+		return nil, err
+	}
+	return context, nil
+}
+
 func (this *Executor) Exec() error {
 
 	if this.Id == "" {
@@ -123,12 +152,26 @@ func (this *Executor) Exec() error {
 		envlist = append(envlist, fmt.Sprintf("%s=%s", k, env[k]))
 	}
 
+	// Get any task context from a datasource url
+	taskContext, err := this.load_context()
+	if err != nil {
+		panic(err)
+	}
+
 	var taskFromInitializer *task.Task
 
 	if this.Initializer != nil {
 		glog.Infoln("Loading configuration from", this.Initializer.ConfigUrl)
 		// set up the context for applying the config as a template
-		this.Initializer.Context = this
+		c := map[string]interface{}{
+			"Task": this,
+			"Env":  env,
+		}
+		if taskContext != nil {
+			c["Context"] = taskContext
+		}
+
+		this.Initializer.Context = c
 
 		executorConfig := new(ExecutorConfig)
 		loaded, err := this.Initializer.Load(executorConfig, this.AuthToken, this.zk)
@@ -137,7 +180,7 @@ func (this *Executor) Exec() error {
 		}
 
 		if loaded {
-			taskFromInitializer = executorConfig.Task
+			taskFromInitializer = &executorConfig.Task
 
 			if len(executorConfig.ConfigFiles) > 0 {
 				must(this.connect_zk())
@@ -173,11 +216,25 @@ func (this *Executor) Exec() error {
 		// What's specified in the command line wins
 		merged.Id = target.Id
 
-		if target.Cmd.Path != "" {
+		if this.Cmd != "" {
 			merged.Cmd = target.Cmd
 		}
 
 		target = *merged
+	}
+
+	// One final pass of applying taskContext to the command as if the command is a template:
+	if taskContext != nil {
+		applied := task.Cmd{}
+		err := ApplyVarSubs(target.Cmd, &applied, map[string]interface{}{
+			"Task":    this,
+			"Env":     env,
+			"Context": taskContext,
+		})
+		if err != nil {
+			panic(err)
+		}
+		target.Cmd = &applied
 	}
 
 	var exit chan error
