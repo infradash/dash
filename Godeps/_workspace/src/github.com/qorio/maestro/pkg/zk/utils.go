@@ -42,6 +42,17 @@ func Resolve(zc ZK, key registry.Path, value string) (registry.Path, string, err
 	}
 }
 
+func PathExists(zc ZK, key registry.Path) bool {
+	_, err := zc.Get(key.Path())
+	switch {
+	case err == ErrNotExist:
+		return false
+	case err != nil:
+		return true
+	}
+	return true
+}
+
 func GetObject(zc ZK, key registry.Path, value interface{}) error {
 	n, err := zc.Get(key.Path())
 	switch {
@@ -127,15 +138,24 @@ func Increment(zc ZK, key registry.Path, increment int) error {
 	case err != nil:
 		return err
 	}
-	count, err := strconv.Atoi(n.GetValueString())
-	if err != nil {
-		count = 0
+	_, err = n.Increment(increment)
+	return err
+}
+
+func CheckAndIncrement(zc ZK, key registry.Path, current, increment int) (int, error) {
+	n, err := zc.Get(key.Path())
+	switch {
+	case err == ErrNotExist:
+		val := 0
+		n, err = zc.Create(key.Path(), []byte(strconv.Itoa(val)))
+		if err != nil {
+			return -1, err
+		}
+		return val, nil
+	case err != nil:
+		return -1, err
 	}
-	err = n.Set([]byte(strconv.Itoa(count + 1)))
-	if err != nil {
-		return err
-	}
-	return nil
+	return n.CheckAndIncrement(current, increment)
 }
 
 func DeleteObject(zc ZK, key registry.Path) error {

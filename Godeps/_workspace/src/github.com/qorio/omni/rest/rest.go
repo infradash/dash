@@ -65,6 +65,15 @@ var (
 		return dec.Decode(typed)
 	}
 
+	json_logging_unmarshaler = func(body io.ReadCloser, typed interface{}) error {
+		buff, err := ioutil.ReadAll(body)
+		if err != nil {
+			return err
+		}
+		glog.V(100).Infoln("Unmarshal [", string(buff), "]")
+		return json.Unmarshal(buff, typed)
+	}
+
 	proto_marshaler = func(contentType string, resp http.ResponseWriter, any interface{}) error {
 		typed, ok := any.(proto.Message)
 		if !ok {
@@ -100,8 +109,8 @@ var (
 	}
 
 	unmarshalers = map[string]func(io.ReadCloser, interface{}) error{
-		"":                     json_unmarshaler,
-		"application/json":     json_unmarshaler,
+		"":                     json_logging_unmarshaler,
+		"application/json":     json_logging_unmarshaler,
 		"application/protobuf": proto_unmarshaler,
 		"text/plain":           string_unmarshaler,
 		"text/html":            nil,
@@ -407,7 +416,9 @@ func (this *engine) MarshalJSON(req *http.Request, any interface{}, resp http.Re
 
 func (this *engine) HandleError(resp http.ResponseWriter, req *http.Request, message string, code int) (err error) {
 	resp.WriteHeader(code)
-	resp.Write([]byte(fmt.Sprintf("{\"error\":\"%s\"}", message)))
+	if len(message) > 0 {
+		resp.Write([]byte(fmt.Sprintf("{\"error\":\"%s\"}", message)))
+	}
 	return
 }
 

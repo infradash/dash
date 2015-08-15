@@ -13,7 +13,6 @@
                     "container_name_template": "{{.Service}}-{{.Version}}-{{.Build}}-{{.Sequence}}",
                     "Env" : [ "VALET_DOMAIN={{.Domain}}", "ZOOKEEPER_HOSTS={{.DASH_ZK_HOSTS}}"],
 		    "Cmd" : [ "-config_source_url=http://blinkergit.github.io/ops-maintenance/blinker/blinker/blinker-cloud.json"],
-		    "xLabels" : { "DASH_DOMAIN":"{{.Domain}}", "DASH_SERVICE":"blinker" },
                     "host_config" : { "PublishAllPorts" : true }
                 }],
 		"discover": {
