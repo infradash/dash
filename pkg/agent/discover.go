@@ -65,6 +65,24 @@ func (this *ContainerMatchRule) GetMatchContainerPort() int {
 	return this.WatchContainerSpec.GetMatchContainerPort()
 }
 
+func (this *ContainerMatchRule) match_by_labels(c *docker.Container) bool {
+	if len(this.MatchContainerLabels) == 0 {
+		return true // Don't care
+	}
+
+	// want to match, but have no environments defined:
+	if c.DockerData == nil || c.DockerData.Config == nil || len(c.DockerData.Config.Labels) == 0 {
+		return false
+	}
+
+	for k, v := range this.MatchContainerLabels {
+		if c.DockerData.Config.Labels[k] != v {
+			return false
+		}
+	}
+	return true
+}
+
 func (this *ContainerMatchRule) match_by_environment(c *docker.Container) bool {
 	if len(this.MatchContainerEnvironment) == 0 {
 		return true // Don't care
@@ -131,14 +149,22 @@ func (this *ContainerMatchRule) match(c *docker.Container) bool {
 
 	// We first try by matching image. Then by name, environment variable.
 	if !ImageMatch(c.Image, &this.Image) {
+		glog.V(500).Infoln("Failed match by image:", c.Id)
 		return false
 	}
 
-	if !this.match_by_name_regexp(c) {
+	if !this.match_by_labels(c) {
+		glog.V(500).Infoln("Failed match by labels:", c.Id)
 		return false
 	}
 
 	if !this.match_by_environment(c) {
+		glog.V(500).Infoln("Failed match by environment:", c.Id)
+		return false
+	}
+
+	if !this.match_by_name_regexp(c) {
+		glog.V(500).Infoln("Failed match by name:", c.Id)
 		return false
 	}
 
@@ -196,19 +222,29 @@ func findContainerDomain(c *docker.Container) *string {
 		return nil
 	}
 
+	glog.Infoln("DockerData.Config=", c.DockerData.Config.Labels)
 	v := ""
-	// First we check to see if the docker container was started with a particular environment
-	search := fmt.Sprintf("%s=", EnvDomain)
+	// Find by label or environment variables
 	if c.DockerData != nil && c.DockerData.Config != nil {
-		for _, env := range c.DockerData.Config.Env {
-			index := strings.Index(env, search)
-			if index == 0 {
-				v = env[len(search):]
-				break
+		switch {
+		case len(c.DockerData.Config.Labels) > 0:
+			if l, exists := c.DockerData.Config.Labels[EnvDomain]; exists {
+				v = l
+				return &v
+			}
+		case len(c.DockerData.Config.Env) > 0:
+			search := fmt.Sprintf("%s=", EnvDomain)
+			for _, env := range c.DockerData.Config.Env {
+				index := strings.Index(env, search)
+				if index == 0 {
+					v = env[len(search):]
+					return &v
+				}
 			}
 		}
 	}
 	return &v
+
 }
 
 func (this *DiscoveryContainerMatcher) MatcherForDomain(domain string, service ServiceKey) func(docker.Action, *docker.Container) bool {

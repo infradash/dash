@@ -3,8 +3,8 @@ package agent
 import (
 	"encoding/json"
 	"fmt"
-	. "github.com/infradash/dash/pkg/dash"
 	"github.com/golang/glog"
+	. "github.com/infradash/dash/pkg/dash"
 	"github.com/qorio/maestro/pkg/docker"
 	"github.com/qorio/maestro/pkg/zk"
 	"strings"
@@ -88,6 +88,14 @@ func (this *Job) Execute(zkc zk.ZK, dockerc *docker.Docker) error {
 
 	for i, action := range this.Actions {
 		opts := action.ContainerControl
+
+		// inject metadata via labels
+		if len(action.ContainerControl.Labels) == 0 {
+			action.ContainerControl.Labels = map[string]string{}
+		}
+
+		action.ContainerControl.Labels[EnvDomain] = this.domain
+		action.ContainerControl.Labels[EnvService] = string(this.service)
 
 		switch action.Action {
 		case Start:

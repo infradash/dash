@@ -27,9 +27,10 @@ type Info struct {
 type WatchContainerSpec struct {
 	QualifyByTags
 	docker.Image
-	MatchContainerPort        *int     `json:"match_container_port"`
-	MatchContainerName        *string  `json:"match_container_name"`
-	MatchContainerEnvironment []string `json:"match_container_env"`
+	MatchContainerPort        *int              `json:"match_container_port"`
+	MatchContainerName        *string           `json:"match_container_name"`
+	MatchContainerEnvironment []string          `json:"match_container_envs"`
+	MatchContainerLabels      map[string]string `json:"match_container_labels"`
 }
 
 // Configuration for the domain

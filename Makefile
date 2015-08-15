@@ -40,13 +40,29 @@ run-local-agent:
 	DASH_TAGS="appserver,frontend" \
 	DASH_NAME="dash" \
 	DASH_ZK_HOSTS="localhost:2181" \
-	DOCKER_PORT="tcp://192.168.59.103:2376" \
+	DASH_DOCKER_PORT="tcp://192.168.59.103:2376" \
 	${GODEP} go run main/dash.go --logtostderr --v=500 --self_register=false \
 		--ui_docroot=$(HOME)/go/src/github.com/infradash/dash/www \
 		--tlscert=$(HOME)/.boot2docker/certs/boot2docker-vm/cert.pem \
 		--tlskey=$(HOME)/.boot2docker/certs/boot2docker-vm/key.pem \
 		--tlsca=$(HOME)/.boot2docker/certs/boot2docker-vm/ca.pem \
 		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/passport.json" \
+	agent
+
+run-local-agent-blinker:
+	DASH_HOST=`hostname` \
+	DASH_DOMAIN="integration.blinker.com" \
+	DASH_VERSION="integration" \
+	DASH_TAGS="appserver" \
+	DASH_NAME="dash" \
+	DASH_ZK_HOSTS="localhost:2181" \
+	DASH_DOCKER_PORT="tcp://192.168.59.103:2376" \
+	${GODEP} go run main/dash.go --logtostderr --v=500 --self_register=false --timeout=5s \
+		--ui_docroot=$(HOME)/go/src/github.com/infradash/dash/www \
+		--tlscert=$(HOME)/.boot2docker/certs/boot2docker-vm/cert.pem \
+		--tlskey=$(HOME)/.boot2docker/certs/boot2docker-vm/key.pem \
+		--tlsca=$(HOME)/.boot2docker/certs/boot2docker-vm/ca.pem \
+		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/blinker.json" \
 	agent
 
 run-exec-bash-export:
