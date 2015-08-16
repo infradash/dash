@@ -27,10 +27,15 @@ type Info struct {
 type WatchContainerSpec struct {
 	QualifyByTags
 	docker.Image
-	MatchContainerPort        *int              `json:"match_container_port"`
-	MatchContainerName        *string           `json:"match_container_name"`
-	MatchContainerEnvironment []string          `json:"match_container_envs"`
-	MatchContainerLabels      map[string]string `json:"match_container_labels"`
+	MatchContainerPort *int                       `json:"match_container_port,omitempty"`
+	MatchFirst         []ContainerMatchRulesUnion `json:"match_first,omitempty"`
+	MatchAll           []ContainerMatchRulesUnion `json:"mathc_all,omitempty"`
+}
+
+type ContainerMatchRulesUnion struct {
+	ByContainerName        *string           `json:"container_name,omitempty"`
+	ByContainerEnvironment []string          `json:"container_envs,omitempty"`
+	ByContainerLabels      map[string]string `json:"container_labels,omitempty"`
 }
 
 // Configuration for the domain

@@ -17,9 +17,11 @@
                 }],
 		"discover": {
 		    "repository" : "blinker/blinker",
-		    "match_container_port":3000,
-		    "match_container_name":"blinker-(.*)-([0-9]+).([0-9]+)-([0-9]+)",
-		    "match_container_labels" : { "DASH_DOMAIN":"{{.Domain}}", "DASH_SERVICE":"blinker" }
+		    "match_container_port" : 3000,
+		    "match_first": [
+			{ "container_labels" : { "DASH_SERVICE":"blinker" } },
+			{ "container_name": "blinker-(.*)-([0-9]+).([0-9]+)-([0-9]+)" }
+		    ]
 		},
                 "swarm" : {
                     "min_instances_global" : 1,
