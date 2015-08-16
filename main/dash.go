@@ -97,6 +97,8 @@ func main() {
 
 	verb := flag.Args()[0]
 
+	regContainerEntry.Identity = *identity
+
 	switch verb {
 	case "terraform":
 
@@ -134,15 +136,16 @@ func main() {
 
 	case "agent":
 
-		agent.Identity = *identity
+		agent.RegistryContainerEntry = *regContainerEntry
 		agent.QualifyByTags.Tags = tags
 		agent.ZkSettings = *zkSettings
 		agent.DockerSettings = *dockerSettings
-		agent.RegistryContainerEntry = *regContainerEntry
 		agent.RegistryContainerEntry.RegistryReleaseEntry = *regReleaseEntry
 		agent.RegistryContainerEntry.RegistryReleaseEntry.RegistryEntryBase = *regEntryBase
 
 		glog.Infoln(buildInfo.Notice())
+
+		glog.Infoln("Agent.Name=", agent.RegistryContainerEntry.Identity.Name)
 		glog.Infoln("Starting agent:", *agent, agent.Identity.String(), agent.Initializer.Context)
 
 		agent.Run() // blocks

@@ -56,6 +56,8 @@ func (this *Agent) checkPreconditions() {
 // Block until SIGTERM
 func (this *Agent) Run() {
 
+	this.checkPreconditions()
+
 	glog.Infoln("Agent", this.GetIdentity())
 
 	if this.EnableUI && this.UiDocRoot != "" {
