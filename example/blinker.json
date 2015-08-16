@@ -6,8 +6,6 @@
             "blinker": {
                 "tags":["appserver"],
                 "auth_info_path":"/code.blinker.com/docker/authconfig",
-                "trigger_path" : "/{{.Domain}}/blinker/integration",
-                "image_path" : "/{{.Domain}}/blinker/integration",
                 "max_attempts": 2,
                 "actions" : [{
                     "container_name_template": "{{.Service}}-{{.Version}}-{{.Build}}-{{.Sequence}}",

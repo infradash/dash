@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"encoding/json"
 	. "github.com/infradash/dash/pkg/dash"
 	"github.com/qorio/maestro/pkg/docker"
 	"github.com/qorio/maestro/pkg/zk"
@@ -47,6 +48,11 @@ type DomainConfig struct {
 	Schedulers map[ServiceKey]*Scheduler `json:"schedulers,omitempty"`
 
 	Vacuums map[ServiceKey]*VacuumConfig `json:"vacuums,omitempty"`
+}
+
+func (d *DomainConfig) JSON() string {
+	b, _ := json.Marshal(d)
+	return string(b)
 }
 
 type Scheduler struct {

@@ -149,6 +149,8 @@ func (this *Domain) SynchronizeSchedule() error {
 		glog.Infoln("Synchronize Service=", service)
 
 		scheduler.Job.zk = this.zk
+		scheduler.Job.domain = this.Domain
+		scheduler.Job.service = service
 
 		global := &scheduler.Job
 		local := this.tracker
@@ -174,33 +176,45 @@ func (this *Domain) AddScheduler(service ServiceKey, scheduler *Scheduler) (chan
 		return nil, err
 	}
 
-	if scheduler.TriggerPath != nil {
-		watch := string(*scheduler.TriggerPath)
-		context := &scheduler.Job
-		err = this.triggers.AddWatcher(watch, context, func(e zk.Event) bool {
-
-			glog.Infoln("Event for trigger", watch, e)
-			if e.State == zk.StateDisconnected {
-				glog.Warningln(watch, "disconnected: No action.")
-				return true
-			}
-
-			syncError := scheduler.Synchronize(this.Domain, service, this.tracker, global, this.scheduleExecutor.Inbox)
-			switch syncError {
-			case nil:
-				return true
-			case ErrNoImage:
-				ExceptionEvent(syncError, context, "Cannot determine image from referenced node")
-				return true
-			case zk.ErrNotExist:
-				ExceptionEvent(syncError, context, "Referenced node does not exist.  Ok to continue watch")
-				return true
-			default:
-				ExceptionEvent(syncError, context, "Error watching release")
-				return true
-			}
+	if scheduler.TriggerPath == nil {
+		glog.Infoln("No Trigger specified. Create one based on domain and service")
+		defaultWatchPath, _, err := RegistryKeyValue(KReleaseWatch, map[string]interface{}{
+			"Domain":  this.Domain,
+			"Service": service,
 		})
+		if err != nil {
+			glog.Warningln("No trigger path - not watching for releases")
+			return stopper, nil
+		}
+		trigger := Trigger(defaultWatchPath)
+		scheduler.TriggerPath = &trigger
 	}
+
+	watch := string(*scheduler.TriggerPath)
+	context := &scheduler.Job
+	err = this.triggers.AddWatcher(watch, context, func(e zk.Event) bool {
+
+		glog.Infoln("Event for trigger", watch, e)
+		if e.State == zk.StateDisconnected {
+			glog.Warningln(watch, "disconnected: No action.")
+			return true
+		}
+
+		syncError := scheduler.Synchronize(this.Domain, service, this.tracker, global, this.scheduleExecutor.Inbox)
+		switch syncError {
+		case nil:
+			return true
+		case ErrNoImage:
+			ExceptionEvent(syncError, context, "Cannot determine image from referenced node")
+			return true
+		case zk.ErrNotExist:
+			ExceptionEvent(syncError, context, "Referenced node does not exist.  Ok to continue watch")
+			return true
+		default:
+			ExceptionEvent(syncError, context, "Error watching release")
+			return true
+		}
+	})
 
 	return stopper, nil
 }

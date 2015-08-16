@@ -116,19 +116,17 @@ func (this *Agent) Run() {
 
 			glog.Infoln("Loaded and applied configuration. Processing.")
 
-			applied_domain_configs := []*DomainConfig{}
-
 			for _, per_domain := range list {
 
 				applied := new(DomainConfig)
-				err := ApplyVarSubs(per_domain, applied, MergeMaps(map[string]interface{}{
-					"Domain": per_domain.Domain,
-				}, EscapeVars(ConfigVariables[1:]...)))
+				err := ApplyVarSubs(per_domain, applied,
+					MergeMaps(map[string]interface{}{
+						"Domain": per_domain.Domain,
+					}, EscapeVars(ConfigVariables[1:]...)))
 				if err != nil {
 					panic(err)
 				}
 				per_domain = *applied
-				applied_domain_configs = append(applied_domain_configs, &per_domain)
 
 				if _, config_err := this.ConfigureDomain(&per_domain); config_err != nil {
 					panic(config_err)
@@ -350,6 +348,7 @@ func (this *Agent) ConfigureDomain(config *DomainConfig) (*Domain, error) {
 
 	domain, has := this.domains[config.Domain]
 	if !has {
+
 		domain = &Domain{
 			Domain:                 config.Domain,
 			RegistryContainerEntry: config.RegistryContainerEntry,

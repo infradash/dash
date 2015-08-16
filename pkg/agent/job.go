@@ -39,8 +39,24 @@ func (this *Job) Image() (string, string, string, error) {
 // 3. The docker image eg. infradash/infradash:release_1-123
 func (this *Job) image(zkc zk.ZK) (string, string, string, error) {
 	if this.ImagePath == "" {
-		return "", "", "", ErrNoSchedulerReleasePath
+
+		defaultReleaseWatchPath, _, err := RegistryKeyValue(KReleaseWatch, map[string]interface{}{
+			"Domain":  this.domain,
+			"Service": this.service,
+		})
+		if err != nil {
+			return "", "", "", err
+		}
+
+		releaseNode, err := zkc.Get(defaultReleaseWatchPath)
+		if err != nil {
+			return "", "", "", err
+		}
+
+		this.ImagePath = releaseNode.GetValueString()
+		glog.Infoln("ImagePath defaults to", this.ImagePath, "for job", *this)
 	}
+
 	glog.Infoln("Container image from image path", this.ImagePath)
 	docker_info, err := zkc.Get(this.ImagePath)
 	if err != nil {

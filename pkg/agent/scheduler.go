@@ -10,13 +10,13 @@ import (
 	"text/template"
 )
 
-func NoActions() []Job {
-	return []Job{}
-}
-
 var (
 	image_counter = map[string]int{}
 )
+
+func NoActions() []Job {
+	return []Job{}
+}
 
 func get_sequence_by_image(image string) int {
 	if c, has := image_counter[image]; has {
