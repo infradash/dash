@@ -48,5 +48,7 @@ deployment:
    docker:
      branch: /v[0-9]+(\.[0-9]+)*/
      commands:
+       - source ./hack/env.sh && make GODEP=godep build
+       - cp $BUILD_DIR/dash $CIRCLE_ARTIFACTS
        - cp $BUILD_DIR/dash docker/dash
        - cd docker/dash && make push && cd ..
