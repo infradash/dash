@@ -63,6 +63,7 @@ run-local-agent-blinker:
 		--tlskey=$(HOME)/.boot2docker/certs/boot2docker-vm/key.pem \
 		--tlsca=$(HOME)/.boot2docker/certs/boot2docker-vm/ca.pem \
 		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/blinker.json" \
+		--status_topic="mqtt://iot.eclipse.org:1883/infradash/test" \
 	agent
 
 run-exec-bash-export:

@@ -1,13 +1,17 @@
 package agent
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/golang/glog"
 	. "github.com/infradash/dash/pkg/dash"
 	"github.com/qorio/maestro/pkg/docker"
+	_ "github.com/qorio/maestro/pkg/mqtt"
+	"github.com/qorio/maestro/pkg/pubsub"
 	"github.com/qorio/maestro/pkg/zk"
 	"github.com/qorio/omni/runtime"
 	"net/http"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -40,7 +44,7 @@ type Agent struct {
 	domains       map[string]*Domain
 	domainConfigs map[string]DomainConfig
 
-	//containerMatcher *DiscoveryContainerMatcher
+	StatusPubsubTopic string `json:"status_topic,omitempty"`
 }
 
 // Checks that all the information required for agent start up is met.
@@ -272,6 +276,68 @@ func (this *Agent) ConnectServices() error {
 		// This is where we get callbacks for the containers that the agent initiates.
 		// The event api can include containers that are started manually.
 	}
+
+	glog.Infoln("Start Zookeeper events channel")
+	go func() {
+
+		status := func(map[string]interface{}) {
+			// no-op
+		}
+		if this.StatusPubsubTopic != "" {
+			id := path.Join(this.Domain, this.Name, this.Host)
+			topic := pubsub.Topic(this.StatusPubsubTopic + "/" + id)
+			if topic.Valid() {
+				if pb, err := topic.Broker().PubSub(id); err == nil {
+					status = func(evt map[string]interface{}) {
+						msg, err := json.Marshal(evt)
+						if err == nil {
+							pb.Publish(topic, msg)
+						}
+					}
+				}
+			} else {
+				panic(topic)
+			}
+		}
+
+		events := zk.Events()
+		for {
+			evt := <-events
+			glog.Infoln("ZKEvent:", evt.JSON())
+
+			// send as pubsub
+			// TODO - Redpill compatible:
+			/*
+				type Event struct {
+					Status      string `json:"status"`
+					Title       string `json:"title,omitempty"`
+					Description string `json:"description,omitempty"`
+					Note        string `json:"note,omitempty"`
+					User        string `json:"user,omitempty"`
+					Type        string `json:"type,omitempty"`
+					Url         string `json:"url,omitempty"`
+					Timestamp   int64  `json:"timestamp,omitempty"`
+					ObjectId    string `json:"object_id"`
+					ObjectType  string `json:"object_type"`
+				}
+			*/
+			m := evt.AsMap()
+			m["object_id"] = path.Join(this.Domain, this.Name, this.Host)
+			m["object_type"] = "agent"
+			m["timestamp"] = time.Now().Unix()
+			m["description"] = fmt.Sprint(m["type"], ":", m["state"], "@", "server=", m["server"])
+			m["title"] = "zookeeper event from agent " + path.Join(this.Domain, this.Name, this.Host)
+			m["user"] = "dash"
+			switch m["state"] {
+			case "state-disconnected", "state-auth-failed", "state-expired":
+				m["status"] = "fatal"
+			case "state-connected", "state-has-session":
+				m["status"] = "ok"
+			}
+			status(m)
+		}
+	}()
+
 	return nil
 }
 

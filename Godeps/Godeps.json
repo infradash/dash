@@ -83,43 +83,43 @@
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/circleci",
-			"Comment": "v1.0-8-gee5c622",
-			"Rev": "ee5c622f2126c26b51a633ea0ef51f051ff9397a"
+			"Comment": "v1.0-9-geb97f13",
+			"Rev": "eb97f1341b9a3c24a89686d4efc3597e6ed615ca"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/docker",
-			"Comment": "v1.0-8-gee5c622",
-			"Rev": "ee5c622f2126c26b51a633ea0ef51f051ff9397a"
+			"Comment": "v1.0-9-geb97f13",
+			"Rev": "eb97f1341b9a3c24a89686d4efc3597e6ed615ca"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/mqtt",
-			"Comment": "v1.0-8-gee5c622",
-			"Rev": "ee5c622f2126c26b51a633ea0ef51f051ff9397a"
+			"Comment": "v1.0-9-geb97f13",
+			"Rev": "eb97f1341b9a3c24a89686d4efc3597e6ed615ca"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/pubsub",
-			"Comment": "v1.0-8-gee5c622",
-			"Rev": "ee5c622f2126c26b51a633ea0ef51f051ff9397a"
+			"Comment": "v1.0-9-geb97f13",
+			"Rev": "eb97f1341b9a3c24a89686d4efc3597e6ed615ca"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/registry",
-			"Comment": "v1.0-8-gee5c622",
-			"Rev": "ee5c622f2126c26b51a633ea0ef51f051ff9397a"
+			"Comment": "v1.0-9-geb97f13",
+			"Rev": "eb97f1341b9a3c24a89686d4efc3597e6ed615ca"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/task",
-			"Comment": "v1.0-8-gee5c622",
-			"Rev": "ee5c622f2126c26b51a633ea0ef51f051ff9397a"
+			"Comment": "v1.0-9-geb97f13",
+			"Rev": "eb97f1341b9a3c24a89686d4efc3597e6ed615ca"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/template",
-			"Comment": "v1.0-8-gee5c622",
-			"Rev": "ee5c622f2126c26b51a633ea0ef51f051ff9397a"
+			"Comment": "v1.0-9-geb97f13",
+			"Rev": "eb97f1341b9a3c24a89686d4efc3597e6ed615ca"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/zk",
-			"Comment": "v1.0-8-gee5c622",
-			"Rev": "ee5c622f2126c26b51a633ea0ef51f051ff9397a"
+			"Comment": "v1.0-9-geb97f13",
+			"Rev": "eb97f1341b9a3c24a89686d4efc3597e6ed615ca"
 		},
 		{
 			"ImportPath": "github.com/qorio/omni/api",
@@ -151,7 +151,7 @@
 		},
 		{
 			"ImportPath": "github.com/samuel/go-zookeeper/zk",
-			"Rev": "5bb5cfc093ad18a28148c578f8632cfdb4d802e4"
+			"Rev": "177002e16a0061912f02377e2dd8951a8b3551bc"
 		},
 		{
 			"ImportPath": "gopkg.in/check.v1",
