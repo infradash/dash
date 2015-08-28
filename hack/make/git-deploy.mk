@@ -16,6 +16,10 @@ deploy-git-checkout:
 	cd $(DEPLOY_LOCAL_REPO) && git config --global user.email $(DEPLOY_USER_EMAIL) && git config --global user.name $(DEPLOY_USER_NAME) && git checkout $(DEPLOY_REPO_BRANCH)
 
 deploy-git: deploy-git-checkout
-	mkdir -p $(DEPLOY_LOCAL_REPO)/$(DEPLOY_DIR) && cp -r $(BUILD_DIR) $(DEPLOY_LOCAL_REPO)/$(DEPLOY_DIR) && echo $(DOCKER_IMAGE) > $(DEPLOY_LOCAL_REPO)/$(DEPLOY_DIR)/DOCKER 
+	mkdir -p $(DEPLOY_LOCAL_REPO)/$(DEPLOY_DIR) && cp -r $(BUILD_DIR) $(DEPLOY_LOCAL_REPO)/$(DEPLOY_DIR)
+	cd $(DEPLOY_LOCAL_REPO) && git add -v $(DEPLOY_DIR) && git commit -m "Version $(GIT_TAG) Commit $(GIT_COMMIT_HASH) Build $(CIRCLE_BUILD_NUM)" -a && git push
+
+deploy-git-docker-image-version: deploy-git
+	mkdir -p $(DEPLOY_LOCAL_REPO)/$(DEPLOY_DIR) && echo $(DOCKER_IMAGE) > $(DEPLOY_LOCAL_REPO)/$(DEPLOY_DIR)/DOCKER 
 	cd $(DEPLOY_LOCAL_REPO) && git add -v $(DEPLOY_DIR) && git commit -m "Version $(GIT_TAG) Commit $(GIT_COMMIT_HASH) Build $(CIRCLE_BUILD_NUM)" -a && git push
 
