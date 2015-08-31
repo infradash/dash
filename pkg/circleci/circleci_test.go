@@ -22,13 +22,13 @@ func (suite *TestSuiteCircleCi) TearDownSuite(c *C) {
 func (suite *TestSuiteCircleCi) TestCircleCi(c *C) {
 
 	cc := &CircleCi{
-		Config: circleci.Config{
-			User:     "qorio",
-			Project:  "passport",
-			ApiToken: "891d8faf70a1947adf1d6d9b736ca76129e2aa56",
+		Build: circleci.Build{
+			User:         "qorio",
+			Project:      "passport",
+			ApiToken:     "891d8faf70a1947adf1d6d9b736ca76129e2aa56",
+			BuildNum:     103,
+			ArtifactsDir: c.MkDir(),
 		},
-		BuildNumber: 103,
-		TargetDir:   c.MkDir(),
 	}
 
 	err := cc.Run()

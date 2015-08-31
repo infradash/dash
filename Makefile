@@ -236,7 +236,7 @@ run-readpath:
 		--readpath=/code.infradash.com/infradash \
 	registry
 
-run-circleci:
+run-circleci-fetch:
 	DASH_ZK_HOSTS="localhost:2181" \
 	${GODEP} go run main/dash.go --logtostderr \
 		--circle_user=qorio \
@@ -244,7 +244,18 @@ run-circleci:
 		--circle_token=d84e7b3e53035b9d8fc8a5aadbc2ad4237064e20 \
 		--circle_buildnum=213 \
 		--build_artifact_dir=/tmp/passport \
-	circleci
+	circleci fetch
+
+run-circleci-build:
+	DASH_ZK_HOSTS="localhost:2181" \
+	${GODEP} go run main/dash.go --logtostderr \
+		--circle_user=qorio \
+		--circle_project=passport \
+		--circle_token=d84e7b3e53035b9d8fc8a5aadbc2ad4237064e20 \
+		--circle_buildnum=213 \
+		--circle_git_branch=master \
+		--build_artifact_dir=/tmp/passport \
+	circleci build `pwd`/circle.yml
 
 run-circleci-zk:
 	DASH_ZK_HOSTS="localhost:2181" \

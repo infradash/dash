@@ -175,6 +175,14 @@ func main() {
 	case "circleci":
 
 		circleci.ZkSettings = *zkSettings
+
+		if len(flag.Args()) > 1 {
+			circleci.Cmd = flag.Args()[1]
+		}
+		if len(flag.Args()) > 2 {
+			circleci.Args = flag.Args()[2:]
+		}
+
 		err := circleci.Run() // blocks
 		if err != nil {
 			panic(err)
