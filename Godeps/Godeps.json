@@ -2,8 +2,7 @@
 	"ImportPath": "github.com/infradash/dash",
 	"GoVersion": "go1.4.2",
 	"Packages": [
-		"./pkg/...",
-		"./main/..."
+		"./pkg/..."
 	],
 	"Deps": [
 		{
@@ -156,6 +155,10 @@
 		{
 			"ImportPath": "gopkg.in/check.v1",
 			"Rev": "64131543e7896d5bcc6bd5a76287eb75ea96c673"
+		},
+		{
+			"ImportPath": "gopkg.in/yaml.v1",
+			"Rev": "9f9df34309c04878acc86042b16630b0f696e1de"
 		}
 	]
 }
