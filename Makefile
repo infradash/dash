@@ -57,7 +57,7 @@ run-local-agent-blinker:
 	DASH_NAME="dash" \
 	DASH_ZK_HOSTS="localhost:2181" \
 	DASH_DOCKER_PORT="tcp://192.168.59.103:2376" \
-	${GODEP} go run main/dash.go --logtostderr --v=500 --self_register=false --timeout=5s \
+	${GODEP} go run main/dash.go --logtostderr --v=500 --self_register=true --timeout=5s \
 		--ui_docroot=$(HOME)/go/src/github.com/infradash/dash/docker/dash/www --enable_ui=true \
 		--tlscert=$(HOME)/.boot2docker/certs/boot2docker-vm/cert.pem \
 		--tlskey=$(HOME)/.boot2docker/certs/boot2docker-vm/key.pem \

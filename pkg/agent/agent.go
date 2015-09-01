@@ -8,8 +8,10 @@ import (
 	"github.com/qorio/maestro/pkg/docker"
 	_ "github.com/qorio/maestro/pkg/mqtt"
 	"github.com/qorio/maestro/pkg/pubsub"
-	"github.com/qorio/maestro/pkg/zk"
+	"github.com/qorio/maestro/pkg/registry"
+	_zk "github.com/qorio/maestro/pkg/zk"
 	"github.com/qorio/omni/runtime"
+	"github.com/qorio/omni/version"
 	"net/http"
 	"path"
 	"strings"
@@ -36,7 +38,7 @@ type Agent struct {
 
 	// json skips these fields
 	endpoint       http.Handler      `json:"-"`
-	zk             zk.ZK             `json:"-"`
+	zk             _zk.ZK            `json:"-"`
 	docker         *docker.Docker    `json:"-"`
 	self_container *docker.Container `json:"-"`
 
@@ -45,6 +47,8 @@ type Agent struct {
 	domainConfigs map[string]DomainConfig
 
 	StatusPubsubTopic string `json:"status_topic,omitempty"`
+
+	proxyRunning bool
 }
 
 // Checks that all the information required for agent start up is met.
@@ -57,6 +61,10 @@ func (this *Agent) checkPreconditions() {
 	}
 }
 
+func (this *Agent) is_running_proxy() bool {
+	return this.EnableUI && this.UiDocRoot != ""
+}
+
 // Block until SIGTERM
 func (this *Agent) Run() {
 
@@ -64,7 +72,7 @@ func (this *Agent) Run() {
 
 	glog.Infoln("Agent", this.GetIdentity())
 
-	if this.EnableUI && this.UiDocRoot != "" {
+	if this.is_running_proxy() {
 		mux := http.NewServeMux()
 		glog.Infoln("Starting UI with docroot=", this.UiDocRoot, "DockerPort=", this.DockerPort)
 		fileHandler := http.FileServer(http.Dir(this.UiDocRoot))
@@ -79,6 +87,7 @@ func (this *Agent) Run() {
 			if err := http.ListenAndServe(p, mux); err != nil {
 				panic(err)
 			}
+			this.proxyRunning = true
 		}()
 	}
 
@@ -244,7 +253,7 @@ func (this *Agent) GetIdentity() string {
 
 func (this *Agent) ConnectServices() error {
 	glog.Infoln("Connecting to zookeeper:", this.Hosts)
-	zk, err := zk.Connect(strings.Split(this.Hosts, ","), this.Timeout)
+	zk, err := _zk.Connect(strings.Split(this.Hosts, ","), this.Timeout)
 	if err != nil {
 		return err
 	}
@@ -358,29 +367,38 @@ func (this *Agent) Register() error {
 	}
 }
 
+func (this *Agent) info() string {
+	info := map[string]interface{}{
+		"api":     fmt.Sprintf("%s:%d", this.Host, this.ListenPort),
+		"version": *version.BuildInfo(),
+	}
+	if this.is_running_proxy() {
+		info["dockerapi"] = fmt.Sprintf("%s:%d", this.Host, this.ListenPort+1)
+	}
+	if buff, err := json.Marshal(info); err == nil {
+		return string(buff)
+	}
+	return ""
+}
+
 func (this *Agent) _register() error {
 	if this.zk == nil {
 		return ErrNotConnectedToRegistry
 	}
 
-	if this.self_container != nil {
-		key, value, err := RegistryKeyValue(KAgent, this)
-		glog.Infoln("Register self as key=", key, "value=", value, "err=", err)
-		if err != nil {
-			return err
-		}
-		n, err := this.zk.CreateEphemeral(key, nil)
-		if err != nil {
-			return err
-		} else {
-			err = n.Set([]byte(value))
-			if err == nil {
-				// Update this only on successful registration
-				this.Registration = key
-			}
-		}
+	key := registry.NewPath("dash", this.Host).Path()
+	value := this.info()
+
+	glog.Infoln("Register self as key=", key, "value=", value)
+	n, err := this.zk.CreateEphemeral(key, nil)
+	if err != nil {
+		return err
 	} else {
-		return ErrNoContainerInformation
+		err = n.Set([]byte(value))
+		if err == nil {
+			// Update this only on successful registration
+			this.Registration = key
+		}
 	}
 
 	return nil

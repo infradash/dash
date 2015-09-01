@@ -50,10 +50,6 @@ const (
 {{define "KEY"}}/{{.Domain}}/dash/{{.Host}}:{{.ContainerPort}}:{{.HostPort}}{{end}}
 {{define "VALUE"}}{{.Host}}:{{.HostPort}}{{end}}
 `
-	KAgent = `
-{{define "KEY"}}/dash/{{.Host}}:{{.ContainerPort}}:{{.HostPort}}{{end}}
-{{define "VALUE"}}{{.Host}}:{{.HostPort}}{{end}}
-`
 )
 
 var templates = make(map[string]*template.Template)
@@ -68,7 +64,6 @@ func init() {
 	must_compile_template(KDash)
 	must_compile_template(KLive)
 	must_compile_template(KLiveWatch)
-	must_compile_template(KAgent)
 }
 
 func must_compile_template(k string) {
@@ -81,13 +76,23 @@ func must_compile_template(k string) {
 	}
 }
 
-func RegistryKeyValue(k string, object interface{}) (key, value string, err error) {
+func RegistryKeyValue(k string, object interface{}, funcs ...template.FuncMap) (key, value string, err error) {
 	var keyBuff, valueBuff bytes.Buffer
-	err = templates[k].Lookup("KEY").Execute(&keyBuff, object)
+	t := templates[k]
+	if t == nil {
+		err = errors.New("no-template")
+		return
+	}
+
+	if len(funcs) > 0 {
+		t = t.Funcs(funcs[0])
+	}
+
+	err = t.Lookup("KEY").Execute(&keyBuff, object)
 	if err != nil {
 		return
 	}
-	err = templates[k].Lookup("VALUE").Execute(&valueBuff, object)
+	err = t.Lookup("VALUE").Execute(&valueBuff, object)
 	if err != nil {
 		return
 	}
