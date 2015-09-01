@@ -6,6 +6,7 @@ import (
 	"github.com/golang/glog"
 	. "github.com/infradash/dash/pkg/dash"
 	"github.com/qorio/maestro/pkg/docker"
+	"github.com/qorio/maestro/pkg/registry"
 	"github.com/qorio/maestro/pkg/zk"
 	"sync"
 	"time"
@@ -57,12 +58,10 @@ func (this *Domain) do_register() error {
 		return ErrNotConnectedToRegistry
 	}
 
-	key, value, err := RegistryKeyValue(KDash, this)
-	glog.Infoln("Register self as key=", key, "value=", value, "err=", err)
-	if err != nil {
-		return err
-	}
-	n, err := this.zk.CreateEphemeral(key, nil)
+	key := registry.NewPath(this.Domain, "dash", this.Host).Path()
+	value := this.agent.info()
+	glog.Infoln("Register self as key=", key, "value=", value)
+	n, err := this.zk.CreateEphemeral(key, []byte(value))
 	if err != nil {
 		return err
 	} else {

@@ -390,7 +390,7 @@ func (this *Agent) _register() error {
 	value := this.info()
 
 	glog.Infoln("Register self as key=", key, "value=", value)
-	n, err := this.zk.CreateEphemeral(key, nil)
+	n, err := this.zk.CreateEphemeral(key, []byte(value))
 	if err != nil {
 		return err
 	} else {
