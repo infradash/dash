@@ -9,7 +9,7 @@ import (
 	_ "github.com/qorio/maestro/pkg/mqtt"
 	"github.com/qorio/maestro/pkg/pubsub"
 	"github.com/qorio/maestro/pkg/registry"
-	_zk "github.com/qorio/maestro/pkg/zk"
+	"github.com/qorio/maestro/pkg/zk"
 	"github.com/qorio/omni/runtime"
 	"github.com/qorio/omni/version"
 	"net/http"
@@ -38,7 +38,7 @@ type Agent struct {
 
 	// json skips these fields
 	endpoint       http.Handler      `json:"-"`
-	zk             _zk.ZK            `json:"-"`
+	zk             zk.ZK             `json:"-"`
 	docker         *docker.Docker    `json:"-"`
 	self_container *docker.Container `json:"-"`
 
@@ -253,7 +253,7 @@ func (this *Agent) GetIdentity() string {
 
 func (this *Agent) ConnectServices() error {
 	glog.Infoln("Connecting to zookeeper:", this.Hosts)
-	zk, err := _zk.Connect(strings.Split(this.Hosts, ","), this.Timeout)
+	zk, err := zk.Connect(strings.Split(this.Hosts, ","), this.Timeout)
 	if err != nil {
 		return err
 	}
@@ -367,7 +367,7 @@ func (this *Agent) Register() error {
 	}
 }
 
-func (this *Agent) info() string {
+func (this *Agent) info() interface{} {
 	info := map[string]interface{}{
 		"api":     fmt.Sprintf("%s:%d", this.Host, this.ListenPort),
 		"version": *version.BuildInfo(),
@@ -375,10 +375,7 @@ func (this *Agent) info() string {
 	if this.is_running_proxy() {
 		info["dockerapi"] = fmt.Sprintf("%s:%d", this.Host, this.ListenPort+1)
 	}
-	if buff, err := json.Marshal(info); err == nil {
-		return string(buff)
-	}
-	return ""
+	return info
 }
 
 func (this *Agent) _register() error {
@@ -386,22 +383,14 @@ func (this *Agent) _register() error {
 		return ErrNotConnectedToRegistry
 	}
 
-	key := registry.NewPath("dash", this.Host).Path()
-	value := this.info()
-
-	glog.Infoln("Register self as key=", key, "value=", value)
-	n, err := this.zk.CreateEphemeral(key, []byte(value))
-	if err != nil {
-		return err
-	} else {
-		err = n.Set([]byte(value))
-		if err == nil {
-			// Update this only on successful registration
-			this.Registration = key
-		}
+	key := registry.NewPath("dash", this.Host)
+	err := zk.CreateOrSet(this.zk, key, this.info(), true)
+	glog.Infoln("Register key=", key, "err=", err)
+	if err == nil {
+		// Update this only on successful registration
+		this.Registration = key.Path()
 	}
-
-	return nil
+	return err
 }
 
 // Containers in this domain

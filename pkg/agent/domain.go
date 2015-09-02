@@ -58,20 +58,14 @@ func (this *Domain) do_register() error {
 		return ErrNotConnectedToRegistry
 	}
 
-	key := registry.NewPath(this.Domain, "dash", this.Host).Path()
-	value := this.agent.info()
-	glog.Infoln("Register self as key=", key, "value=", value)
-	n, err := this.zk.CreateEphemeral(key, []byte(value))
-	if err != nil {
-		return err
-	} else {
-		err = n.Set([]byte(value))
-		if err == nil {
-			// Update this only on successful registration
-			this.Identity = key
-		}
+	key := registry.NewPath(this.Domain, "dash", this.Host)
+	err := zk.CreateOrSet(this.zk, key, this.agent.info(), true)
+	glog.Infoln("Register self, key=", key, "err=", err)
+	if err == nil {
+		// Update this only on successful registration
+		this.Identity = key.Path()
 	}
-	return nil
+	return err
 }
 
 func (this *Domain) StartServices(tags QualifyByTags) (*Domain, error) {

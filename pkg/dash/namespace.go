@@ -46,10 +46,6 @@ const (
 {{define "KEY"}}/{{.Domain}}/{{.Service}}/live{{end}}
 {{define "VALUE"}}/{{.Domain}}/{{.Service}}/{{.Version}}/container/{{.Image}},/{{.Domain}}/{{.Service}}/{{.Version}}/env{{end}}
 `
-	KDash = `
-{{define "KEY"}}/{{.Domain}}/dash/{{.Host}}:{{.ContainerPort}}:{{.HostPort}}{{end}}
-{{define "VALUE"}}{{.Host}}:{{.HostPort}}{{end}}
-`
 )
 
 var templates = make(map[string]*template.Template)
@@ -61,7 +57,6 @@ func init() {
 	must_compile_template(KContainer)
 	must_compile_template(KEnvRoot)
 	must_compile_template(KEnv)
-	must_compile_template(KDash)
 	must_compile_template(KLive)
 	must_compile_template(KLiveWatch)
 }
