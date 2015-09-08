@@ -373,7 +373,7 @@ func (this *Agent) info() interface{} {
 		"version": *version.BuildInfo(),
 	}
 	if this.is_running_proxy() {
-		info["dockerapi"] = fmt.Sprintf("%s:%d", this.Host, this.ListenPort+1)
+		info["dockerapi"] = fmt.Sprintf("http://%s:%d/dockerapi", this.Host, this.ListenPort+1)
 	}
 	return info
 }

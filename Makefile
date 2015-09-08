@@ -51,7 +51,7 @@ run-local-agent:
 
 run-local-agent-blinker:
 	DASH_HOST=`hostname` \
-	DASH_DOMAIN="integration.blinker.com" \
+	DASH_DOMAIN="dev.blinker.com" \
 	DASH_VERSION="integration" \
 	DASH_TAGS="appserver" \
 	DASH_NAME="dash" \
