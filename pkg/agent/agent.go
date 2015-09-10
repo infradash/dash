@@ -371,7 +371,7 @@ func (this *Agent) info() interface{} {
 		"version":   *version.BuildInfo(),
 	}
 	if this.is_running_dockerui() {
-		info["dockerui"] = fmt.Sprintf("http://%s:%d/dockerapi", this.Host, this.DockerUIPort)
+		info["dockerui"] = fmt.Sprintf("http://%s:%d/", this.Host, this.DockerUIPort)
 	}
 
 	return info
