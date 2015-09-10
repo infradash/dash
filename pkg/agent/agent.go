@@ -27,7 +27,8 @@ type Agent struct {
 
 	RegistryContainerEntry
 
-	ListenPort int `json:"listen_port"`
+	ListenPort   int `json:"listen_port"`
+	DockerUIPort int `json:"dockerui_port"`
 
 	UiDocRoot string `json:"ui_doc_root,omitempty"`
 	EnableUI  bool   `json:"enable_ui,omitempty"`
@@ -47,8 +48,6 @@ type Agent struct {
 	domainConfigs map[string]DomainConfig
 
 	StatusPubsubTopic string `json:"status_topic,omitempty"`
-
-	proxyRunning bool
 }
 
 // Checks that all the information required for agent start up is met.
@@ -61,7 +60,7 @@ func (this *Agent) checkPreconditions() {
 	}
 }
 
-func (this *Agent) is_running_proxy() bool {
+func (this *Agent) is_running_dockerui() bool {
 	return this.EnableUI && this.UiDocRoot != ""
 }
 
@@ -71,25 +70,6 @@ func (this *Agent) Run() {
 	this.checkPreconditions()
 
 	glog.Infoln("Agent", this.GetIdentity())
-
-	if this.is_running_proxy() {
-		mux := http.NewServeMux()
-		glog.Infoln("Starting UI with docroot=", this.UiDocRoot, "DockerPort=", this.DockerPort)
-		fileHandler := http.FileServer(http.Dir(this.UiDocRoot))
-		// Proxy to docker -- the Docker API handler
-		dockerApiHandler := this.createDockerApiHandler(this.UiDocRoot, this.DockerPort)
-		mux.Handle("/dockerapi/", http.StripPrefix("/dockerapi", dockerApiHandler))
-		mux.Handle("/", fileHandler)
-
-		go func() {
-			p := fmt.Sprintf(":%d", this.ListenPort+1)
-			glog.Infoln("UI Listening on", p)
-			if err := http.ListenAndServe(p, mux); err != nil {
-				panic(err)
-			}
-			this.proxyRunning = true
-		}()
-	}
 
 	this.domains = make(map[string]*Domain, 0)
 	this.domainConfigs = make(map[string]DomainConfig, 0)
@@ -102,6 +82,23 @@ func (this *Agent) Run() {
 	endpoint, err := NewApiEndPoint(this)
 	if err != nil {
 		panic(err)
+	}
+
+	if this.is_running_dockerui() {
+		mux := http.NewServeMux()
+		glog.Infoln("Starting UI with docroot=", this.UiDocRoot, "DockerPort=", this.DockerPort)
+		fileHandler := http.FileServer(http.Dir(this.UiDocRoot))
+
+		dockerApiHandler := this.createDockerApiHandler(this.DockerPort)
+		mux.Handle("/dockerapi/", http.StripPrefix("/dockerapi", dockerApiHandler))
+		mux.Handle("/", fileHandler)
+		go func() {
+			p := fmt.Sprintf(":%d", this.DockerUIPort)
+			glog.Infoln("UI Listening on", p)
+			if err := http.ListenAndServe(p, mux); err != nil {
+				panic(err)
+			}
+		}()
 	}
 
 	if this.selfRegister {
@@ -369,12 +366,14 @@ func (this *Agent) Register() error {
 
 func (this *Agent) info() interface{} {
 	info := map[string]interface{}{
-		"api":     fmt.Sprintf("%s:%d", this.Host, this.ListenPort),
-		"version": *version.BuildInfo(),
+		"api":       fmt.Sprintf("%s:%d", this.Host, this.ListenPort),
+		"dockerapi": fmt.Sprintf("http://%s:%d/dockerapi", this.Host, this.ListenPort),
+		"version":   *version.BuildInfo(),
 	}
-	if this.is_running_proxy() {
-		info["dockerapi"] = fmt.Sprintf("http://%s:%d/dockerapi", this.Host, this.ListenPort+1)
+	if this.is_running_dockerui() {
+		info["dockerui"] = fmt.Sprintf("http://%s:%d/dockerapi", this.Host, this.DockerUIPort)
 	}
+
 	return info
 }
 

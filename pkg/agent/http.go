@@ -26,6 +26,10 @@ func NewApiEndPoint(agent *Agent) (ep *EndPoint, err error) {
 		engine: rest.NewEngine(&Methods, nil, nil),
 	}
 
+	// Docker Remote API proxy
+	dockerApiHandler := agent.createDockerApiHandler(agent.DockerPort)
+	ep.engine.Handle("/dockerapi/{docker:.*}", http.StripPrefix("/dockerapi", dockerApiHandler))
+
 	ep.engine.Bind(
 		rest.SetHandler(Methods[GetInfo], ep.GetInfo),
 		rest.SetHandler(Methods[ListContainers], ep.ListContainers),
