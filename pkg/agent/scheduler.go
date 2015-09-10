@@ -137,7 +137,7 @@ func count_failed_containers(local HostContainerStates, service ServiceKey, imag
 
 func (this *Scheduler) IsValid() bool {
 	implementations := 0
-	if this.Swarm != nil {
+	if this.Constraint != nil {
 		implementations += 1
 	}
 	if this.RunOnce != nil {
@@ -190,8 +190,8 @@ func (this *Scheduler) Synchronize(domain string, service ServiceKey,
 
 	actions := []Job{}
 	switch {
-	case this.Swarm != nil:
-		count, err := this.Swarm.Schedule(localRunning, globalRunning)
+	case this.Constraint != nil:
+		count, err := this.Constraint.Schedule(localRunning, globalRunning)
 		glog.Infoln("Static scheduler:", count, err)
 		if err != nil {
 			return err

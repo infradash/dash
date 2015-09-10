@@ -45,7 +45,7 @@ type ContainerMatchRulesUnion struct {
 type DomainConfig struct {
 	RegistryContainerEntry
 
-	Schedulers map[ServiceKey]*Scheduler `json:"schedulers,omitempty"`
+	Services map[ServiceKey]*Scheduler `json:"services,omitempty"`
 
 	Vacuums map[ServiceKey]*VacuumConfig `json:"vacuums,omitempty"`
 }
@@ -63,8 +63,8 @@ type Scheduler struct {
 	Discover    *WatchContainerSpec `json:"discover,omitempty"`
 	TriggerPath *Trigger            `json:"trigger_path,omitempty"`
 
-	Swarm   *SwarmSchedule   `json:"swarm,omitempty"`
-	RunOnce *RunOnceSchedule `json:"run_once,omitemtpy"`
+	Constraint *Constraint      `json:"constraint,omitempty"`
+	RunOnce    *RunOnceSchedule `json:"run_once,omitemtpy"`
 
 	lock sync.Mutex
 }
@@ -114,7 +114,7 @@ type ContainerAction struct {
 }
 
 // Static / manual scheduler where the instances counts are specified statically per host
-type SwarmSchedule struct {
+type Constraint struct {
 	MinInstancesPerHost *int `json:"min_instances_per_host,omitempty"`
 	MaxInstancesPerHost *int `json:"max_instances_per_host,omitempty"`
 	MinInstancesGlobal  *int `json:"min_instances_global,omitempty"`

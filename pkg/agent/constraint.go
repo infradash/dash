@@ -6,7 +6,7 @@ import (
 )
 
 // global max, min, local max, min
-func (this *SwarmSchedule) check() (int, int, int, int, error) {
+func (this *Constraint) check() (int, int, int, int, error) {
 	// Set boundaries
 	globalMax := math.MaxInt64
 	if this.MaxInstancesGlobal != nil {
@@ -41,12 +41,12 @@ func (this *SwarmSchedule) check() (int, int, int, int, error) {
 	return globalMax, globalMin, localMax, localMin, nil
 }
 
-func (this *SwarmSchedule) Schedule(localRunning, globalRunning int) (int, error) {
+func (this *Constraint) Schedule(localRunning, globalRunning int) (int, error) {
 	count, err := this.schedule(localRunning, globalRunning)
 	glog.Infoln("Current: Global=", globalRunning, "Local=", localRunning, "Scheduled=", count, "Err=", err)
 	return count, err
 }
-func (this *SwarmSchedule) schedule(localRunning, globalRunning int) (int, error) {
+func (this *Constraint) schedule(localRunning, globalRunning int) (int, error) {
 
 	globalMax, globalMin, localMax, localMin, err := this.check()
 	glog.Infoln("Limits: Global=[", globalMin, ",", globalMax, ")", "Local=[", localMin, ",", localMax, ")")

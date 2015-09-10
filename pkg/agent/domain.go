@@ -70,7 +70,7 @@ func (this *Domain) do_register() error {
 
 func (this *Domain) StartServices(tags QualifyByTags) (*Domain, error) {
 	// Schedulers
-	for service, scheduler := range this.Config.Schedulers {
+	for service, scheduler := range this.Config.Services {
 		if scheduler.QualifyByTags.Matches(tags.Tags) {
 
 			applied := new(Scheduler)
@@ -220,7 +220,7 @@ func label(this *docker.Container) string {
 func (this *Domain) GetContainerWatcherSpecs() (map[ServiceKey]*WatchContainerSpec, error) {
 	matched := map[ServiceKey]*WatchContainerSpec{}
 	// Go through all the scheduler settings and derive the WatchContainerSpec
-	for service, scheduler := range this.Config.Schedulers {
+	for service, scheduler := range this.Config.Services {
 		if scheduler.QualifyByTags.Matches(this.agent.QualifyByTags.Tags) {
 			matched[service] = scheduler.GetWatchContainerSpec()
 		}

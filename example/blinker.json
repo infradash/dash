@@ -2,7 +2,7 @@
     {
         "domain": "{{.DASH_DOMAIN}}",
 
-        "schedulers" : {
+        "services" : {
             "blinker": {
                 "tags":["appserver"],
                 "auth_info_path":"/code.blinker.com/docker/authconfig",
@@ -21,7 +21,7 @@
 			{ "container_name": "blinker-(.*)-([0-9]+).([0-9]+)-([0-9]+)" }
 		    ]
 		},
-                "swarm" : {
+                "constraint" : {
                     "min_instances_global" : 1,
                     "max_instances_global" : 100,
                     "min_instances_per_host" : 1,
