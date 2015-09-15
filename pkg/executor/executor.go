@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/golang/glog"
 	. "github.com/infradash/dash/pkg/dash"
+	"github.com/qorio/maestro/pkg/registry"
 	"github.com/qorio/maestro/pkg/task"
 	mtemplate "github.com/qorio/maestro/pkg/template"
 	"github.com/qorio/maestro/pkg/zk"
@@ -162,19 +163,16 @@ func (this *Executor) Exec() error {
 
 	if this.Initializer != nil {
 		glog.Infoln("Loading configuration from", this.Initializer.ConfigUrl)
-		// set up the context for applying the config as a template
-		c := map[string]interface{}{
-			"Task": this,
-			"Env":  env,
-		}
-		if taskContext != nil {
-			c["Context"] = taskContext
-		}
-
-		this.Initializer.Context = c
-
+		this.Initializer.Context = this
 		executorConfig := new(ExecutorConfig)
-		loaded, err := this.Initializer.Load(executorConfig, this.AuthToken, this.zk)
+		loaded, err := this.Initializer.Load(executorConfig, this.AuthToken, this.zk, template.FuncMap{
+			"env": func(k string) interface{} {
+				return env[k]
+			},
+			"context": func(k string) interface{} {
+				return taskContext[k]
+			},
+		})
 		if err != nil {
 			panic(err)
 		}
@@ -188,9 +186,21 @@ func (this *Executor) Exec() error {
 			for _, c := range executorConfig.ConfigFiles {
 				this.HandleConfigReload(&c)
 			}
+
+			// collect the tail files and topics
+			tails := map[string]string{}
 			for _, t := range executorConfig.TailFiles {
 				this.HandleTailFile(&t)
+
+				if len(t.Topic) > 0 {
+					tails[t.Path] = t.Topic.String()
+				}
 			}
+
+			// register this
+			k := registry.NewPath(this.Domain, this.Service, "_logs", this.Host)
+			err := zk.CreateOrSet(this.zk, k, tails, true)
+			glog.Infoln("Registered tail topics:", k, err)
 		}
 	}
 

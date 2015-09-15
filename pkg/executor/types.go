@@ -18,8 +18,8 @@ type Info struct {
 type ExecutorConfig struct {
 	task.Task
 
-	TailFiles   []TailFile   `json:"tail,omitempty"`
 	ConfigFiles []ConfigFile `json:"configs"`
+	TailFiles   []TailFile   `json:"tail,omitempty"`
 }
 
 type TailFile struct {

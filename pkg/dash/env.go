@@ -66,7 +66,11 @@ func (this *EnvSource) EnvFromZk(zc zk.ZK) func() ([]string, map[string]interfac
 
 		glog.Infoln("Loading env from", env_path)
 		root_node, err := zc.Get(env_path)
-		if err != nil {
+		switch err {
+		case nil:
+		case zk.ErrNotExist:
+			return []string{}, map[string]interface{}{}
+		default:
 			panic(err)
 		}
 
