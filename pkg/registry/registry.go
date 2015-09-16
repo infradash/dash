@@ -101,7 +101,17 @@ func (this *Registry) PrintReadPathValue() error {
 	return nil
 }
 
+func (this *Registry) Finish() {
+	if this.zk != nil {
+		glog.Infoln("Closing zk")
+		this.zk.Close()
+	}
+}
+
 func (this *Registry) Run() error {
+
+	defer this.Finish()
+
 	if this.zk == nil {
 		this.Connect()
 	}
@@ -263,8 +273,5 @@ func (this *Registry) Run() error {
 		}
 	}
 
-	if this.zk != nil {
-		this.zk.Close()
-	}
 	return nil
 }

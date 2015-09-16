@@ -112,8 +112,9 @@ func (this *CircleCi) FetchBuildArtifacts() error {
 	if err != nil {
 		return err
 	}
-
+	glog.Infoln("Fetched build artifacts manifest")
 	for _, a := range all {
+		glog.Infoln("Starting download of", a.Name)
 		len, err := a.Download(this.ArtifactsDir)
 		if err != nil {
 			panic(err)
