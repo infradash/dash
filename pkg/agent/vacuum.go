@@ -136,7 +136,9 @@ func (this *Vacuum) do_vacuum() error {
 					if this.Config.RemoveImage {
 						go func() {
 							// TODO - remove image
-							glog.Infoln("TODO ====>  Container removed.  Now removing image:", image)
+							glog.Infoln("Container removed.  Now removing image:", image)
+							err := this.docker.RemoveImage(image, true, true)
+							glog.Infoln("RemoveImage: err=", err)
 
 						}()
 					}
