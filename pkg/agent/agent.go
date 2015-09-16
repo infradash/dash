@@ -401,7 +401,7 @@ func (this *Agent) ListContainers(domain, service string) ([]*docker.Container, 
 	return d.ListContainers(ServiceKey(service))
 }
 
-func (this *Agent) WatchContainer(domain, service string, spec *WatchContainerSpec) error {
+func (this *Agent) WatchContainer(domain, service string, spec *MatchContainerRule) error {
 	d, has := this.domains[domain]
 	if !has {
 		return ErrNoDomain

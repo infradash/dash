@@ -46,14 +46,14 @@ func (this *Agent) DiscoverSelfInDocker() error {
 }
 
 type ContainerMatchRule struct {
-	WatchContainerSpec
+	MatchContainerRule
 
 	Domain      string
 	Service     ServiceKey
 	PortMatched bool
 }
 
-func (this *WatchContainerSpec) GetMatchContainerPort() int {
+func (this *MatchContainerRule) GetMatchContainerPort() int {
 	if this.MatchContainerPort != nil {
 		return *this.MatchContainerPort
 	} else {
@@ -62,7 +62,7 @@ func (this *WatchContainerSpec) GetMatchContainerPort() int {
 }
 
 func (this *ContainerMatchRule) GetMatchContainerPort() int {
-	return this.WatchContainerSpec.GetMatchContainerPort()
+	return this.MatchContainerRule.GetMatchContainerPort()
 }
 
 func (this *ContainerMatchRule) match_by_running_port(c *docker.Container) bool {
@@ -152,9 +152,9 @@ func (this *DiscoveryContainerMatcher) Init() *DiscoveryContainerMatcher {
 	return this
 }
 
-func (this *DiscoveryContainerMatcher) C(domain string, service ServiceKey, spec *WatchContainerSpec) *DiscoveryContainerMatcher {
+func (this *DiscoveryContainerMatcher) C(domain string, service ServiceKey, spec *MatchContainerRule) *DiscoveryContainerMatcher {
 	match_rule := ContainerMatchRule{
-		WatchContainerSpec: *spec,
+		MatchContainerRule: *spec,
 		Domain:             domain,
 		Service:            service,
 	}

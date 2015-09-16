@@ -25,7 +25,7 @@ type Info struct {
 	Agent   *Agent        `json:"agent"`
 }
 
-type WatchContainerSpec struct {
+type MatchContainerRule struct {
 	QualifyByTags
 	docker.Image
 	MatchContainerPort *int                       `json:"match_container_port,omitempty"`
@@ -58,9 +58,9 @@ func (d *DomainConfig) JSON() string {
 type Scheduler struct {
 	QualifyByTags
 
-	Job
+	Task
 
-	Discover    *WatchContainerSpec `json:"discover,omitempty"`
+	Register    *MatchContainerRule `json:"register,omitempty"`
 	TriggerPath *Trigger            `json:"trigger_path,omitempty"`
 
 	Constraint *Constraint      `json:"constraint,omitempty"`
@@ -74,7 +74,7 @@ type Trigger string
 type AssignContainerName func(step int, template string, opts *docker.ContainerControl) string
 type AssignContainerImage func(step int, opts *docker.ContainerControl) (*docker.Image, error)
 
-type Job struct {
+type Task struct {
 
 	// Registry path where the image to use is stored.
 	ImagePath string `json:"image_path,omitempty"`
@@ -100,15 +100,13 @@ type Job struct {
 	assignImage AssignContainerImage
 
 	// TODO - Add fields here to support implementation of barriers, leader election and global locks required
-	// to implement semantics like 'only 1 per cluster' and pre-emption (e.g. A after B)
+	// to implement semantics like 'only 1 per cluster'
 }
 
 type ContainerAction struct {
 	// Template for naming the container. Variables:  Group, Sequence, Domain, Service, Image
 	// If not provided, docker naming will be used.
 	ContainerNameTemplate *string `json:"container_name_template,omitempty" dash:"template"`
-
-	Action ContainerActionType
 
 	docker.ContainerControl
 }

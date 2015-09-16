@@ -141,11 +141,11 @@ func (this *Domain) SynchronizeSchedule() error {
 	for service, scheduler := range this.schedulers {
 		glog.Infoln("Synchronize Service=", service)
 
-		scheduler.Job.zk = this.zk
-		scheduler.Job.domain = this.Domain
-		scheduler.Job.service = service
+		scheduler.Task.zk = this.zk
+		scheduler.Task.domain = this.Domain
+		scheduler.Task.service = service
 
-		global := &scheduler.Job
+		global := &scheduler.Task
 		local := this.tracker
 
 		err := scheduler.Synchronize(this.Domain, service, local, global, this.scheduleExecutor.Inbox)
@@ -161,8 +161,8 @@ func (this *Domain) AddScheduler(service ServiceKey, scheduler *Scheduler) (chan
 	channel := this.tracker.AddStatesListener(service)
 	stopper := make(chan bool)
 
-	scheduler.Job.zk = this.zk
-	global := &scheduler.Job
+	scheduler.Task.zk = this.zk
+	global := &scheduler.Task
 
 	err := scheduler.Run(this.Domain, service, global, channel, stopper, this.scheduleExecutor.Inbox)
 	if err != nil {
@@ -184,7 +184,7 @@ func (this *Domain) AddScheduler(service ServiceKey, scheduler *Scheduler) (chan
 	}
 
 	watch := string(*scheduler.TriggerPath)
-	context := &scheduler.Job
+	context := &scheduler.Task
 	err = this.triggers.AddWatcher(watch, context, func(e zk.Event) bool {
 
 		glog.Infoln("Event for trigger", watch, e)
@@ -217,18 +217,18 @@ func label(this *docker.Container) string {
 }
 
 // Based on the scheduler information, derive the rules for discovery and monitoring of containers
-func (this *Domain) GetContainerWatcherSpecs() (map[ServiceKey]*WatchContainerSpec, error) {
-	matched := map[ServiceKey]*WatchContainerSpec{}
-	// Go through all the scheduler settings and derive the WatchContainerSpec
+func (this *Domain) GetContainerWatcherSpecs() (map[ServiceKey]*MatchContainerRule, error) {
+	matched := map[ServiceKey]*MatchContainerRule{}
+	// Go through all the scheduler settings and derive the MatchContainerRule
 	for service, scheduler := range this.Config.Services {
 		if scheduler.QualifyByTags.Matches(this.agent.QualifyByTags.Tags) {
-			matched[service] = scheduler.GetWatchContainerSpec()
+			matched[service] = scheduler.GetMatchContainerRule()
 		}
 	}
 	return matched, nil
 }
 
-func (this *Domain) WatchContainer(service ServiceKey, spec *WatchContainerSpec) error {
+func (this *Domain) WatchContainer(service ServiceKey, spec *MatchContainerRule) error {
 	key := fmt.Sprintf("%s-%s", service, spec.Image)
 
 	if this.container_watchers == nil {

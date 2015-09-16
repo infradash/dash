@@ -14,8 +14,8 @@ var (
 	image_counter = map[string]int{}
 )
 
-func NoActions() []Job {
-	return []Job{}
+func NoActions() []Task {
+	return []Task{}
 }
 
 func get_sequence_by_image(image string) int {
@@ -88,13 +88,13 @@ func AssignContainerImageFromRegistry(global GlobalServiceState, local HostConta
 }
 
 // Derive the watch container spec based on the scheduler data.
-func (this *Scheduler) GetWatchContainerSpec() *WatchContainerSpec {
+func (this *Scheduler) GetMatchContainerRule() *MatchContainerRule {
 
-	if this.Discover == nil {
-		this.Discover = &WatchContainerSpec{}
+	if this.Register == nil {
+		this.Register = &MatchContainerRule{}
 	}
 	// TODO - infer this...
-	return this.Discover
+	return this.Register
 }
 
 func (this *Scheduler) Run(domain string, service ServiceKey, global GlobalServiceState,
@@ -188,7 +188,7 @@ func (this *Scheduler) Synchronize(domain string, service ServiceKey,
 		return err
 	}
 
-	actions := []Job{}
+	actions := []Task{}
 	switch {
 	case this.Constraint != nil:
 		count, err := this.Constraint.Schedule(localRunning, globalRunning)
@@ -201,7 +201,7 @@ func (this *Scheduler) Synchronize(domain string, service ServiceKey,
 		}
 	default:
 		// Without specifying any constraints, we just naively start more instances...
-		//actions = []Job{this.StartOne(domain, service, global, local)}
+		//actions = []Task{this.StartOne(domain, service, global, local)}
 	}
 
 	if control != nil {
@@ -211,9 +211,9 @@ func (this *Scheduler) Synchronize(domain string, service ServiceKey,
 }
 
 func (this *Scheduler) StartOne(domain string, service ServiceKey,
-	global GlobalServiceState, local HostContainerStates) Job {
+	global GlobalServiceState, local HostContainerStates) Task {
 
-	sa := this.Job
+	sa := this.Task
 	sa.domain = domain
 	sa.service = service
 	sa.assignName = AssignContainerNameFromRegistry(global, local, domain, service)

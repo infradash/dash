@@ -66,7 +66,7 @@ func (suite *TestSuiteDiscover) TestContainerMatch(c *C) {
 	nginx_http := 80
 
 	m := new(DiscoveryContainerMatcher).Init()
-	m.C("test.com", ServiceKey("sidekiq"), &WatchContainerSpec{
+	m.C("test.com", ServiceKey("sidekiq"), &MatchContainerRule{
 		Image: docker.Image{Repository: "infradash/infradash"},
 		MatchFirst: []ContainerMatchRulesUnion{
 			ContainerMatchRulesUnion{
@@ -74,7 +74,7 @@ func (suite *TestSuiteDiscover) TestContainerMatch(c *C) {
 			},
 		},
 	})
-	m.C("test.com", ServiceKey("infradash"), &WatchContainerSpec{
+	m.C("test.com", ServiceKey("infradash"), &MatchContainerRule{
 		Image:              docker.Image{Repository: "infradash/infradash"},
 		MatchContainerPort: &infradash_port,
 		MatchFirst: []ContainerMatchRulesUnion{
@@ -84,11 +84,11 @@ func (suite *TestSuiteDiscover) TestContainerMatch(c *C) {
 		},
 	})
 
-	m.C("test.com", ServiceKey("mqtt"), &WatchContainerSpec{
+	m.C("test.com", ServiceKey("mqtt"), &MatchContainerRule{
 		Image:              docker.Image{Repository: "infradash/mqtt"},
 		MatchContainerPort: &mqtt_port,
 	})
-	m.C("test.com", ServiceKey("nginx"), &WatchContainerSpec{
+	m.C("test.com", ServiceKey("nginx"), &MatchContainerRule{
 		Image:              docker.Image{Repository: "infradash/nginx"},
 		MatchContainerPort: &nginx_https,
 		MatchFirst: []ContainerMatchRulesUnion{
@@ -97,7 +97,7 @@ func (suite *TestSuiteDiscover) TestContainerMatch(c *C) {
 			},
 		},
 	})
-	m.C("test.com", ServiceKey("nginx-http"), &WatchContainerSpec{
+	m.C("test.com", ServiceKey("nginx-http"), &MatchContainerRule{
 		Image:              docker.Image{Repository: "infradash/nginx"},
 		MatchContainerPort: &nginx_https,
 		MatchFirst: []ContainerMatchRulesUnion{
@@ -106,7 +106,7 @@ func (suite *TestSuiteDiscover) TestContainerMatch(c *C) {
 			},
 		},
 	})
-	m.C("test.com", ServiceKey("nginx-http2"), &WatchContainerSpec{
+	m.C("test.com", ServiceKey("nginx-http2"), &MatchContainerRule{
 		Image:              docker.Image{Repository: "infradash/nginx"},
 		MatchContainerPort: &nginx_http,
 		MatchFirst: []ContainerMatchRulesUnion{

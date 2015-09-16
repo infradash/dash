@@ -7,10 +7,10 @@ import (
 )
 
 type ScheduleExecutor struct {
-	Inbox chan<- []Job
+	Inbox chan<- []Task
 	Stop  chan<- bool
 
-	inbox chan []Job
+	inbox chan []Task
 	stop  chan bool
 
 	zk     zk.ZK
@@ -18,7 +18,7 @@ type ScheduleExecutor struct {
 }
 
 func NewScheduleExecutor(zk zk.ZK, docker *docker.Docker) *ScheduleExecutor {
-	inbox, stop := make(chan []Job), make(chan bool)
+	inbox, stop := make(chan []Task), make(chan bool)
 	return &ScheduleExecutor{
 		Inbox:  inbox,
 		Stop:   stop,

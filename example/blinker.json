@@ -13,7 +13,7 @@
 		    "Cmd" : [ "-config_source_url=http://blinkergit.github.io/ops-maintenance/blinker/blinker/blinker-cloud.json"],
                     "host_config" : { "PublishAllPorts" : true }
                 }],
-		"discover": {
+		"register": {
 		    "repository" : "blinker/blinker",
 		    "match_container_port" : 3000,
 		    "match_first": [

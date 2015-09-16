@@ -84,7 +84,7 @@ func (this *EndPoint) ListContainers(resp http.ResponseWriter, req *http.Request
 func (this *EndPoint) WatchContainer(resp http.ResponseWriter, req *http.Request) {
 	domain := this.engine.GetUrlParameter(req, "domain")
 	service := this.engine.GetUrlParameter(req, "service")
-	spec := Methods[WatchContainer].RequestBody(req).(*WatchContainerSpec)
+	spec := Methods[WatchContainer].RequestBody(req).(*MatchContainerRule)
 	err := this.engine.UnmarshalJSON(req, spec)
 	if err != nil {
 		glog.Warningln("Error", err)

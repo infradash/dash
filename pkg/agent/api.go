@@ -55,7 +55,7 @@ Start watching container start/stops
 		UrlRoute:     "/v1/watch/container/{domain}/{service}",
 		HttpMethod:   "POST",
 		ContentTypes: []string{"application/json"},
-		RequestBody:  Types.WatchContainerSpec,
+		RequestBody:  Types.MatchContainerRule,
 	},
 
 	ConfigureDomain: api.MethodSpec{
@@ -88,13 +88,13 @@ Forwards a message to the target specified in the message
 var Types = struct {
 	Info               func(*http.Request) interface{}
 	ReleaseAction      func(*http.Request) interface{}
-	WatchContainerSpec func(*http.Request) interface{}
+	MatchContainerRule func(*http.Request) interface{}
 	Containers         func(*http.Request) interface{}
 	DomainConfig       func(*http.Request) interface{}
 	ExecutorConfig     func(*http.Request) interface{}
 }{
 	Info:               func(*http.Request) interface{} { return &Info{} },
-	WatchContainerSpec: func(*http.Request) interface{} { return &WatchContainerSpec{} },
+	MatchContainerRule: func(*http.Request) interface{} { return &MatchContainerRule{} },
 	Containers:         func(*http.Request) interface{} { return []docker.Container{} },
 	DomainConfig:       func(*http.Request) interface{} { return &DomainConfig{} },
 	ExecutorConfig:     func(*http.Request) interface{} { return &executor.ExecutorConfig{} },
