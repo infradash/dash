@@ -82,71 +82,71 @@
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/circleci",
-			"Comment": "v1.0-24-gab209ac",
-			"Rev": "ab209acb514e66ae72d4fbcf5bf59ff6b0dddfa0"
+			"Comment": "v1.0-25-gf707914",
+			"Rev": "f707914e942e94c1fa7fb554071dfdfa5950747c"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/docker",
-			"Comment": "v1.0-24-gab209ac",
-			"Rev": "ab209acb514e66ae72d4fbcf5bf59ff6b0dddfa0"
+			"Comment": "v1.0-25-gf707914",
+			"Rev": "f707914e942e94c1fa7fb554071dfdfa5950747c"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/mqtt",
-			"Comment": "v1.0-24-gab209ac",
-			"Rev": "ab209acb514e66ae72d4fbcf5bf59ff6b0dddfa0"
+			"Comment": "v1.0-25-gf707914",
+			"Rev": "f707914e942e94c1fa7fb554071dfdfa5950747c"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/pubsub",
-			"Comment": "v1.0-24-gab209ac",
-			"Rev": "ab209acb514e66ae72d4fbcf5bf59ff6b0dddfa0"
+			"Comment": "v1.0-25-gf707914",
+			"Rev": "f707914e942e94c1fa7fb554071dfdfa5950747c"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/registry",
-			"Comment": "v1.0-24-gab209ac",
-			"Rev": "ab209acb514e66ae72d4fbcf5bf59ff6b0dddfa0"
+			"Comment": "v1.0-25-gf707914",
+			"Rev": "f707914e942e94c1fa7fb554071dfdfa5950747c"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/task",
-			"Comment": "v1.0-24-gab209ac",
-			"Rev": "ab209acb514e66ae72d4fbcf5bf59ff6b0dddfa0"
+			"Comment": "v1.0-25-gf707914",
+			"Rev": "f707914e942e94c1fa7fb554071dfdfa5950747c"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/template",
-			"Comment": "v1.0-24-gab209ac",
-			"Rev": "ab209acb514e66ae72d4fbcf5bf59ff6b0dddfa0"
+			"Comment": "v1.0-25-gf707914",
+			"Rev": "f707914e942e94c1fa7fb554071dfdfa5950747c"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/zk",
-			"Comment": "v1.0-24-gab209ac",
-			"Rev": "ab209acb514e66ae72d4fbcf5bf59ff6b0dddfa0"
+			"Comment": "v1.0-25-gf707914",
+			"Rev": "f707914e942e94c1fa7fb554071dfdfa5950747c"
 		},
 		{
 			"ImportPath": "github.com/qorio/omni/api",
-			"Rev": "7fd1bb125cf56d6b48f8fdac7fffc6c033b5bca2"
+			"Rev": "b7a11cfc6d59bd081ac4a2696329417b9aca044d"
 		},
 		{
 			"ImportPath": "github.com/qorio/omni/auth",
-			"Rev": "7fd1bb125cf56d6b48f8fdac7fffc6c033b5bca2"
+			"Rev": "b7a11cfc6d59bd081ac4a2696329417b9aca044d"
 		},
 		{
 			"ImportPath": "github.com/qorio/omni/common",
-			"Rev": "7fd1bb125cf56d6b48f8fdac7fffc6c033b5bca2"
+			"Rev": "b7a11cfc6d59bd081ac4a2696329417b9aca044d"
 		},
 		{
 			"ImportPath": "github.com/qorio/omni/http",
-			"Rev": "7fd1bb125cf56d6b48f8fdac7fffc6c033b5bca2"
+			"Rev": "b7a11cfc6d59bd081ac4a2696329417b9aca044d"
 		},
 		{
 			"ImportPath": "github.com/qorio/omni/rest",
-			"Rev": "7fd1bb125cf56d6b48f8fdac7fffc6c033b5bca2"
+			"Rev": "b7a11cfc6d59bd081ac4a2696329417b9aca044d"
 		},
 		{
 			"ImportPath": "github.com/qorio/omni/runtime",
-			"Rev": "7fd1bb125cf56d6b48f8fdac7fffc6c033b5bca2"
+			"Rev": "b7a11cfc6d59bd081ac4a2696329417b9aca044d"
 		},
 		{
 			"ImportPath": "github.com/qorio/omni/version",
-			"Rev": "7fd1bb125cf56d6b48f8fdac7fffc6c033b5bca2"
+			"Rev": "b7a11cfc6d59bd081ac4a2696329417b9aca044d"
 		},
 		{
 			"ImportPath": "github.com/samuel/go-zookeeper/zk",

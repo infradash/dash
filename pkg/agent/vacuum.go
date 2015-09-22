@@ -112,7 +112,6 @@ func (this *Vacuum) do_vacuum() error {
 	case this.Config.ByVersion != nil:
 		versions := this.local.CountVersions(this.Service)
 		if versions <= this.Config.ByVersion.VersionsToKeep {
-			glog.Infoln("Domain=", this.Domain, "Service=", this.Service, "Nothing to do: versions=", versions)
 			return nil
 		}
 
@@ -135,11 +134,10 @@ func (this *Vacuum) do_vacuum() error {
 				case Removed:
 					if this.Config.RemoveImage {
 						go func() {
-							// TODO - remove image
 							glog.Infoln("Container removed.  Now removing image:", image)
 							err := this.docker.RemoveImage(image, true, true)
 							glog.Infoln("RemoveImage: err=", err)
-
+							// TODO - send event
 						}()
 					}
 				default:
