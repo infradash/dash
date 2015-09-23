@@ -63,7 +63,7 @@ run-local-agent-blinker:
 		--tlskey=$(HOME)/.boot2docker/certs/boot2docker-vm/key.pem \
 		--tlsca=$(HOME)/.boot2docker/certs/boot2docker-vm/ca.pem \
 		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/blinker.json" \
-		--status_topic='mqtt://{{env "/dev.blinker.com/mqtt" }}/{{.Domain}}' \
+		--status_topic='mqtt://{{domain_service "mqtt" }}/{{.Domain}}' \
 	agent
 
 run-exec-bash-export:

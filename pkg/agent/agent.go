@@ -297,6 +297,9 @@ func (this *Agent) ConnectServices() error {
 				"env": func(p string) *string {
 					return zk.GetString(this.zk, registry.Path(p))
 				},
+				"domain_service": func(p string) *string {
+					return zk.GetString(this.zk, registry.Path("/"+this.Domain).Sub(p))
+				},
 			})
 			if err != nil {
 				panic(err)
