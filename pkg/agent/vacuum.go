@@ -91,9 +91,9 @@ func (this *Vacuum) Run() error {
 					this.ticker.Stop()
 				}
 			case <-this.ticker.C:
-				glog.Infoln("Running Vacuum:", "Domain=", this.Domain, "Service=", this.Service)
 				err := this.do_vacuum()
 				if err != nil {
+					glog.Warningln("Vacuum failed:", "Domain=", this.Domain, "Service=", this.Service, "Err=", err)
 					ExceptionEvent(err, this, "Vacuum failed")
 				}
 			}
