@@ -9,6 +9,7 @@ import (
 	_ "github.com/qorio/maestro/pkg/mqtt"
 	"github.com/qorio/maestro/pkg/pubsub"
 	"github.com/qorio/maestro/pkg/registry"
+	"github.com/qorio/maestro/pkg/template"
 	"github.com/qorio/maestro/pkg/zk"
 	"github.com/qorio/omni/runtime"
 	"github.com/qorio/omni/version"
@@ -48,6 +49,7 @@ type Agent struct {
 	domainConfigs map[string]DomainConfig
 
 	StatusPubsubTopic string `json:"status_topic,omitempty"`
+	statusTopic       pubsub.Topic
 }
 
 // Checks that all the information required for agent start up is met.
@@ -250,11 +252,11 @@ func (this *Agent) GetIdentity() string {
 
 func (this *Agent) ConnectServices() error {
 	glog.Infoln("Connecting to zookeeper:", this.Hosts)
-	zk, err := zk.Connect(strings.Split(this.Hosts, ","), this.Timeout)
+	zc, err := zk.Connect(strings.Split(this.Hosts, ","), this.Timeout)
 	if err != nil {
 		return err
 	}
-	this.zk = zk
+	this.zk = zc
 	glog.Infoln("Connected to zookeeper:", this.Hosts)
 
 	glog.Infoln("Connecting to docker:", this.DockerSettings)
@@ -290,8 +292,21 @@ func (this *Agent) ConnectServices() error {
 			// no-op
 		}
 		if this.StatusPubsubTopic != "" {
+
+			root, err := template.ApplyTemplate(this.StatusPubsubTopic, this, map[string]interface{}{
+				"env": func(p string) *string {
+					return zk.GetString(this.zk, registry.Path(p))
+				},
+			})
+			if err != nil {
+				panic(err)
+			}
+
 			id := path.Join(this.Domain, this.Name, this.Host)
-			topic := pubsub.Topic(this.StatusPubsubTopic + "/" + id)
+			topic := pubsub.Topic(root + "/" + id)
+
+			glog.Infoln("STATUS-TOPIC: Status topic=", topic)
+
 			if topic.Valid() {
 				if pb, err := topic.Broker().PubSub(id); err == nil {
 					status = func(evt map[string]interface{}) {
@@ -300,13 +315,15 @@ func (this *Agent) ConnectServices() error {
 							pb.Publish(topic, msg)
 						}
 					}
+					this.statusTopic = topic
+					glog.Infoln("STATUS-TOPIC: Status topic=", topic, "ready.")
 				}
 			} else {
 				panic(topic)
 			}
 		}
 
-		events := zk.Events()
+		events := this.zk.Events()
 		for {
 			evt := <-events
 			glog.Infoln("ZKEvent:", evt.JSON())
@@ -366,9 +383,10 @@ func (this *Agent) Register() error {
 
 func (this *Agent) info() interface{} {
 	info := map[string]interface{}{
-		"api":       fmt.Sprintf("%s:%d", this.Host, this.ListenPort),
-		"dockerapi": fmt.Sprintf("http://%s:%d/dockerapi", this.Host, this.ListenPort),
-		"version":   *version.BuildInfo(),
+		"api":          fmt.Sprintf("%s:%d", this.Host, this.ListenPort),
+		"dockerapi":    fmt.Sprintf("http://%s:%d/dockerapi", this.Host, this.ListenPort),
+		"version":      *version.BuildInfo(),
+		"status_topic": this.statusTopic,
 	}
 	if this.is_running_dockerui() {
 		info["dockerui"] = fmt.Sprintf("http://%s:%d/", this.Host, this.DockerUIPort)
