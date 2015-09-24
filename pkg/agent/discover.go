@@ -86,14 +86,10 @@ func (this *ContainerMatchRule) match(c *docker.Container) bool {
 		return false
 	}
 
-	glog.V(100).Infoln("Checking container", c, "against", this)
-
 	// We first try by matching image. Then by name, environment variable.
 	if !ImageMatch(c.Image, &this.Image) {
 		return false
 	}
-
-	glog.V(100).Infoln("Images matched. Checking container", c, "against", this)
 
 	// When the container isn't running, the port information is erased.
 	// So we count on other conditions to match -- we at least eliminate the negative case
