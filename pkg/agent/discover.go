@@ -85,10 +85,15 @@ func (this *ContainerMatchRule) match(c *docker.Container) bool {
 	if c.DockerData == nil {
 		return false
 	}
+
+	glog.V(100).Infoln("Checking container", c, "against", this)
+
 	// We first try by matching image. Then by name, environment variable.
 	if !ImageMatch(c.Image, &this.Image) {
 		return false
 	}
+
+	glog.V(100).Infoln("Images matched. Checking container", c, "against", this)
 
 	// When the container isn't running, the port information is erased.
 	// So we count on other conditions to match -- we at least eliminate the negative case
@@ -259,6 +264,7 @@ func (this *DiscoveryContainerMatcher) Match(c *docker.Container) (bool, *Contai
 }
 
 func ImageMatch(image string, spec *docker.Image) bool {
+	glog.V(100).Infoln("Matching image", image, "vs", spec)
 	if spec.Tag != "" {
 		return image == fmt.Sprintf("%s:%s", spec.Repository, spec.Tag)
 	} else {

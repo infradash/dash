@@ -7,5 +7,5 @@ import (
 )
 
 func (this *Terraform) BindFlags() {
-	flag.StringVar(&this.Ip, "ip", os.Getenv(EnvIp), "True to source env from standard input")
+	flag.StringVar(&this.Ip, "ip", os.Getenv(EnvIp), "Host ip")
 }

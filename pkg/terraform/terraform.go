@@ -37,16 +37,23 @@ func (this *Terraform) Run() error {
 	}
 
 	if this.Zookeeper != nil {
+		if this.Zookeeper.Template == "" {
+			this.Zookeeper.Template = "func://zk_default_template"
+		}
 		if err := this.Zookeeper.Execute(this.AuthToken, this, this.template_funcs()); err != nil {
 			return err
 		}
 	}
 
 	if this.Kafka != nil {
+		if this.Kafka.Template == "" {
+			this.Kafka.Template = "func://kafka_default_template"
+		}
 		if err := this.Kafka.Execute(this.AuthToken, this, this.template_funcs()); err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -58,8 +65,14 @@ func (this *Terraform) template_funcs() map[string]interface{} {
 		"zk_servers_spec": func() string {
 			return GetZkServersSpec(Server{Ip: Ip(this.Ip)}, this.Ensemble)
 		},
+		"zk_default_template": func() string {
+			return DefaultZkExhibitorConfig
+		},
 		"server_id": func() string {
 			return GetServerId(Ip(this.Ip), this.Ensemble)
+		},
+		"kafka_default_template": func() string {
+			return DefaultKafkaProperties
 		},
 	}
 }

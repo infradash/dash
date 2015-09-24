@@ -18,6 +18,7 @@ type Config struct {
 	Template Url      `json:"template"`
 	Endpoint Url      `json:"endpoint"`
 	Cmd      []string `json:"cmd"`
+	Applied  string   `json:"applied"`
 }
 
 type TerraformConfig struct {

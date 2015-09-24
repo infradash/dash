@@ -2,6 +2,7 @@ package terraform
 
 import (
 	"bytes"
+	"github.com/golang/glog"
 	. "github.com/infradash/dash/pkg/dash"
 	"github.com/qorio/maestro/pkg/template"
 	"io/ioutil"
@@ -11,21 +12,21 @@ import (
 )
 
 func (this *Config) Validate() error {
-	switch {
+	if this.Template.String() != "" {
+		if e := check_url(this.Template.String()); e != nil {
+			glog.Warningln("Bad url", this.Template)
+			return e
+		}
+	}
 
-	case this.Template.String() == "":
-		return ErrBadConfig
-	case this.Endpoint.String() == "":
+	if this.Endpoint.String() == "" {
+		glog.Warningln("Missing endpoint")
 		return ErrBadConfig
 	}
 
-	if e := check_url(this.Template.String()); e != nil {
-		return e
-	}
 	if e := check_url(this.Endpoint.String()); e != nil {
 		return e
 	}
-
 	return nil
 }
 
