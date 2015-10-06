@@ -45,12 +45,32 @@ var IsVersionOlderByBuild = func(imageA, imageB string) bool {
 	return false
 }
 
+var IsVersionOlderByDockerRepoTags = func(imageA, imageB string) bool {
+	repoA, tagA, err := dash.ParseDockerImage(imageA)
+	if err != nil {
+		return false
+	}
+	repoB, tagB, err := dash.ParseDockerImage(imageB)
+	if err != nil {
+		return false
+	}
+
+	if repoA == repoB {
+		return tagA <= tagB
+	} else {
+		return repoA <= repoB
+	}
+}
+
 // Min-heap of container groups prioritized by the version
 type MinVersionHeap []*ContainerGroup
 
-func (h MinVersionHeap) Len() int           { return len(h) }
-func (h MinVersionHeap) Less(i, j int) bool { return IsVersionOlderByBuild(h[i].Image, h[j].Image) }
-func (h MinVersionHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+func (h MinVersionHeap) Len() int            { return len(h) }
+func (h MinVersionHeap) Less0(i, j int) bool { return IsVersionOlderByBuild(h[i].Image, h[j].Image) }
+func (h MinVersionHeap) Less(i, j int) bool {
+	return IsVersionOlderByDockerRepoTags(h[i].Image, h[j].Image)
+}
+func (h MinVersionHeap) Swap(i, j int) { h[i], h[j] = h[j], h[i] }
 func (h *MinVersionHeap) Push(x interface{}) {
 	// Push and Pop use pointer receivers because they modify the slice's length,
 	// not just its contents.

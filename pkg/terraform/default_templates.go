@@ -38,5 +38,9 @@ broker.id={{server_id}}
 zookeeper.connect={{zk_hosts}}
 port=6667
 log.dir=/var/log/kafka/server-{{server_id}}.log
+<<<<<<< HEAD
+=======
+
+>>>>>>> release/1.0
 `
 )
