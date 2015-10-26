@@ -7,11 +7,13 @@ import (
 	"github.com/qorio/maestro/pkg/zk"
 	"net/url"
 	gotemplate "text/template"
+	"time"
 )
 
 type ConfigLoader struct {
-	ConfigUrl string      `json:"config_url"`
-	Context   interface{} `json:"-"`
+	ConfigUrl     string        `json:"config_url"`
+	Context       interface{}   `json:"-"`
+	RetryInterval time.Duration `json:"retry_interval"`
 }
 
 func (this *ConfigLoader) Load(prototype interface{}, auth string, zc zk.ZK, funcs ...gotemplate.FuncMap) (loaded bool, err error) {
@@ -31,8 +33,20 @@ func (this *ConfigLoader) Load(prototype interface{}, auth string, zc zk.ZK, fun
 		"Authorization": "Bearer " + auth,
 	}
 
-	body, _, err := template.FetchUrl(this.ConfigUrl, headers)
-	if err != nil {
+	var body string
+
+	for {
+		body, _, err = template.FetchUrl(this.ConfigUrl, headers)
+		if err == nil {
+			glog.Infoln("Fetched config from", this.ConfigUrl)
+			break
+		} else {
+			glog.Infoln("Waiting ", this.ConfigUrl)
+			time.Sleep(this.RetryInterval) // need to block synchronously.
+		}
+	}
+
+	if len(body) == 0 {
 		return false, err
 	}
 

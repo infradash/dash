@@ -26,6 +26,7 @@ func (this *DockerSettings) BindFlags() {
 
 func (this *ConfigLoader) BindFlags() {
 	flag.StringVar(&this.ConfigUrl, "config_url", os.Getenv(EnvConfigUrl), "Initialize config source url")
+	flag.DurationVar(&this.RetryInterval, "config_url_retry_interval", 5*time.Second, "config url retries interval")
 }
 
 func (this *RegistryEntryBase) BindFlags() {

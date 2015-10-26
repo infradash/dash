@@ -1,10 +1,91 @@
 package terraform
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
-	_ "github.com/golang/glog"
+	"github.com/golang/glog"
+	"io/ioutil"
+	"net/http"
 	"strings"
+	gotemplate "text/template"
+	"time"
 )
+
+const (
+	ZkLocalExhibitorConfigEndpoint    = "http://localhost:8080/exhibitor/v1/config/set"
+	ZkLocalExhibitorGetConfigEndpoint = "http://localhost:8080/exhibitor/v1/config/get-state"
+)
+
+func (zk *ZookeeperConfig) Validate() error {
+	glog.Infoln("Zookeeper - validating config")
+	c := Config(*zk)
+	return c.Validate()
+}
+
+func (zk *ZookeeperConfig) Execute(authToken string, context interface{}, funcs gotemplate.FuncMap) error {
+
+	err := <-zk.CheckReady()
+	if err != nil {
+		return err
+	}
+
+	glog.Infoln("Zookeeper - executing config")
+	c := Config(*zk)
+	return c.Execute(authToken, context, funcs)
+}
+
+func (zk *ZookeeperConfig) CheckReady() chan error {
+
+	ready := make(chan error)
+	ticker := time.Tick(2 * time.Second)
+
+	go func() {
+		for {
+			select {
+
+			case <-ticker:
+
+				glog.Infoln("CheckReady: ", zk.CheckStatusEndpoint)
+
+				client := &http.Client{}
+				resp, err := client.Get(zk.CheckStatusEndpoint.String())
+
+				glog.Infoln("CheckReady resp=", resp, "Err=", err)
+
+				if err == nil && resp.StatusCode == http.StatusOK {
+
+					type status_t struct {
+						Running bool `json:"running"`
+					}
+
+					buff, err := ioutil.ReadAll(resp.Body)
+					if err != nil {
+						ready <- err
+					}
+
+					status := new(status_t)
+					err = json.Unmarshal(buff, status)
+
+					glog.Infoln("Status=", string(buff), "err=", err)
+
+					if err != nil {
+						ready <- err
+					}
+
+					if !status.Running {
+						ready <- errors.New("not-running")
+					} else {
+						glog.Infoln("Zk is ready")
+						ready <- nil
+					}
+					break
+				}
+			}
+		}
+	}()
+	return ready
+}
 
 func GetZkServersSpec(self Server, members []Server) string {
 	list := []string{}

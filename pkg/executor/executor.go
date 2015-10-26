@@ -60,6 +60,8 @@ type Executor struct {
 
 	watcher *ZkWatcher
 
+	exit chan error
+
 	// Tail files
 	MQTTConnectionTimeout       time.Duration `json:"mqtt_connection_timeout"`
 	MQTTConnectionRetryWaitTime time.Duration `json:"mqtt_connection_wait_time"`
@@ -115,7 +117,7 @@ func (this *Executor) load_context() (map[string]interface{}, error) {
 	return context, nil
 }
 
-func (this *Executor) Exec() error {
+func (this *Executor) Exec() {
 
 	if this.Id == "" {
 		this.Id = common.NewUUID().String()
@@ -198,9 +200,11 @@ func (this *Executor) Exec() error {
 			}
 
 			// register this
-			k := registry.NewPath(this.Domain, this.Service, "_logs", this.Host)
-			err := zk.CreateOrSet(this.zk, k, tails, true)
-			glog.Infoln("Registered tail topics:", k, err)
+			if this.zk != nil {
+				k := registry.NewPath(this.Domain, this.Service, "_logs", this.Host)
+				err := zk.CreateOrSet(this.zk, k, tails, true)
+				glog.Infoln("Registered tail topics:", k, err)
+			}
 		}
 	}
 
@@ -247,10 +251,8 @@ func (this *Executor) Exec() error {
 		target.Cmd = &applied
 	}
 
-	var exit chan error
-
 	if this.Daemon {
-		exit = make(chan error)
+		this.exit = make(chan error)
 		go func() {
 			glog.Infoln("Starting API server")
 			endpoint, err := NewApiEndPoint(this)
@@ -271,7 +273,7 @@ func (this *Executor) Exec() error {
 						glog.Infoln("Stopped zk", err)
 					}
 
-					exit <- err
+					this.exit <- err
 					return err
 				})
 		}()
@@ -329,12 +331,13 @@ func (this *Executor) Exec() error {
 			taskRuntime.Stop()
 		}
 	}
+}
 
-	if exit != nil {
-		glog.Infoln("Waiting for API server to complete.")
-		return <-exit
+func (this *Executor) Wait() error {
+	if this.exit != nil {
+		glog.Infoln("Daemon mode. Blocking wait.")
+		return <-this.exit
 	}
-
 	return nil
 }
 

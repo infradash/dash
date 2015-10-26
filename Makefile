@@ -28,8 +28,9 @@ build: setup
 run-local-terraform:
 	DASH_IP=10.0.0.2 \
 	${GODEP} go run main/dash.go --logtostderr --v=500 \
-		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/terraform-config2.json" \
-	terraform
+		--daemon=false --exec_only --no_source_env \
+		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/terraform-config4.json" \
+	terraform echo "hello"
 
 # Simple local example -- assumes localhost zookeeper or SSH tunnel to zookeeper
 # Local ssh tunnel:
