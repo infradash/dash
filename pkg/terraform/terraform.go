@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"github.com/golang/glog"
 	. "github.com/infradash/dash/pkg/dash"
+	"github.com/infradash/dash/pkg/executor"
 )
 
 type Terraform struct {
-	Identity
+	executor.Executor
 	TerraformConfig
 
 	Initializer   *ConfigLoader `json:"config_loader"`
@@ -37,8 +38,17 @@ func (this *Terraform) Run() error {
 	}
 
 	if this.Zookeeper != nil {
+
+		this.Zookeeper.Stop = make(chan bool)
+
 		if this.Zookeeper.Template == "" {
 			this.Zookeeper.Template = "func://zk_default_template"
+		}
+		if this.Zookeeper.Endpoint == "" {
+			this.Zookeeper.Endpoint = ZkLocalExhibitorConfigEndpoint
+		}
+		if this.Zookeeper.CheckStatusEndpoint == "" {
+			this.Zookeeper.CheckStatusEndpoint = ZkLocalExhibitorGetConfigEndpoint
 		}
 		if err := this.Zookeeper.Execute(this.AuthToken, this, this.template_funcs()); err != nil {
 			return err
@@ -46,6 +56,9 @@ func (this *Terraform) Run() error {
 	}
 
 	if this.Kafka != nil {
+
+		this.Kafka.Stop = make(chan bool)
+
 		if this.Kafka.Template == "" {
 			this.Kafka.Template = "func://kafka_default_template"
 		}

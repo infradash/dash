@@ -99,37 +99,57 @@ func main() {
 
 	regContainerEntry.Identity = *identity
 
+	executor.Identity = *identity
+	executor.QualifyByTags.Tags = tags
+	executor.ZkSettings = *zkSettings
+	envSource.RegistryEntryBase = *regEntryBase
+	executor.EnvSource = *envSource
+	if len(flag.Args()) > 1 {
+		executor.Cmd = flag.Args()[1]
+	}
+	if len(flag.Args()) > 2 {
+		executor.Args = flag.Args()[2:]
+	}
+
 	switch verb {
+
 	case "terraform":
 
-		terraform.Identity = *identity
-
 		glog.Infoln(buildInfo.Notice())
-		glog.Infoln("Starting terraform:", *terraform, terraform.Identity.String(), terraform.Initializer.Context)
 
-		err := terraform.Run()
+		// disable the initializer so that it's loaded by terraform instead
+		executor.Initializer = nil
+		terraform.Executor = *executor
+
+		glog.Infoln("Starting terraform EXEC:", *terraform, terraform.Identity.String(), terraform.Initializer.Context)
+
+		terraform.Executor.Exec()
+
+		terraform_done := make(chan error)
+
+		// start terraform steps in a separate thread
+		go func() {
+			glog.Infoln("Starting terraform CONFIG:", *terraform, terraform.Identity.String(), terraform.Initializer.Context)
+			terraform_done <- terraform.Run()
+		}()
+
+		err := terraform.Executor.Wait()
+		if err != nil {
+			panic(err)
+		}
+
+		// Make sure terrforming is complete
+		err = <-terraform_done
 		if err != nil {
 			panic(err)
 		}
 
 	case "exec":
 
-		executor.Identity = *identity
-		executor.QualifyByTags.Tags = tags
-		executor.ZkSettings = *zkSettings
-		envSource.RegistryEntryBase = *regEntryBase
-		executor.EnvSource = *envSource
-
-		if len(flag.Args()) > 1 {
-			executor.Cmd = flag.Args()[1]
-		}
-		if len(flag.Args()) > 2 {
-			executor.Args = flag.Args()[2:]
-		}
-
 		glog.Infoln(buildInfo.Notice())
 		glog.Infoln("Exec:", executor, executor.Identity.String(), executor.Initializer.Context)
-		err := executor.Exec()
+		executor.Exec()
+		err := executor.Wait()
 		if err != nil {
 			panic(err)
 		}

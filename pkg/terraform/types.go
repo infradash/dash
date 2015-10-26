@@ -15,17 +15,21 @@ type Server struct {
 }
 
 type Config struct {
-	Template Url      `json:"template"`
-	Endpoint Url      `json:"endpoint"`
-	Cmd      []string `json:"cmd"`
-	Applied  string   `json:"applied"`
+	Template            Url `json:"template"`
+	Endpoint            Url `json:"endpoint"`
+	CheckStatusEndpoint Url `json:"check_status_endpoint"`
+
+	Stop chan bool
 }
 
+type ZookeeperConfig Config
+type KafkaConfig Config
+
 type TerraformConfig struct {
-	Status    pubsub.Topic `json:"status"`
-	Ensemble  []Server     `json:"ensemble"`
-	Zookeeper *Config      `json:"zookeeper"`
-	Kafka     *Config      `json:"kafka"`
+	Status    pubsub.Topic     `json:"status"`
+	Ensemble  []Server         `json:"ensemble"`
+	Zookeeper *ZookeeperConfig `json:"zookeeper"`
+	Kafka     *KafkaConfig     `json:"kafka"`
 }
 
 func (this Url) String() string {

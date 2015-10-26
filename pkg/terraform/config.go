@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 	gotemplate "text/template"
+	"time"
 )
 
 func (this *Config) Validate() error {
@@ -36,7 +37,24 @@ func (this *Config) Execute(authToken string, context interface{}, funcs gotempl
 		return err
 	}
 
-	return this.apply_config(authToken, config)
+	err = this.apply_config(authToken, config)
+	if err != nil {
+		glog.Warningln("Error applying config:", err)
+		ticker := time.Tick(2 * time.Second)
+		for {
+			select {
+			case <-ticker:
+				glog.Infoln("Applying config:", this)
+				err := this.apply_config(authToken, config)
+				if err == nil {
+					break
+				}
+			case <-this.Stop:
+				break
+			}
+		}
+	}
+	return nil
 }
 
 func (this *Config) execute_template(authToken string, context interface{}, funcs gotemplate.FuncMap) ([]byte, error) {
@@ -64,6 +82,7 @@ func do_post(url string, body []byte, authToken string) error {
 	client := &http.Client{}
 	post, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
 	post.Header.Add("Authorization", "Bearer "+authToken)
+	post.Header.Add("Content-Type", "application/json")
 	resp, err := client.Do(post)
 	if err != nil {
 		return err

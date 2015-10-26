@@ -108,7 +108,7 @@ func (suite *TestSuiteTerraform) TestApplyConfigJSONTemplate(c *C) {
 			Server{Ip: "10.40.0.2"},
 			Server{Ip: "10.40.0.3"},
 		},
-		Zookeeper: &Config{
+		Zookeeper: &ZookeeperConfig{
 			Template: Url(suite.zk_json_url),
 		},
 	}
@@ -119,7 +119,8 @@ func (suite *TestSuiteTerraform) TestApplyConfigJSONTemplate(c *C) {
 			TerraformConfig: *config,
 		}
 
-		j, err := config.Zookeeper.execute_template(t.AuthToken, t, t.template_funcs())
+		cfg := Config(*config.Zookeeper)
+		j, err := cfg.execute_template(t.AuthToken, t, t.template_funcs())
 		c.Assert(err, Equals, nil)
 
 		m := map[string]interface{}{}
@@ -135,7 +136,8 @@ func (suite *TestSuiteTerraform) TestApplyConfigJSONTemplate(c *C) {
 			TerraformConfig: *config,
 		}
 
-		j, err := config.Zookeeper.execute_template(t.AuthToken, t, t.template_funcs())
+		cfg := Config(*config.Zookeeper)
+		j, err := cfg.execute_template(t.AuthToken, t, t.template_funcs())
 		c.Assert(err, Equals, nil)
 
 		m := map[string]interface{}{}
@@ -151,7 +153,8 @@ func (suite *TestSuiteTerraform) TestApplyConfigJSONTemplate(c *C) {
 			TerraformConfig: *config,
 		}
 
-		j, err := config.Zookeeper.execute_template(t.AuthToken, t, t.template_funcs())
+		cfg := Config(*config.Zookeeper)
+		j, err := cfg.execute_template(t.AuthToken, t, t.template_funcs())
 		c.Assert(err, Equals, nil)
 
 		m := map[string]interface{}{}

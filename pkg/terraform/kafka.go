@@ -1,8 +1,21 @@
 package terraform
 
 import (
-	_ "github.com/golang/glog"
+	"github.com/golang/glog"
+	gotemplate "text/template"
 )
+
+func (zk *KafkaConfig) Validate() error {
+	glog.Infoln("Kafka - validating config")
+	c := Config(*zk)
+	return c.Validate()
+}
+
+func (zk *KafkaConfig) Execute(authToken string, context interface{}, funcs gotemplate.FuncMap) error {
+	glog.Infoln("Kafka - executing config")
+	c := Config(*zk)
+	return c.Execute(authToken, context, funcs)
+}
 
 func (this *Terraform) StartKafka() error {
 	return nil
