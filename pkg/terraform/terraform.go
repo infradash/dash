@@ -5,6 +5,7 @@ import (
 	"github.com/golang/glog"
 	. "github.com/infradash/dash/pkg/dash"
 	"github.com/infradash/dash/pkg/executor"
+	"time"
 )
 
 type Terraform struct {
@@ -25,12 +26,19 @@ func (this *Terraform) Run() error {
 	}
 	this.Initializer.Context = this
 
-	loaded, err := this.Initializer.Load(this, this.AuthToken, nil)
-	if err != nil {
-		return err
-	}
-	if !loaded {
-		return ErrNotLoaded
+	loaded := false
+	var err error
+	for {
+		loaded, err = this.Initializer.Load(this, this.AuthToken, nil)
+
+		if !loaded || err != nil {
+
+			glog.Infoln("Wait then retry")
+			time.Sleep(2 * time.Second)
+
+		} else {
+			break
+		}
 	}
 
 	if err := this.TerraformConfig.Validate(); err != nil {

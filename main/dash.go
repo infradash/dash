@@ -121,9 +121,10 @@ func main() {
 		executor.Initializer = nil
 		terraform.Executor = *executor
 
-		glog.Infoln("Starting terraform EXEC:", *terraform, terraform.Identity.String(), terraform.Initializer.Context)
-
-		terraform.Executor.Exec()
+		go func() {
+			glog.Infoln("Starting terraform EXEC:", *terraform, terraform.Identity.String(), terraform.Initializer.Context)
+			terraform.Executor.Exec()
+		}()
 
 		terraform_done := make(chan error)
 
