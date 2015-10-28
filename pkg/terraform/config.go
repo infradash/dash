@@ -37,7 +37,9 @@ func (this *Config) Execute(authToken string, context interface{}, funcs gotempl
 		return err
 	}
 
+	glog.Infoln("Applying config", string(config))
 	err = this.apply_config(authToken, config)
+	glog.Infoln("Applying config, err=", err)
 	if err != nil {
 		glog.Warningln("Error applying config:", err)
 		ticker := time.Tick(2 * time.Second)

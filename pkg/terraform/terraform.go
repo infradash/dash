@@ -71,12 +71,14 @@ func (this *Terraform) Run() error {
 
 	if this.Zookeeper != nil {
 		if err := this.Zookeeper.Execute(this.AuthToken, this, this.template_funcs()); err != nil {
+			glog.Warningln("Execute zk config, err=", err)
 			return err
 		}
 	}
 
 	if this.Kafka != nil {
 		if err := this.Kafka.Execute(this.AuthToken, this, this.template_funcs()); err != nil {
+			glog.Warningln("Execute kafka config, err=", err)
 			return err
 		}
 	}
