@@ -41,10 +41,6 @@ func (this *Terraform) Run() error {
 		}
 	}
 
-	if err := this.TerraformConfig.Validate(); err != nil {
-		return err
-	}
-
 	if this.Zookeeper != nil {
 
 		this.Zookeeper.Stop = make(chan bool)
@@ -58,9 +54,6 @@ func (this *Terraform) Run() error {
 		if this.Zookeeper.CheckStatusEndpoint == "" {
 			this.Zookeeper.CheckStatusEndpoint = ZkLocalExhibitorGetConfigEndpoint
 		}
-		if err := this.Zookeeper.Execute(this.AuthToken, this, this.template_funcs()); err != nil {
-			return err
-		}
 	}
 
 	if this.Kafka != nil {
@@ -70,6 +63,19 @@ func (this *Terraform) Run() error {
 		if this.Kafka.Template == "" {
 			this.Kafka.Template = "func://kafka_default_template"
 		}
+	}
+
+	if err := this.TerraformConfig.Validate(); err != nil {
+		return err
+	}
+
+	if this.Zookeeper != nil {
+		if err := this.Zookeeper.Execute(this.AuthToken, this, this.template_funcs()); err != nil {
+			return err
+		}
+	}
+
+	if this.Kafka != nil {
 		if err := this.Kafka.Execute(this.AuthToken, this, this.template_funcs()); err != nil {
 			return err
 		}
