@@ -2,7 +2,6 @@ package terraform
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/golang/glog"
 	"io/ioutil"
@@ -73,13 +72,13 @@ func (zk *ZookeeperConfig) CheckReady() chan error {
 						ready <- err
 					}
 
-					if !status.Running {
-						ready <- errors.New("not-running")
-					} else {
+					if status.Running {
 						glog.Infoln("Zk is ready")
 						ready <- nil
+						break
+					} else {
+						glog.Infoln("Zk is not running yet.  Wait.")
 					}
-					break
 				}
 			}
 		}
