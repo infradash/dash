@@ -24,10 +24,7 @@ func (zk *ZookeeperConfig) Validate() error {
 
 func (zk *ZookeeperConfig) Execute(authToken string, context interface{}, funcs gotemplate.FuncMap) error {
 
-	err := <-zk.CheckReady()
-	if err != nil {
-		return err
-	}
+	<-zk.CheckReady()
 
 	glog.Infoln("Zookeeper - executing config")
 	c := Config(*zk)
