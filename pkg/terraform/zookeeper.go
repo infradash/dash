@@ -24,60 +24,55 @@ func (zk *ZookeeperConfig) Validate() error {
 
 func (zk *ZookeeperConfig) Execute(authToken string, context interface{}, funcs gotemplate.FuncMap) error {
 
-	<-zk.CheckReady()
+	zk.CheckReady()
 
 	glog.Infoln("Zookeeper - executing config")
 	c := Config(*zk)
 	return c.Execute(authToken, context, funcs)
 }
 
-func (zk *ZookeeperConfig) CheckReady() chan error {
+func (zk *ZookeeperConfig) CheckReady() {
 
-	ready := make(chan error)
 	ticker := time.Tick(2 * time.Second)
+	for {
+		select {
 
-	go func() {
-		for {
-			select {
+		case <-ticker:
 
-			case <-ticker:
+			glog.Infoln("CheckReady: ", zk.CheckStatusEndpoint)
 
-				glog.Infoln("CheckReady: ", zk.CheckStatusEndpoint)
+			client := &http.Client{}
+			resp, err := client.Get(zk.CheckStatusEndpoint.String())
 
-				client := &http.Client{}
-				resp, err := client.Get(zk.CheckStatusEndpoint.String())
+			glog.Infoln("CheckReady resp=", resp, "Err=", err)
 
-				glog.Infoln("CheckReady resp=", resp, "Err=", err)
+			if err == nil && resp.StatusCode == http.StatusOK {
 
-				if err == nil && resp.StatusCode == http.StatusOK {
+				type status_t struct {
+					Running bool `json:"running"`
+				}
 
-					type status_t struct {
-						Running bool `json:"running"`
-					}
+				buff, err := ioutil.ReadAll(resp.Body)
+				if err != nil {
+					panic(err)
+				}
 
-					buff, err := ioutil.ReadAll(resp.Body)
-					if err != nil {
-						ready <- err
-					}
+				status := new(status_t)
+				err = json.Unmarshal(buff, status)
 
-					status := new(status_t)
-					err = json.Unmarshal(buff, status)
+				glog.Infoln("Status=", string(buff), "err=", err)
 
-					glog.Infoln("Status=", string(buff), "err=", err)
-
-					// At this point, ready or not just as long we have a response
-					if err == nil {
-						glog.Infoln("Got valid response from Exhibitor: server running=", status.Running)
-						ready <- err
-						break
-					} else {
-						glog.Infoln("Exhibitor not running. Wait.")
-					}
+				// At this point, ready or not just as long we have a response
+				if err == nil {
+					glog.Infoln("Got valid response from Exhibitor: server running=", status.Running)
+					return
+				} else {
+					glog.Infoln("Exhibitor not running. Wait.")
 				}
 			}
 		}
-	}()
-	return ready
+	}
+	return
 }
 
 func GetZkServersSpec(self Server, members []Server) string {
