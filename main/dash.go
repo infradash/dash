@@ -121,29 +121,26 @@ func main() {
 		executor.Initializer = nil
 		terraform.Executor = *executor
 
-		go func() {
-			glog.Infoln("Starting terraform EXEC:", *terraform, terraform.Identity.String(), terraform.Initializer.Context)
-			terraform.Executor.Exec()
-		}()
-
-		terraform_done := make(chan error)
-
 		// start terraform steps in a separate thread
+		terraform_done := make(chan error)
 		go func() {
 			glog.Infoln("Starting terraform CONFIG:", *terraform, terraform.Identity.String(), terraform.Initializer.Context)
 			terraform_done <- terraform.Run()
 		}()
 
-		err := terraform.Executor.Wait()
+		glog.Infoln("Starting terraform EXEC:", *terraform, terraform.Identity.String(), terraform.Initializer.Context)
+		terraform.Executor.Exec()
+
+		// Make sure terrforming is complete
+		err := <-terraform_done
 		if err != nil {
 			panic(err)
 		}
 
-		// Make sure terrforming is complete
-		err = <-terraform_done
-		if err != nil {
-			panic(err)
-		}
+		// now just loop
+		glog.Infoln("Terraform blocking wait")
+		forever := make(chan error)
+		<-forever
 
 	case "exec":
 
