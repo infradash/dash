@@ -68,16 +68,13 @@ func (zk *ZookeeperConfig) CheckReady() chan error {
 
 					glog.Infoln("Status=", string(buff), "err=", err)
 
-					if err != nil {
+					// At this point, ready or not just as long we have a response
+					if err == nil {
+						glog.Infoln("Got valid response from Exhibitor: server running=", status.Running)
 						ready <- err
-					}
-
-					if status.Running {
-						glog.Infoln("Zk is ready")
-						ready <- nil
 						break
 					} else {
-						glog.Infoln("Zk is not running yet.  Wait.")
+						glog.Infoln("Exhibitor not running. Wait.")
 					}
 				}
 			}
