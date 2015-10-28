@@ -138,9 +138,11 @@ func main() {
 		}
 
 		// now just loop
-		glog.Infoln("Terraform blocking wait")
-		forever := make(chan error)
-		<-forever
+		if terraform.Executor.Daemon {
+			glog.Infoln("Terraform in daemon mode.")
+			forever := make(chan error)
+			<-forever
+		}
 
 	case "exec":
 
