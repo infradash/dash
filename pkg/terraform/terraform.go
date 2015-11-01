@@ -1,10 +1,10 @@
 package terraform
 
 import (
-	"fmt"
 	"github.com/golang/glog"
 	. "github.com/infradash/dash/pkg/dash"
 	"github.com/infradash/dash/pkg/executor"
+	"io/ioutil"
 	"time"
 )
 
@@ -70,6 +70,17 @@ func (this *Terraform) Run() error {
 	}
 
 	if this.Zookeeper != nil {
+
+		// generate the /var/zookeeper/myid file
+		myid := GetServerId(Ip(this.Ip), this.Ensemble)
+		glog.Infoln("Server MyId=", myid)
+		glog.Infoln("Writing the MyId file to /var/zookeeper/myid")
+
+		if err := ioutil.WriteFile("/var/zookeeper/myid", []byte(myid), 0644); err != nil {
+			glog.Warningln("Cannot write myid, err=", err)
+			return err
+		}
+
 		if err := this.Zookeeper.Execute(this.AuthToken, this, this.template_funcs()); err != nil {
 			glog.Warningln("Execute zk config, err=", err)
 			return err
@@ -104,14 +115,4 @@ func (this *Terraform) template_funcs() map[string]interface{} {
 			return DefaultKafkaProperties
 		},
 	}
-}
-
-func GetServerId(self Ip, members []Server) string {
-	myid := 0
-	for id, s := range members {
-		if self == s.Ip {
-			myid = id + 1
-		}
-	}
-	return fmt.Sprintf("%d", myid)
 }

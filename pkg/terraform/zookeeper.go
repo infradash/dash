@@ -75,6 +75,25 @@ func (zk *ZookeeperConfig) CheckReady() {
 	return
 }
 
+func GetServerId(self Ip, members []Server) string {
+	myid := 0
+	for id, s := range members {
+		if self == s.Ip {
+			myid = id + 1
+		}
+	}
+	return fmt.Sprintf("%d", myid)
+}
+
+func GetMyId(self Server, members []Server) int {
+	for id, s := range members {
+		if self.Ip == s.Ip {
+			return id + 1
+		}
+	}
+	return -1
+}
+
 func GetZkServersSpec(self Server, members []Server) string {
 	list := []string{}
 	for id, s := range members {
@@ -104,17 +123,17 @@ func GetZkHosts(members []Server) string {
 	return strings.Join(list, ",")
 }
 
-func (this *Terraform) StartZookeeper() error {
-	return nil
-}
+// func (this *Terraform) StartZookeeper() error {
+// 	return nil
+// }
 
-func (this *Terraform) ConfigureZookeeper() error {
-	if this.Zookeeper == nil {
-		return nil
-	}
-	return this.Zookeeper.Execute(this.AuthToken, this, this.template_funcs())
-}
+// func (this *Terraform) ConfigureZookeeper() error {
+// 	if this.Zookeeper == nil {
+// 		return nil
+// 	}
+// 	return this.Zookeeper.Execute(this.AuthToken, this, this.template_funcs())
+// }
 
-func (this *Terraform) VerifyZookeeper() error {
-	return nil
-}
+// func (this *Terraform) VerifyZookeeper() error {
+// 	return nil
+// }

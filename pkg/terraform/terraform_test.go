@@ -100,6 +100,26 @@ func (suite *TestSuiteTerraform) SetUpSuite(c *C) {
 func (suite *TestSuiteTerraform) TearDownSuite(c *C) {
 }
 
+func (suite *TestSuiteTerraform) TestGetMyId(c *C) {
+	{
+		servers := []Server{
+			Server{Ip: "10.40.0.1"},
+			Server{Ip: "10.40.0.2"},
+			Server{Ip: "10.40.0.3"},
+		}
+		self := Server{Ip: "10.40.0.3"}
+		c.Assert(3, Equals, GetMyId(self, servers))
+	}
+
+	{
+		servers := []Server{
+			Server{Ip: "10.40.0.1"},
+		}
+		self := Server{Ip: "10.40.0.1"}
+		c.Assert(1, Equals, GetMyId(self, servers))
+	}
+}
+
 func (suite *TestSuiteTerraform) TestApplyConfigJSONTemplate(c *C) {
 
 	config := &TerraformConfig{
