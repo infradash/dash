@@ -72,13 +72,11 @@ func (this *Terraform) Run() error {
 	if this.Zookeeper != nil {
 
 		myidFile := "/var/zookeeper/myid"
-		// generate the /var/zookeeper/myid file
-		myid := GetServerId(Ip(this.Ip), this.Ensemble)
-		glog.Infoln("Server MyId=", myid)
-		glog.Infoln("Writing the MyId file to /var/zookeeper/myid")
+		// check for file
+		read, err := ioutil.ReadFile(myidFile)
+		glog.Infoln("MyId file = ", string(read), "Err=", err)
 
-		if err := ioutil.WriteFile(myidFile, []byte(myid), 0644); err != nil {
-			glog.Warningln("Cannot write myid, err=", err)
+		if err != nil {
 			return err
 		}
 
@@ -86,15 +84,6 @@ func (this *Terraform) Run() error {
 			glog.Warningln("Execute zk config, err=", err)
 			return err
 		}
-
-		if err := ioutil.WriteFile(myidFile, []byte(myid), 0644); err != nil {
-			glog.Warningln("Cannot write myid, err=", err)
-			return err
-		}
-
-		// check for file
-		read, err := ioutil.ReadFile(myidFile)
-		glog.Infoln("MyId file = ", string(read), "Err=", err)
 	}
 
 	if this.Kafka != nil {
