@@ -14,7 +14,7 @@ deploy-git-checkout:
 	mkdir -p ./build/deploy
 	git clone $(DEPLOY_REPO_URL) $(DEPLOY_LOCAL_REPO)
 	cd $(DEPLOY_LOCAL_REPO) && git config --global user.email $(DEPLOY_USER_EMAIL) && git config --global user.name $(DEPLOY_USER_NAME) && git checkout $(DEPLOY_REPO_BRANCH)
-	git pull origin $(DEPLOY_REPO_BRANCH)
+	git pull
 
 deploy-git: deploy-git-checkout
 	mkdir -p $(DEPLOY_LOCAL_REPO)/$(DEPLOY_DIR) && cp -r $(BUILD_DIR) $(DEPLOY_LOCAL_REPO)/$(DEPLOY_DIR)
