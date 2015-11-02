@@ -82,43 +82,43 @@
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/circleci",
-			"Comment": "v1.0-28-gd916267",
-			"Rev": "d916267049e8e7b778c8300d233bb29d1ba45e58"
+			"Comment": "v1.0-30-gf244334",
+			"Rev": "f2443344032bc35194665ae46e55eb74c9b508fc"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/docker",
-			"Comment": "v1.0-28-gd916267",
-			"Rev": "d916267049e8e7b778c8300d233bb29d1ba45e58"
+			"Comment": "v1.0-30-gf244334",
+			"Rev": "f2443344032bc35194665ae46e55eb74c9b508fc"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/mqtt",
-			"Comment": "v1.0-28-gd916267",
-			"Rev": "d916267049e8e7b778c8300d233bb29d1ba45e58"
+			"Comment": "v1.0-30-gf244334",
+			"Rev": "f2443344032bc35194665ae46e55eb74c9b508fc"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/pubsub",
-			"Comment": "v1.0-28-gd916267",
-			"Rev": "d916267049e8e7b778c8300d233bb29d1ba45e58"
+			"Comment": "v1.0-30-gf244334",
+			"Rev": "f2443344032bc35194665ae46e55eb74c9b508fc"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/registry",
-			"Comment": "v1.0-28-gd916267",
-			"Rev": "d916267049e8e7b778c8300d233bb29d1ba45e58"
+			"Comment": "v1.0-30-gf244334",
+			"Rev": "f2443344032bc35194665ae46e55eb74c9b508fc"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/task",
-			"Comment": "v1.0-28-gd916267",
-			"Rev": "d916267049e8e7b778c8300d233bb29d1ba45e58"
+			"Comment": "v1.0-30-gf244334",
+			"Rev": "f2443344032bc35194665ae46e55eb74c9b508fc"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/template",
-			"Comment": "v1.0-28-gd916267",
-			"Rev": "d916267049e8e7b778c8300d233bb29d1ba45e58"
+			"Comment": "v1.0-30-gf244334",
+			"Rev": "f2443344032bc35194665ae46e55eb74c9b508fc"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/zk",
-			"Comment": "v1.0-28-gd916267",
-			"Rev": "d916267049e8e7b778c8300d233bb29d1ba45e58"
+			"Comment": "v1.0-30-gf244334",
+			"Rev": "f2443344032bc35194665ae46e55eb74c9b508fc"
 		},
 		{
 			"ImportPath": "github.com/qorio/omni/api",

@@ -30,10 +30,10 @@ type TailFile struct {
 }
 
 type ConfigFile struct {
-	Url         string          `json:"url,omitempty"`
-	Path        string          `json:"path,omitempty"`
-	Description string          `json:"description,omitempty"`
-	Reload      registry.Change `json:"reload"`
-
-	ReloadCmd []string `json:"reload_cmd,omitempty"`
+	Init        bool             `json:"init,omitempty"`
+	Url         string           `json:"url,omitempty"`
+	Path        string           `json:"path,omitempty"`
+	Description string           `json:"description,omitempty"`
+	Reload      *registry.Change `json:"reload"`
+	ReloadCmd   []string         `json:"reload_cmd,omitempty"`
 }

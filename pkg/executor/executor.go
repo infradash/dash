@@ -186,6 +186,7 @@ func (this *Executor) Exec() {
 				must(this.connect_zk())
 			}
 			for _, c := range executorConfig.ConfigFiles {
+				// Set up any watch related to config reload
 				this.HandleConfigReload(&c)
 			}
 
@@ -205,6 +206,20 @@ func (this *Executor) Exec() {
 				err := zk.CreateOrSet(this.zk, k, tails, true)
 				glog.Infoln("Registered tail topics:", k, err)
 			}
+
+			// apply any config files
+			for _, c := range executorConfig.ConfigFiles {
+
+				if c.Init {
+					glog.Infoln("Initializing config. Url=", c.Url, "Description=", c.Description)
+					// Initialize and load the config first.
+					if err := this.Reload(&c); err != nil {
+						glog.Warningln("Error initializing config", c, "Err=", err)
+						panic(err)
+					}
+				}
+			}
+
 		}
 	}
 

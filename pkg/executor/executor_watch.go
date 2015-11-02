@@ -6,6 +6,7 @@ import (
 	"github.com/qorio/maestro/pkg/zk"
 	"io/ioutil"
 	"os/exec"
+	"strings"
 )
 
 // TODO - validation early -- before we get to here.
@@ -13,6 +14,10 @@ import (
 func (this *Executor) HandleConfigReload(cf *ConfigFile) error {
 
 	glog.Infoln("Watching registry key", cf.Reload)
+
+	if cf.Reload == nil {
+		return nil
+	}
 
 	return this.watcher.AddWatcher(cf.Reload.Path(), cf, func(e zk.Event) bool {
 		if e.State == zk.StateDisconnected {
@@ -32,10 +37,17 @@ func (this *Executor) Reload(cf *ConfigFile) error {
 	}
 	glog.V(100).Infoln("Config template:", string(configBuff))
 
-	err = ioutil.WriteFile(cf.Path, configBuff, 0777)
-	if err != nil {
-		glog.Warningln("Cannot write config to", cf.Path, err)
-		return err
+	if len(cf.Path) > 0 {
+		path := cf.Path
+		if strings.Index(cf.Path, "file://") == 0 {
+			path = cf.Path[len("file://"):]
+		}
+		err = ioutil.WriteFile(path, configBuff, 0777)
+		if err != nil {
+			glog.Warningln("Cannot write config to", cf.Path, err)
+			return err
+		}
+		glog.Infoln("Written config to", cf.Path)
 	}
 
 	if len(cf.ReloadCmd) > 0 {

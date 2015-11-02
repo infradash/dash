@@ -31,6 +31,7 @@ run-local-terraform:
 		--daemon=false --exec_only --no_source_env \
 		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/terraform-config4.json" \
 	terraform echo "hello"
+#			--config_url="http://infradash.github.io/public/zookeeper/terraform-boot2docker.json" \
 
 # Simple local example -- assumes localhost zookeeper or SSH tunnel to zookeeper
 # Local ssh tunnel:
@@ -129,7 +130,7 @@ run-local-bash:
 	DASH_ZK_HOSTS="localhost:2181" \
 	${GODEP} go run main/dash.go --logtostderr --v=100 \
 		--service=infradash --version=develop \
-		--custom_vars=EXEC_TS="{{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
+		--custom_vars="EXEC_TS={{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
 		--daemon=false  \
 	    	--no_source_env=false \
 		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/executor-bash.json" \
@@ -142,7 +143,7 @@ run-notty:
 	${GODEP} go run main/dash.go --logtostderr \
 		--service=infradash --version=develop \
 		--daemon=false --ignore_child_process_fails=false \
-		--custom_vars=EXEC_TS="{{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
+		--custom_vars="EXEC_TS={{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
 		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/task-notty.json" \
 	exec ${CMD}
 
@@ -154,7 +155,7 @@ run-aws-cli:
 		--no_source_env \
 		--service=infradash --version=develop \
 		--daemon=false --ignore_child_process_fails=false \
-		--custom_vars=EXEC_TS="{{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
+		--custom_vars="EXEC_TS={{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
 		--context='string://{"Foo":"Bar"}' \
 		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/aws-cli.json" \
 	exec ${CMD}
@@ -167,7 +168,7 @@ run-aws-cli2:
 		--no_source_env \
 		--service=infradash --version=develop \
 		--daemon=false --ignore_child_process_fails=false \
-		--custom_vars=EXEC_TS="{{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
+		--custom_vars="EXEC_TS={{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
 		--context='string://{"Foo":"Bar"}' --exec_only \
 	exec echo {{.Context.Foo}}
 
@@ -177,8 +178,8 @@ run-tty:
 	DASH_NAME="test-tty" \
 	${GODEP} go run main/dash.go --logtostderr \
 		--service=infradash --version=develop \
-		--daemon=true --ignore_child_process_fails=true \
-		--custom_vars=EXEC_TS="{{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
+		--daemon=false --exec_only --ignore_child_process_fails=true \
+		--custom_vars="EXEC_TS={{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
 		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/task-tty.json" \
 	exec ${CMD}
 
