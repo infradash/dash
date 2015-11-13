@@ -5,10 +5,21 @@ import (
 	"errors"
 	"github.com/golang/glog"
 	"github.com/samuel/go-zookeeper/zk"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
 )
+
+func ZkHosts() []string {
+	servers := []string{"localhost:2181"}
+	list := os.Getenv("ZK_HOSTS")
+	if len(list) > 0 {
+		servers = strings.Split(list, ",")
+	}
+	glog.Infoln("ZK_HOSTS:", servers)
+	return servers
+}
 
 var (
 	ErrNotConnected   = errors.New("zk-not-initialized")
@@ -207,8 +218,10 @@ func Connect(servers []string, timeout time.Duration) (*zookeeper, error) {
 				if !open {
 					return
 				}
-				delete(zz.ephemeral, remove)
-				glog.Infoln("EPHEMERAL-CACHE-REMOVE: Path=", remove)
+				if _, has := zz.ephemeral[remove]; has {
+					delete(zz.ephemeral, remove)
+					glog.Infoln("EPHEMERAL-CACHE-REMOVE: Path=", remove)
+				}
 			}
 		}
 	}()
