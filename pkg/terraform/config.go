@@ -60,7 +60,7 @@ func (this *Config) Execute(authToken string, context interface{}, funcs gotempl
 }
 
 func (this *Config) execute_template(authToken string, context interface{}, funcs gotemplate.FuncMap) ([]byte, error) {
-	return template.ExecuteTemplateUrl(nil, this.Template.String(), authToken, context, funcs)
+	return template.ExecuteUrl(nil, this.Template.String(), authToken, context, funcs)
 }
 
 func (this *Config) apply_config(authToken string, config []byte) error {

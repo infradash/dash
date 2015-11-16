@@ -30,7 +30,7 @@ func (this *Executor) HandleConfigReload(cf *ConfigFile) error {
 }
 
 func (this *Executor) Reload(cf *ConfigFile) error {
-	configBuff, err := template.ExecuteTemplateUrl(this.zk, cf.Url, this.AuthToken, this)
+	configBuff, err := template.ExecuteUrl(this.zk, cf.Url, this.AuthToken, this)
 	if err != nil {
 		glog.Infoln("Error:", err)
 		return err
