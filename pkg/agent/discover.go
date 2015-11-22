@@ -163,10 +163,10 @@ func (this *DiscoveryContainerMatcher) C(domain string, service ServiceKey, spec
 		Service:            service,
 	}
 	if _, has := this.rulesByDomainService[domain]; !has {
-		this.rulesByDomainService[domain] = map[ServiceKey]ContainerMatchRule{service: match_rule}
-	} else {
-		this.rulesByDomainService[domain][service] = match_rule
+		this.rulesByDomainService[domain] = map[ServiceKey]ContainerMatchRule{}
 	}
+
+	this.rulesByDomainService[domain][service] = match_rule
 	return this
 }
 
@@ -235,13 +235,19 @@ func (this *DiscoveryContainerMatcher) match(domain *string, c *docker.Container
 	if domain != nil {
 		matches := map[ServiceKey]*ContainerMatchRule{}
 		// Now we have matched by the domain of the container.  Let's see if it's running an image we care about:
-		for key, match_rule := range this.rulesByDomainService[*domain] {
+		for serviceKey, match_rule := range this.rulesByDomainService[*domain] {
+			glog.Infoln("Checking domain=", domain, "service=", serviceKey, "rule=", match_rule)
+
+			matched := false
 			if env := findContainerDomain(c); env != nil {
-				if *env == *domain && match_rule.match(c) {
-					matches[key] = &match_rule
-				}
-			} else if match_rule.match(c) {
-				matches[key] = &match_rule
+				matched = *env == *domain && match_rule.match(c)
+			} else {
+				matched = match_rule.match(c)
+			}
+
+			glog.Infoln(">>>>>> matched=", matched)
+			if matched {
+				matches[serviceKey] = &match_rule
 			}
 		}
 		return matches
@@ -249,9 +255,10 @@ func (this *DiscoveryContainerMatcher) match(domain *string, c *docker.Container
 		matches := map[ServiceKey]*ContainerMatchRule{}
 		// if we don't know the domain, then search through all the images...
 		for _, rules := range this.rulesByDomainService {
-			for key, match_rule := range rules {
+			for serviceKey, match_rule := range rules {
 				if match_rule.match(c) {
-					matches[key] = &match_rule
+					glog.Infoln("Matched service=", serviceKey, "rule=", match_rule)
+					matches[serviceKey] = &match_rule
 				}
 			}
 		}
