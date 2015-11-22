@@ -31,6 +31,8 @@ type MatchContainerRule struct {
 	MatchContainerPort *int                       `json:"match_container_port,omitempty"`
 	MatchFirst         []ContainerMatchRulesUnion `json:"match_first,omitempty"`
 	MatchAll           []ContainerMatchRulesUnion `json:"mathc_all,omitempty"`
+
+	registerOnly bool
 }
 
 type ContainerMatchRulesUnion struct {

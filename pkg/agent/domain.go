@@ -86,6 +86,10 @@ func (this *Domain) StartServices(tags QualifyByTags) (*Domain, error) {
 
 			*scheduler = *applied
 
+			if scheduler.RegisterOnly() {
+				scheduler.Register.registerOnly = true
+			}
+
 			if !scheduler.IsValid() {
 				glog.Warningln("Bad scheduler specification:", *scheduler)
 				ExceptionEvent(ErrBadSchedulerSpec, *scheduler, "Bad scheduler spec")
