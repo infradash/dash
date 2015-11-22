@@ -136,12 +136,17 @@ func (this *Agent) DiscoverRunningContainers(check CheckContainer, do OnMatch) e
 	for _, container := range all_containers {
 		glog.Infoln("Checking", "Name=", container.Name, "Image=", container.Image, "Id=", container.Id[0:12])
 		match_rules := check(container)
-		for serviceKey, match_rule := range match_rules {
+
+		glog.Infoln("For container=", container, "matched_rules=", match_rules)
+
+		for serviceKey, rule := range match_rules {
 			glog.Infoln("==========================>>>>  Matched",
-				"Service=", serviceKey, "Name=", container.Name,
+				"ServiceKey=", serviceKey,
+				"Rule=", rule,
+				"Name=", container.Name,
 				"Id=", container.Id[0:12],
-				"Image=", container.Image, "Service=", match_rule.Service, "Rule=", match_rule)
-			do(container, match_rule)
+				"Image=", container.Image)
+			do(container, rule)
 		}
 	}
 	return nil
@@ -231,6 +236,10 @@ func (this *DiscoveryContainerMatcher) MatcherForDomain(domain string, service S
 	}
 }
 
+func (this *DiscoveryContainerMatcher) Match(c *docker.Container) map[ServiceKey]*ContainerMatchRule {
+	return this.match(findContainerDomain(c), c)
+}
+
 func (this *DiscoveryContainerMatcher) match(domain *string, c *docker.Container) map[ServiceKey]*ContainerMatchRule {
 	if domain != nil {
 		matches := map[ServiceKey]*ContainerMatchRule{}
@@ -265,10 +274,6 @@ func (this *DiscoveryContainerMatcher) match(domain *string, c *docker.Container
 		return matches
 	}
 
-}
-
-func (this *DiscoveryContainerMatcher) Match(c *docker.Container) map[ServiceKey]*ContainerMatchRule {
-	return this.match(findContainerDomain(c), c)
 }
 
 func ImageMatch(image string, spec *docker.Image) bool {

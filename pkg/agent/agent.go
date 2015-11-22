@@ -186,7 +186,7 @@ func (this *Agent) Run() {
 						case c.DockerData.State.Running, c.DockerData.State.Restarting:
 							d.tracker.Running(match_rule.Service, c)
 
-							glog.Infoln("Registering container Id=", c.Id, "Image=", c.Image)
+							glog.Infoln("Registering container Id=", c.Id, "Image=", c.Image, "Rule=", match_rule)
 							if entry, err := BuildRegistryEntry(c, match_rule.GetMatchContainerPort()); entry != nil {
 								entry.Domain = match_rule.Domain
 								entry.Service = string(match_rule.Service)

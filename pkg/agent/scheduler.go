@@ -149,7 +149,7 @@ func (this *Scheduler) IsValid() bool {
 func (this *Scheduler) Synchronize(domain string, service ServiceKey,
 	local HostContainerStates, global GlobalServiceState, control SchedulerExecutor) error {
 
-	if this.Constraint == nil || this.RunOnce == nil && this.Register != nil {
+	if (this.Constraint == nil || this.RunOnce == nil) && this.Register != nil {
 		glog.Infoln("Domain=", domain, "Service=", service, "is register only")
 		return nil
 	}
