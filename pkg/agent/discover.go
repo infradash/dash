@@ -121,7 +121,7 @@ func (this *ContainerMatchRule) match(c *docker.Container) bool {
 	return match
 }
 
-type CheckContainer func(*docker.Container) (bool, *ContainerMatchRule)
+type CheckContainer func(*docker.Container) (bool, []*ContainerMatchRule)
 type OnMatch func(*docker.Container, *ContainerMatchRule)
 
 func (this *Agent) DiscoverRunningContainers(check CheckContainer, do OnMatch) error {
@@ -135,10 +135,13 @@ func (this *Agent) DiscoverRunningContainers(check CheckContainer, do OnMatch) e
 
 	for _, container := range all_containers {
 		glog.V(100).Infoln("Checking", "Name=", container.Name, "Image=", container.Image, "Id=", container.Id[0:12])
-		if match, match_rule := check(container); match {
-			glog.V(100).Infoln("Matched", "Name=", container.Name, "Id=", container.Id[0:12],
-				"Image=", container.Image, "Service=", match_rule.Service)
-			do(container, match_rule)
+		if match, match_rules := check(container); match {
+
+			for _, match_rule := range match_rules {
+				glog.V(100).Infoln("Matched", "Name=", container.Name, "Id=", container.Id[0:12],
+					"Image=", container.Image, "Service=", match_rule.Service)
+				do(container, match_rule)
+			}
 		}
 	}
 	return nil
@@ -228,34 +231,36 @@ func (this *DiscoveryContainerMatcher) MatcherForDomain(domain string, service S
 	}
 }
 
-func (this *DiscoveryContainerMatcher) match(domain *string, c *docker.Container) (bool, *ContainerMatchRule) {
+func (this *DiscoveryContainerMatcher) match(domain *string, c *docker.Container) (bool, []*ContainerMatchRule) {
 	if domain != nil {
+		matches := []*ContainerMatchRule{}
 		// Now we have matched by the domain of the container.  Let's see if it's running an image we care about:
 		for _, match_rule := range this.rulesByDomainService[*domain] {
 			if env := findContainerDomain(c); env != nil {
 				if *env == *domain && match_rule.match(c) {
-					return true, &match_rule
+					matches = append(matches, &match_rule)
 				}
 			} else if match_rule.match(c) {
-				return true, &match_rule
+				matches = append(matches, &match_rule)
 			}
 		}
-		return false, nil
+		return len(matches) > 0, matches
 	} else {
+		matches := []*ContainerMatchRule{}
 		// if we don't know the domain, then search through all the images...
 		for _, rules := range this.rulesByDomainService {
 			for _, match_rule := range rules {
 				if match_rule.match(c) {
-					return true, &match_rule
+					matches = append(matches, &match_rule)
 				}
 			}
 		}
-		return false, nil
+		return len(matches) > 0, matches
 	}
 
 }
 
-func (this *DiscoveryContainerMatcher) Match(c *docker.Container) (bool, *ContainerMatchRule) {
+func (this *DiscoveryContainerMatcher) Match(c *docker.Container) (bool, []*ContainerMatchRule) {
 	return this.match(findContainerDomain(c), c)
 }
 
