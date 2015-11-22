@@ -147,7 +147,7 @@ func (this *Scheduler) IsValid() bool {
 }
 
 func (this *Scheduler) RegisterOnly() bool {
-	return (this.Constraint == nil || this.RunOnce == nil) && this.Register != nil
+	return (this.Constraint == nil && this.RunOnce == nil) && this.Register != nil
 }
 
 func (this *Scheduler) Synchronize(domain string, service ServiceKey,
