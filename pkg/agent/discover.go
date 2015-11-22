@@ -153,22 +153,22 @@ func (this *Agent) DiscoverRunningContainers(check CheckContainer, do OnMatch) e
 }
 
 type DiscoveryContainerMatcher struct {
-	rulesByDomainService map[string]map[ServiceKey]ContainerMatchRule
+	rulesByDomainService map[string]map[ServiceKey]*ContainerMatchRule
 }
 
 func (this *DiscoveryContainerMatcher) Init() *DiscoveryContainerMatcher {
-	this.rulesByDomainService = make(map[string]map[ServiceKey]ContainerMatchRule)
+	this.rulesByDomainService = make(map[string]map[ServiceKey]*ContainerMatchRule)
 	return this
 }
 
 func (this *DiscoveryContainerMatcher) C(domain string, service ServiceKey, spec *MatchContainerRule) *DiscoveryContainerMatcher {
-	match_rule := ContainerMatchRule{
+	match_rule := &ContainerMatchRule{
 		MatchContainerRule: *spec,
 		Domain:             domain,
 		Service:            service,
 	}
 	if _, has := this.rulesByDomainService[domain]; !has {
-		this.rulesByDomainService[domain] = map[ServiceKey]ContainerMatchRule{}
+		this.rulesByDomainService[domain] = map[ServiceKey]*ContainerMatchRule{}
 	}
 
 	this.rulesByDomainService[domain][service] = match_rule
@@ -243,8 +243,10 @@ func (this *DiscoveryContainerMatcher) Match(c *docker.Container) map[ServiceKey
 func (this *DiscoveryContainerMatcher) match(domain *string, c *docker.Container) map[ServiceKey]*ContainerMatchRule {
 	if domain != nil {
 		matches := map[ServiceKey]*ContainerMatchRule{}
+
+		rules_by_service := this.rulesByDomainService[*domain]
 		// Now we have matched by the domain of the container.  Let's see if it's running an image we care about:
-		for serviceKey, match_rule := range this.rulesByDomainService[*domain] {
+		for serviceKey, match_rule := range rules_by_service {
 			glog.Infoln("Checking domain=", domain, "service=", serviceKey, "rule=", match_rule)
 
 			matched := false
@@ -256,9 +258,10 @@ func (this *DiscoveryContainerMatcher) match(domain *string, c *docker.Container
 
 			glog.Infoln(">>>>>> matched=", matched)
 			if matched {
-				matches[serviceKey] = &match_rule
+				matches[serviceKey] = match_rule
 			}
 		}
+		glog.Infoln("==> Matched Rules:", matches)
 		return matches
 	} else {
 		matches := map[ServiceKey]*ContainerMatchRule{}
@@ -267,7 +270,7 @@ func (this *DiscoveryContainerMatcher) match(domain *string, c *docker.Container
 			for serviceKey, match_rule := range rules {
 				if match_rule.match(c) {
 					glog.Infoln("Matched service=", serviceKey, "rule=", match_rule)
-					matches[serviceKey] = &match_rule
+					matches[serviceKey] = match_rule
 				}
 			}
 		}
