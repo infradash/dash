@@ -49,12 +49,9 @@ func test_container(running bool, image, domain, name string, port int64, labels
 }
 
 func test_match(c *C, m *DiscoveryContainerMatcher, dc *docker.Container, match bool) {
-	isMatch, rule := m.Match(dc)
+	rules := m.Match(dc)
+	isMatch := len(rules) > 0
 	c.Assert(isMatch, Equals, match)
-	if isMatch {
-		c.Log("Rule=", rule)
-		c.Assert(rule, Not(Equals), nil)
-	}
 }
 
 func (suite *TestSuiteDiscover) TestContainerMatch(c *C) {
