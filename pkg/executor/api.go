@@ -7,6 +7,7 @@ import (
 
 const (
 	ApiGetInfo api.ServiceMethod = iota
+	ApiQuitQuitQuit
 )
 
 var Methods = api.ServiceMethods{
@@ -19,6 +20,14 @@ Returns information about the server.
 		HttpMethod:   "GET",
 		ContentTypes: []string{"application/json"},
 		ResponseBody: Types.Info,
+	},
+	ApiQuitQuitQuit: api.MethodSpec{
+		Doc: `
+Exits the process
+`,
+		UrlRoute:     "/v1/quitquitquit",
+		HttpMethod:   "POST",
+		ContentTypes: []string{"application/json"},
 	},
 }
 
