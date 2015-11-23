@@ -158,6 +158,8 @@ func (this *Scheduler) Synchronize(domain string, service ServiceKey,
 		return nil
 	}
 
+	glog.Infoln("Domain=", domain, "Service=", service, "synchronize...")
+
 	key, _, image, err := global.Image()
 	switch {
 	case err == nil:

@@ -181,14 +181,16 @@ func (this *Agent) Run() {
 						switch {
 
 						case c.DockerData.State.Restarting:
-							if !match_rule.registerOnly {
-								d.tracker.Starting(match_rule.Service, c)
-							}
+							d.tracker.Starting(match_rule.Service, c)
+							// if !match_rule.registerOnly {
+							// 	d.tracker.Starting(match_rule.Service, c)
+							// }
 
 						case c.DockerData.State.Running, c.DockerData.State.Restarting:
-							if !match_rule.registerOnly {
-								d.tracker.Running(match_rule.Service, c)
-							}
+							d.tracker.Running(match_rule.Service, c)
+							// if !match_rule.registerOnly {
+							// 	d.tracker.Running(match_rule.Service, c)
+							// }
 
 							glog.Infoln("Registering container Id=", c.Id, "Image=", c.Image, "Rule=", match_rule)
 							if entry, err := BuildRegistryEntry(c, match_rule.GetMatchContainerPort()); entry != nil {
@@ -209,9 +211,10 @@ func (this *Agent) Run() {
 
 						case c.DockerData.State.FinishedAt.Before(time.Now()):
 							glog.V(100).Infoln("Container", "Id=", c.Id[0:12], "Name=", c.Name, "stopped.")
-							if !match_rule.registerOnly {
-								d.tracker.Stopped(match_rule.Service, c)
-							}
+							d.tracker.Stopped(match_rule.Service, c)
+							// if !match_rule.registerOnly {
+							// 	d.tracker.Stopped(match_rule.Service, c)
+							// }
 						}
 					}
 				})
