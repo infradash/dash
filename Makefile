@@ -100,6 +100,15 @@ run-local-execonly:
 		--daemon=false --exec_only --no_source_env \
 	exec echo {{.EXEC_DOMAIN}}
 
+run-local-execonly-daemon:
+	DASH_DOMAIN="test.com" \
+	DASH_ZK_HOSTS="localhost:21810" \
+	${GODEP} go run main/dash.go --logtostderr \
+		--service=infradash --version=develop \
+		--custom_vars=EXEC_TS="{{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
+		--daemon=true --exec_only --no_source_env \
+	exec echo {{.EXEC_DOMAIN}}
+
 run-local-exec:
 	DASH_DOMAIN="test.com" \
 	DASH_ZK_HOSTS="localhost:2181" \

@@ -1,6 +1,7 @@
 package executor
 
 import (
+	"fmt"
 	"github.com/golang/glog"
 	ps "github.com/mitchellh/go-ps"
 	"github.com/qorio/omni/rest"
@@ -54,13 +55,36 @@ func (this *EndPoint) GetInfo(resp http.ResponseWriter, req *http.Request) {
 }
 
 func (this *EndPoint) QuitQuitQuit(resp http.ResponseWriter, req *http.Request) {
-	glog.Infoln("Stopping process!!!!!!!!!!!")
-	pss, err := ps.Processes()
-	if err == nil {
-		for _, p := range pss {
-			glog.Infoln("PPID=", p.PPid(), "PID=", p.Pid(), "CMD=", p.Executable())
+	wait_duration := 5 * time.Second
+	if queries, err := this.engine.GetUrlQueries(req, Methods[ApiQuitQuitQuit].UrlQueries); err == nil {
+		if parsed, err := time.ParseDuration(queries["wait"].(string)); err == nil {
+			wait_duration = parsed
 		}
 	}
-	// TODO - clean shut down
-	os.Exit(0)
+
+	message := fmt.Sprintf("Executor stopping in %v", wait_duration)
+	this.engine.HandleError(resp, req, message, http.StatusServiceUnavailable)
+	go func() {
+
+		myPid := os.Getpid()
+
+		glog.Infoln("PID=", myPid, "Show processes:")
+		// TODO - go through all the child processes and stop them one by one for clean stop
+		pss, err := ps.Processes()
+		if err == nil {
+			for _, p := range pss {
+				glog.Infoln("PPID=", p.PPid(), "PID=", p.Pid(), "CMD=", p.Executable())
+				if p.PPid() == myPid {
+					glog.Infoln("Child process ==>", p.Pid(), "cmd=", p.Executable())
+				}
+			}
+
+		} else {
+			glog.Infoln("Failed to get ps:", err)
+		}
+		glog.Infoln("Executor going down!!!!!!!!!")
+		time.Sleep(wait_duration)
+		glog.Infoln("Bye")
+		os.Exit(0)
+	}()
 }

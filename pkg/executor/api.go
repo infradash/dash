@@ -28,6 +28,9 @@ Exits the process
 		UrlRoute:     "/v1/quitquitquit",
 		HttpMethod:   "POST",
 		ContentTypes: []string{"application/json"},
+		UrlQueries: api.UrlQueries{
+			"wait": "5s",
+		},
 	},
 }
 
