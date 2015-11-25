@@ -10,13 +10,13 @@ import (
 	"text/template"
 )
 
-func NoActions() []Job {
-	return []Job{}
-}
-
 var (
 	image_counter = map[string]int{}
 )
+
+func NoActions() []Task {
+	return []Task{}
+}
 
 func get_sequence_by_image(image string) int {
 	if c, has := image_counter[image]; has {
@@ -88,13 +88,13 @@ func AssignContainerImageFromRegistry(global GlobalServiceState, local HostConta
 }
 
 // Derive the watch container spec based on the scheduler data.
-func (this *Scheduler) GetWatchContainerSpec() *WatchContainerSpec {
+func (this *Scheduler) GetMatchContainerRule() *MatchContainerRule {
 
-	if this.Discover == nil {
-		this.Discover = &WatchContainerSpec{}
+	if this.Register == nil {
+		this.Register = &MatchContainerRule{}
 	}
 	// TODO - infer this...
-	return this.Discover
+	return this.Register
 }
 
 func (this *Scheduler) Run(domain string, service ServiceKey, global GlobalServiceState,
@@ -137,17 +137,28 @@ func count_failed_containers(local HostContainerStates, service ServiceKey, imag
 
 func (this *Scheduler) IsValid() bool {
 	implementations := 0
-	if this.Swarm != nil {
+	if this.Constraint != nil {
 		implementations += 1
 	}
 	if this.RunOnce != nil {
 		implementations += 1
 	}
-	return implementations == 1
+	return implementations == 1 || (this.Register != nil)
+}
+
+func (this *Scheduler) RegisterOnly() bool {
+	return (this.Constraint == nil && this.RunOnce == nil) && this.Register != nil
 }
 
 func (this *Scheduler) Synchronize(domain string, service ServiceKey,
 	local HostContainerStates, global GlobalServiceState, control SchedulerExecutor) error {
+
+	if this.RegisterOnly() {
+		glog.Infoln("Domain=", domain, "Service=", service, "is register only")
+		return nil
+	}
+
+	glog.Infoln("Domain=", domain, "Service=", service, "synchronize...")
 
 	key, _, image, err := global.Image()
 	switch {
@@ -188,10 +199,10 @@ func (this *Scheduler) Synchronize(domain string, service ServiceKey,
 		return err
 	}
 
-	actions := []Job{}
+	actions := []Task{}
 	switch {
-	case this.Swarm != nil:
-		count, err := this.Swarm.Schedule(localRunning, globalRunning)
+	case this.Constraint != nil:
+		count, err := this.Constraint.Schedule(localRunning, globalRunning)
 		glog.Infoln("Static scheduler:", count, err)
 		if err != nil {
 			return err
@@ -201,7 +212,7 @@ func (this *Scheduler) Synchronize(domain string, service ServiceKey,
 		}
 	default:
 		// Without specifying any constraints, we just naively start more instances...
-		//actions = []Job{this.StartOne(domain, service, global, local)}
+		//actions = []Task{this.StartOne(domain, service, global, local)}
 	}
 
 	if control != nil {
@@ -211,9 +222,9 @@ func (this *Scheduler) Synchronize(domain string, service ServiceKey,
 }
 
 func (this *Scheduler) StartOne(domain string, service ServiceKey,
-	global GlobalServiceState, local HostContainerStates) Job {
+	global GlobalServiceState, local HostContainerStates) Task {
 
-	sa := this.Job
+	sa := this.Task
 	sa.domain = domain
 	sa.service = service
 	sa.assignName = AssignContainerNameFromRegistry(global, local, domain, service)

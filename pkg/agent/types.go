@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"encoding/json"
 	. "github.com/infradash/dash/pkg/dash"
 	"github.com/qorio/maestro/pkg/docker"
 	"github.com/qorio/maestro/pkg/zk"
@@ -24,12 +25,20 @@ type Info struct {
 	Agent   *Agent        `json:"agent"`
 }
 
-type WatchContainerSpec struct {
+type MatchContainerRule struct {
 	QualifyByTags
 	docker.Image
-	MatchContainerPort        *int     `json:"match_container_port"`
-	MatchContainerName        *string  `json:"match_container_name"`
-	MatchContainerEnvironment []string `json:"match_container_env"`
+	MatchContainerPort *int                       `json:"match_container_port,omitempty"`
+	MatchFirst         []ContainerMatchRulesUnion `json:"match_first,omitempty"`
+	MatchAll           []ContainerMatchRulesUnion `json:"mathc_all,omitempty"`
+
+	registerOnly bool
+}
+
+type ContainerMatchRulesUnion struct {
+	ByContainerName        *string           `json:"container_name,omitempty"`
+	ByContainerEnvironment []string          `json:"container_envs,omitempty"`
+	ByContainerLabels      map[string]string `json:"container_labels,omitempty"`
 }
 
 // Configuration for the domain
@@ -38,21 +47,26 @@ type WatchContainerSpec struct {
 type DomainConfig struct {
 	RegistryContainerEntry
 
-	Schedulers map[ServiceKey]*Scheduler `json:"schedulers,omitempty"`
+	Services map[ServiceKey]*Scheduler `json:"services,omitempty"`
 
 	Vacuums map[ServiceKey]*VacuumConfig `json:"vacuums,omitempty"`
+}
+
+func (d *DomainConfig) JSON() string {
+	b, _ := json.Marshal(d)
+	return string(b)
 }
 
 type Scheduler struct {
 	QualifyByTags
 
-	Job
+	Task
 
-	Discover    *WatchContainerSpec `json:"discover,omitempty"`
+	Register    *MatchContainerRule `json:"register,omitempty"`
 	TriggerPath *Trigger            `json:"trigger_path,omitempty"`
 
-	Swarm   *SwarmSchedule   `json:"swarm,omitempty"`
-	RunOnce *RunOnceSchedule `json:"run_once,omitemtpy"`
+	Constraint *Constraint      `json:"constraint,omitempty"`
+	RunOnce    *RunOnceSchedule `json:"run_once,omitemtpy"`
 
 	lock sync.Mutex
 }
@@ -62,7 +76,7 @@ type Trigger string
 type AssignContainerName func(step int, template string, opts *docker.ContainerControl) string
 type AssignContainerImage func(step int, opts *docker.ContainerControl) (*docker.Image, error)
 
-type Job struct {
+type Task struct {
 
 	// Registry path where the image to use is stored.
 	ImagePath string `json:"image_path,omitempty"`
@@ -88,7 +102,7 @@ type Job struct {
 	assignImage AssignContainerImage
 
 	// TODO - Add fields here to support implementation of barriers, leader election and global locks required
-	// to implement semantics like 'only 1 per cluster' and pre-emption (e.g. A after B)
+	// to implement semantics like 'only 1 per cluster'
 }
 
 type ContainerAction struct {
@@ -96,13 +110,11 @@ type ContainerAction struct {
 	// If not provided, docker naming will be used.
 	ContainerNameTemplate *string `json:"container_name_template,omitempty" dash:"template"`
 
-	Action ContainerActionType
-
 	docker.ContainerControl
 }
 
 // Static / manual scheduler where the instances counts are specified statically per host
-type SwarmSchedule struct {
+type Constraint struct {
 	MinInstancesPerHost *int `json:"min_instances_per_host,omitempty"`
 	MaxInstancesPerHost *int `json:"max_instances_per_host,omitempty"`
 	MinInstancesGlobal  *int `json:"min_instances_global,omitempty"`

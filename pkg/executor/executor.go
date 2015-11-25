@@ -2,65 +2,56 @@ package executor
 
 import (
 	"bytes"
-	"errors"
+	"encoding/json"
 	"fmt"
 	"github.com/golang/glog"
 	. "github.com/infradash/dash/pkg/dash"
-	"github.com/qorio/maestro/pkg/workflow"
+	"github.com/qorio/maestro/pkg/registry"
+	"github.com/qorio/maestro/pkg/task"
+	mtemplate "github.com/qorio/maestro/pkg/template"
 	"github.com/qorio/maestro/pkg/zk"
 	"github.com/qorio/omni/common"
 	"github.com/qorio/omni/runtime"
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
+	"sort"
 	"strings"
 	"text/template"
 	"time"
 )
 
 type Executor struct {
+	Identity
+
 	QualifyByTags
 	ZkSettings
 	EnvSource
 
-	Id            string
+	Context string `json:"context,omitempty"`
+
 	StartTimeUnix int64
 
 	NoSourceEnv bool
 
-	// Options for controlling stdout
-	WriteStdout        bool // write to stdout
-	EscapeWhiteSpaces  bool
-	Newline            bool
-	QuoteChar          string
-	GenerateBashExport bool
-
-	Host string   `json:"host"`
-	Cmd  string   `json:"cmd"`
-	Args []string `json:"args"`
-
-	ExecCmd  string   `json:"exec_cmd"`
-	ExecArgs []string `json:"exec_args"`
-
-	Initializer *ConfigLoader `json:"config_loader"`
-
-	Daemon                   bool   `json:"daemon"`
-	IgnoreChildProcessFails  bool   `json:"ignore_child_process_fails"`
-	CustomVarsCommaSeparated string `json:"custom_vars"` // K1=E1,K2=E2,...
-
-	MQTTConnectionTimeout       time.Duration `json:"mqtt_connection_timeout"`
-	MQTTConnectionRetryWaitTime time.Duration `json:"mqtt_connection_wait_time"`
-	TailFileOpenRetries         int           `json:"tail_file_open_retries"`
-	TailFileRetryWaitTime       time.Duration `json:"tail_file_retry_wait_time"`
-
-	// From maestro's orchestration
-	Task    *workflow.Task
-	runtime *workflow.Runtime
-
 	// e.g. [ 'BOOT_TIME', '{{.StartTimestamp}}']
 	// where the value is a template to apply to the state of the Exector object.
 	customVars map[string]*template.Template
+
+	Host string   `json:"host"`
+	Dir  string   `json:"dir"`
+	Cmd  string   `json:"cmd"`
+	Args []string `json:"args"`
+
+	Initializer *ConfigLoader `json:"config_loader"`
+
+	IgnoreChildProcessFails  bool   `json:"ignore_child_process_fails"`
+	CustomVarsCommaSeparated string `json:"custom_vars"` // K1=E1,K2=E2,...
+
+	Runs           int  `json:"runs"`
+	Daemon         bool `json:"daemon"`
+	TimeoutSeconds int  `json:"timeout_seconds"`
+	ExecOnly       bool `json:"exec_only,omitempty"`
 
 	ListenPort int          `json:"listen_port"`
 	endpoint   http.Handler `json:"-"`
@@ -69,35 +60,13 @@ type Executor struct {
 
 	watcher *ZkWatcher
 
-	// For storing the stdout of the command.  This is the result of the process
-	processOutputBuffer bytes.Buffer
-}
+	exit chan error
 
-func (this *Executor) Stdin() io.Reader {
-	if this.runtime == nil || this.runtime.Stdin() == nil {
-		glog.Infoln("Sourcing process stdin from os.Stdin")
-		return os.Stdin
-	}
-	glog.Infoln("Teeing input to os.Stderr:", this.Task.Stdin)
-	//return io.TeeReader(io.MultiReader(this.runtime.Stdin(), os.Stdin), this.runtime.PublishStdin())
-	// TODO - allow stdin to come through a topic subscriber.
-	return io.TeeReader(io.MultiReader(os.Stdin), this.runtime.Stderr())
-}
-
-func (this *Executor) Stdout() io.Writer {
-	if this.runtime == nil || this.runtime.Stdout() == nil {
-		glog.Infoln("Sending process stdout to os.Stdout.")
-		return io.MultiWriter(os.Stdout, &this.processOutputBuffer)
-	}
-	return io.MultiWriter(os.Stdout, this.runtime.Stdout(), &this.processOutputBuffer)
-}
-
-func (this *Executor) Stderr() io.Writer {
-	if this.runtime == nil || this.runtime.Stderr() == nil {
-		glog.Infoln("Sending process stdout to os.Stderr")
-		return os.Stderr
-	}
-	return io.MultiWriter(os.Stderr, this.runtime.Stderr())
+	// Tail files
+	MQTTConnectionTimeout       time.Duration `json:"mqtt_connection_timeout"`
+	MQTTConnectionRetryWaitTime time.Duration `json:"mqtt_connection_wait_time"`
+	TailFileOpenRetries         int           `json:"tail_file_open_retries"`
+	TailFileRetryWaitTime       time.Duration `json:"tail_file_retry_wait_time"`
 }
 
 func must(err error) {
@@ -119,27 +88,41 @@ func (this *Executor) connect_zk() error {
 	return nil
 }
 
-func (this *Executor) wait_for_process_finish(done chan error) {
-	err := <-done
-	glog.Infoln("Got done signal:", err, "runtime=", this.runtime)
-	if this.runtime != nil {
-		if err == nil {
-			// write the entire stdout buffer to the output path
-			zerr := this.runtime.Success(this.processOutputBuffer.String())
-			glog.Infoln("Written to success Err=", zerr)
-		} else {
-			zerr := this.runtime.Error(err.Error())
-			glog.Infoln("Written to error Err=", zerr)
-		}
-	}
-	if err != nil && !this.IgnoreChildProcessFails {
-		panic(err)
-	}
+func (this *Executor) Stdin() io.Reader {
+	return os.Stdin
 }
 
-func (this *Executor) Exec() error {
+func (this *Executor) load_context() (map[string]interface{}, error) {
+	if this.Context == "" {
+		return nil, nil
+	}
 
-	this.Id = common.NewUUID().String()
+	if strings.Index(this.Context, "env://") == 0 {
+		err := this.connect_zk()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	body, _, err := mtemplate.FetchUrl(this.Context, nil, this.zk)
+	if err != nil {
+		return nil, err
+	}
+
+	context := map[string]interface{}{}
+	err = json.Unmarshal([]byte(body), &context)
+	if err != nil {
+		return nil, err
+	}
+	return context, nil
+}
+
+func (this *Executor) Exec() {
+
+	if this.Id == "" {
+		this.Id = common.NewUUID().String()
+	}
+
 	this.StartTimeUnix = time.Now().Unix()
 	this.Host, _ = os.Hostname()
 
@@ -147,156 +130,151 @@ func (this *Executor) Exec() error {
 		panic(err)
 	}
 
-	var source func() ([]string, map[string]string) = nil
 	vars := make([]string, 0)
-	env := make(map[string]string)
+	env := make(map[string]interface{})
 
-	if !this.NoSourceEnv {
-		glog.Infoln("Sourcing environment variables.")
-		if this.ReadStdin {
-			source = this.EnvFromStdin()
-		} else {
-			must(this.connect_zk())
-			source = this.EnvFromZk()
-		}
-		vars, env = source()
+	if this.NoSourceEnv || this.EnvSource.IsZero() {
+		glog.Infoln("Not sourcing environment variables.  NoSourceEnv=", this.NoSourceEnv, "EnvSourceIsZero=", this.EnvSource.IsZero())
 	} else {
-		glog.Infoln("Not sourcing environment variables.")
+		glog.Infoln("Sourcing environment variables.")
+		must(this.connect_zk())
+		vars, env = this.Source(this.AuthToken, this.zk)()
 	}
 
 	// Inject additional environments
-	vars, err := this.injectCustomVars(env)
+	vars, err := this.InjectCustomVars(env)
 	if err != nil {
 		panic(err)
 	}
 
+	// Export the environment variables
+	envlist := []string{}
 	for _, k := range vars {
 		value := env[k]
-		os.Setenv(k, value)
-
-		if this.EscapeWhiteSpaces && strings.ContainsAny(value, " \t\n") {
-			value = strings.Replace(value, " ", "\\ ", -1)
-		}
-
-		format, delim, prefix := "%s%s=%s%s%s%s", " ", ""
-
-		if this.Newline {
-			delim = "\n"
-		}
-		if this.GenerateBashExport {
-			prefix = "export "
-		}
-		if this.WriteStdout {
-			fmt.Fprintf(os.Stdout, format, prefix, k, this.QuoteChar, value, this.QuoteChar, delim)
-		}
+		os.Setenv(k, fmt.Sprintf("%s", value))
+		envlist = append(envlist, fmt.Sprintf("%s=%s", k, env[k]))
 	}
+
+	// Get any task context from a datasource url
+	taskContext, err := this.load_context()
+	if err != nil {
+		panic(err)
+	}
+
+	var taskFromInitializer *task.Task
 
 	if this.Initializer != nil {
-		glog.Infoln("Loading configuration from", this.Initializer.SourceUrl)
-		// set up the context for applying the config as a template
+		glog.Infoln("Loading configuration from", this.Initializer.ConfigUrl)
 		this.Initializer.Context = this
-
 		executorConfig := new(ExecutorConfig)
-		err := this.Initializer.Load(executorConfig)
+		loaded, err := this.Initializer.Load(executorConfig, this.AuthToken, this.zk, template.FuncMap{
+			"env": func(k string) interface{} {
+				return env[k]
+			},
+			"context": func(k string) interface{} {
+				return taskContext[k]
+			},
+		})
 		if err != nil {
 			panic(err)
 		}
 
-		this.Task = executorConfig.Task
+		if loaded {
+			taskFromInitializer = &executorConfig.Task
 
-		if len(executorConfig.RegistryWatch) > 0 {
-			must(this.connect_zk())
-		}
-		for _, w := range executorConfig.RegistryWatch {
-			glog.Infoln("Configuring watch", w)
-			err := this.SaveWatchAction(&w)
-			if err != nil {
-				panic(err)
+			if len(executorConfig.ConfigFiles) > 0 {
+				must(this.connect_zk())
 			}
-		}
-		for _, t := range executorConfig.TailRequest {
-			this.HandleTailRequest(&t)
+			for _, c := range executorConfig.ConfigFiles {
+				// Set up any watch related to config reload
+				this.HandleConfigReload(&c)
+			}
+
+			// collect the tail files and topics
+			tails := map[string]string{}
+			for _, t := range executorConfig.TailFiles {
+				this.HandleTailFile(&t)
+
+				if len(t.Topic) > 0 {
+					tails[t.Path] = t.Topic.String()
+				}
+			}
+
+			// register this
+			if this.zk != nil {
+				k := registry.NewPath(this.Domain, this.Service, "_logs", this.Host)
+				err := zk.CreateOrSet(this.zk, k, tails, true)
+				glog.Infoln("Registered tail topics:", k, err)
+			}
+
+			// apply any config files
+			for _, c := range executorConfig.ConfigFiles {
+
+				if c.Init {
+					glog.Infoln("Initializing config. Url=", c.Url, "Description=", c.Description)
+					// Initialize and load the config first.
+					if err := this.Reload(&c); err != nil {
+						glog.Warningln("Error initializing config", c, "Err=", err)
+						panic(err)
+					}
+				}
+			}
+
 		}
 	}
 
-	if this.Task != nil {
-		if this.Task.Id == "" {
-			this.Task.Id = this.Id
-		}
-		glog.Infoln("Starting Task", "Id=", this.Task.Id)
-		this.runtime, err = this.Task.Init(this.zk)
-		if err != nil {
-			panic(err)
-		}
-		_, _, err = this.runtime.Start()
-		if err != nil {
-			panic(err)
-		}
+	// Default task based on what's entered in the command line, which takes precedence.
+	target := task.Task{
+		Id: this.Id,
+		Cmd: &task.Cmd{
+			Dir:  this.Dir,
+			Path: this.Cmd,
+			Args: this.Args,
+			Env:  envlist,
+		},
+		ExecOnly: this.ExecOnly,
 	}
 
-	if this.Cmd != "" {
+	if taskFromInitializer != nil {
 
-		glog.Infoln("Processing with environment:", this.Cmd, this.Args)
-
-		// Perform variable substitutions on the command and args
-		if err := this.applyCmdSubstitutions(env); err != nil {
+		merged, err := taskFromInitializer.Copy()
+		if err != nil {
 			panic(err)
 		}
 
-		cmd := exec.Command(this.ExecCmd, this.ExecArgs...)
-		glog.Infoln("Starting", cmd.Path, cmd.Args, "in", cmd.Dir)
+		// What's specified in the command line wins
+		merged.Id = target.Id
 
-		// Wiring the input stream -- this will allows interactive console like bash
-		cmd.Stdin = this.Stdin()
-		cmd.Stdout = this.Stdout()
-		cmd.Stderr = this.Stderr()
+		if this.Cmd != "" {
+			merged.Cmd = target.Cmd
+		}
 
-		// Run this in a closure and send a signal when done.
-		process_done := make(chan error)
+		target = *merged
+	}
 
+	// One final pass of applying taskContext to the command as if the command is a template:
+	if taskContext != nil {
+		applied := task.Cmd{}
+		err := ApplyVarSubs(target.Cmd, &applied, map[string]interface{}{
+			"Task":    this,
+			"Env":     env,
+			"Context": taskContext,
+		})
+		if err != nil {
+			panic(err)
+		}
+		target.Cmd = &applied
+	}
+
+	if this.Daemon {
+		this.exit = make(chan error)
 		go func() {
-			cmd.Start()
-
-			// Wait for cmd to complete even if we have no more stdout/stderr
-			if cmd.Wait(); err != nil {
-				process_done <- err
-				return
-			}
-
-			ps := cmd.ProcessState
-			if ps == nil {
-				process_done <- errors.New(fmt.Sprintf("NoSuchCmd: %s %s", cmd.Path, cmd.Args))
-				return
-			}
-
-			glog.Infoln("Process pid=", ps.Pid(), "Exited=", ps.Exited(), "Success=", ps.Success())
-
-			if !ps.Success() {
-				process_done <- errors.New(fmt.Sprintf("ProcessFailed: %s %s", cmd.Path, cmd.Args))
-				return
-			} else {
-				process_done <- nil
-				return
-			}
-		}()
-		if !this.Daemon {
-			this.wait_for_process_finish(process_done)
-			return nil
-		} else {
-
-			// Run the process wait separately.. so we can get the signal
-			go func() {
-				this.wait_for_process_finish(process_done)
-			}()
-
-			// Keep this waiting... since the subprocess may have forked
+			glog.Infoln("Starting API server")
 			endpoint, err := NewApiEndPoint(this)
 			if err != nil {
 				panic(err)
 			}
-
 			this.endpoint = endpoint
-			// This will block
 			runtime.MinimalContainer(this.ListenPort,
 				func() http.Handler {
 					return endpoint
@@ -309,15 +287,126 @@ func (this *Executor) Exec() error {
 						err = this.zk.Close()
 						glog.Infoln("Stopped zk", err)
 					}
+
+					this.exit <- err
 					return err
 				})
+		}()
+	}
 
+	runs := 1
+	switch {
+	case this.Runs != 0:
+		runs = this.Runs
+	case this.Runs == 0 && target.Runs != 0:
+		runs = target.Runs
+	}
+
+	// Keep looping if
+	for runs != 0 {
+
+		glog.Infoln(runs, "Starting Task", "Id=", target.Id, "ExecOnly=", target.ExecOnly)
+		if target.Cmd != nil {
+			glog.Infoln("Cmd=", target.Cmd.Path, "Args=", target.Cmd.Args)
+		}
+
+		taskRuntime, err := target.Init(this.zk)
+		if err != nil {
+			panic(err)
+		}
+
+		taskRuntime.StdinInterceptor(func(in string) (out string, ok bool) {
+			return in, strings.Index(in, "#quit") != 0
+		})
+
+		err = taskRuntime.ApplyEnvAndFuncs(env, nil)
+		if err != nil {
+			panic(err)
+		}
+
+		taskRuntime.CaptureStdout()
+
+		done, err := taskRuntime.Start()
+		if err != nil {
+			glog.Fatalln("Cannot start", err)
+		}
+
+		// Set up timeout
+		timer := time.NewTimer(0 * time.Second)
+		timer.Stop()
+		if this.TimeoutSeconds > 0 {
+			timer.Reset(time.Duration(this.TimeoutSeconds) * time.Second)
+		}
+
+		this.exec_wait(done, timer.C)
+		runs += -1
+
+		if runs == 0 {
+			glog.Infoln("Stopping runtime")
+			taskRuntime.Stop()
+		}
+	}
+}
+
+func (this *Executor) Wait() error {
+	if this.exit != nil {
+		glog.Infoln("Daemon mode. Blocking wait.")
+		return <-this.exit
+	}
+	return nil
+}
+
+func (this *Executor) exec_wait(done chan error, timeout <-chan time.Time) {
+	select {
+	case result := <-done:
+		switch result {
+		case task.ErrTimeout:
+			panic(result)
+		case nil:
+			glog.Infoln("Success")
+		default:
+			if !this.IgnoreChildProcessFails {
+				panic(result)
+			}
+		}
+	case <-timeout:
+		panic("timeout")
+	}
+}
+
+func (this *Executor) ParseCustomVars() error {
+	this.customVars = make(map[string]*template.Template)
+
+	for _, expression := range strings.Split(this.CustomVarsCommaSeparated, ",") {
+		parts := strings.Split(expression, "=")
+		if len(parts) != 2 {
+			return ErrBadTemplate
+		}
+		key, exp := parts[0], parts[1]
+		if t, err := template.New(key).Parse(exp); err != nil {
+			return err
+		} else {
+			this.customVars[key] = t
+		}
+	}
+	return nil
+}
+
+func (this *Executor) InjectCustomVars(env map[string]interface{}) ([]string, error) {
+	for k, t := range this.customVars {
+		var buff bytes.Buffer
+		if err := t.Execute(&buff, this); err != nil {
+			return nil, err
+		} else {
+			env[k] = buff.String()
+			glog.Infoln("CustomVar:", k, buff.String())
 		}
 	}
 
-	if this.runtime != nil {
-		glog.Infoln("Finishing: stopping runtime")
-		this.runtime.Stop()
+	keys := make([]string, 0)
+	for k, _ := range env {
+		keys = append(keys, k)
 	}
-	return nil
+	sort.Strings(keys)
+	return keys, nil
 }

@@ -6,4 +6,5 @@ import (
 
 var (
 	ErrNotSupportedProtocol = errors.New("bad-url-protocol")
+	ErrNoPath               = errors.New("no-path")
 )

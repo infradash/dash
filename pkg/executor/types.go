@@ -1,8 +1,9 @@
 package executor
 
 import (
-	. "github.com/infradash/dash/pkg/dash"
-	"github.com/qorio/maestro/pkg/workflow"
+	"github.com/qorio/maestro/pkg/pubsub"
+	"github.com/qorio/maestro/pkg/registry"
+	"github.com/qorio/maestro/pkg/task"
 	"github.com/qorio/omni/version"
 	"time"
 )
@@ -14,36 +15,25 @@ type Info struct {
 	Executor *Executor     `json:"executor"`
 }
 
-// TODO - workflow.Task eventually replaces all the other fields.
 type ExecutorConfig struct {
-	*workflow.Task
+	task.Task
 
-	TailRequest   []TailRequest   `json:"tail,omitempty"`
-	RegistryWatch []RegistryWatch `json:"registry_watch,omitempty"`
+	ConfigFiles []ConfigFile `json:"configs"`
+	TailFiles   []TailFile   `json:"tail,omitempty"`
 }
 
-type RegistryWatch struct {
-	RegistryReleaseEntry
-
-	// If provided, look in here for the actual value instead
-	ValueLocation      *RegistryEntryBase `json:"value_location,omitempty"`
-	MatchContainerPort *int               `json:"match_container_port,omitempty"`
-	ReloadConfig       *ReloadConfig      `json:"reload_config,omitempty"`
+type TailFile struct {
+	Path   string       `json:"path,omitempty"`
+	Topic  pubsub.Topic `json:"topic,omitempty"`
+	Stdout bool         `json:"stdout,omitempty"`
+	Stderr bool         `json:"stderr,omitempty"`
 }
 
-type ReloadConfig struct {
-	Description string `json:"description,omitempty"`
-
-	// Url that serves the template e.g. github pages or S3
-	ConfigTemplateUrl     string `json:"config_template_url,omitempty"`
-	ConfigDestinationPath string `json:"config_destination_path,omitempty"`
-
-	ReloadCmd []string `json:"reload_cmd,omitempty"`
-}
-
-type TailRequest struct {
-	Path         string `json:"path,omitempty"`
-	Output       string `json:"output,omitempty"`
-	RegistryPath string `json:"registry_path,omitempty"` // Where to look for actual host:port
-	MQTTTopic    string `json:"mqtt_topic,omitempty"`
+type ConfigFile struct {
+	Init        bool             `json:"init,omitempty"`
+	Url         string           `json:"url,omitempty"`
+	Path        string           `json:"path,omitempty"`
+	Description string           `json:"description,omitempty"`
+	Reload      *registry.Change `json:"reload"`
+	ReloadCmd   []string         `json:"reload_cmd,omitempty"`
 }

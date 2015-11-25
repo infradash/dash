@@ -1,10 +1,18 @@
 {
-    "name": "test_task",
-    "info": "/{{.Domain}}/task/test_task/{{.Id}}",
-    "success": "/{{.Domain}}/task/test_task/{{.Id}}/success",
-    "error": "/{{.Domain}}/task/test_task/{{.Id}}/error",
-    "status": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/test_task/{{.Id}}",
-    "stdin_topic": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/test_task/stdin",
-    "stdout_topic": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/test_task/{{.Id}}/stdout",
-    "stderr_topic": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/test_task/{{.Id}}/stderr"
+    "name": "{{.Name}}",
+    "info": "/{{.Domain}}/task/{{.Name}}/{{.Id}}",
+    "success": "/{{.Domain}}/task/{{.Name}}/{{.Id}}/success",
+    "error": "/{{.Domain}}/task/{{.Name}}/{{.Id}}/error",
+    "status": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}",
+    "stdin": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}/stdin",
+    "stdout": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}/stdout",
+    "stderr": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}/stderr",
+    "configs": [
+	{
+	    "init": true,
+	    "description":"Runing task {{.Name}} in {{env "EXEC_DOMAIN"}}",
+            "url": "file:///Users/david/go/src/github.com/infradash/dash/example/task-tty.conf",
+            "path": "/Users/david/go/src/github.com/infradash/dash/example/task-tty.{{.Id}}"
+	}
+    ]
 }

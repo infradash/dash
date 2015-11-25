@@ -30,14 +30,18 @@ func MergeMaps(m ...map[string]interface{}) map[string]interface{} {
 
 // Takes an original value/ struct that has its fields with {{.Template}} values and apply
 // substitutions and returns a transformed value.  This allows multiple passes of applying templates.
-func ApplyVarSubs(original, applied interface{}, context interface{}) (err error) {
+func ApplyVarSubs(original, applied interface{}, context interface{}, funcMap ...template.FuncMap) (err error) {
 	// first marshal into json
 	json_buff, err := json.Marshal(original)
 	if err != nil {
 		return err
 	}
 	// now apply the entire json as if it were a template
-	tpl, err := template.New(string(json_buff)).Parse(string(json_buff))
+	tpl := template.New(string(json_buff))
+	if len(funcMap) > 0 {
+		tpl = tpl.Funcs(funcMap[0])
+	}
+	tpl, err = tpl.Parse(string(json_buff))
 	if err != nil {
 		return err
 	}

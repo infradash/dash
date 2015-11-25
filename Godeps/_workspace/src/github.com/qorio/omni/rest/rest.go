@@ -1,11 +1,11 @@
 package rest
 
 import (
-	"github.com/golang/protobuf/proto"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/golang/glog"
+	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/mux"
 	"github.com/qorio/omni/api"
 	"github.com/qorio/omni/auth"
@@ -15,21 +15,46 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
+)
+
+type nht int
+
+const (
+	no_header nht = 1
 )
 
 var (
-	ErrMissingInput                 = errors.New("error-missing-input")
-	ErrUnknownContentType           = errors.New("error-no-content-type")
-	ErrUnknownMethod                = errors.New("error-unknown-method")
-	ErrIncompatibleType             = errors.New("error-incompatible-type")
-	ErrNotSupportedUrlParameterType = errors.New("error-not-supported-url-query-param-type")
-	ErrNoHttpHeaderSpec             = errors.New("error-no-http-header-spec")
-)
+	string_marshaler = func(contentType string, resp http.ResponseWriter, typed interface{}, noHeader ...nht) error {
+		if str, ok := typed.(*string); ok {
+			if len(noHeader) == 0 {
+				resp.Header().Add("Content-Type", contentType)
+			}
+			resp.Write([]byte(*str))
+			return nil
+		} else {
+			return errors.New("wrong-type-expects-str-ptr")
+		}
+	}
 
-var (
-	json_marshaler = func(contentType string, resp http.ResponseWriter, typed interface{}) error {
+	string_unmarshaler = func(body io.ReadCloser, typed interface{}) error {
+		if _, ok := typed.(*string); !ok {
+			return errors.New("wrong-type-expects-str-ptr")
+		}
+		if buff, err := ioutil.ReadAll(body); err == nil {
+			ptr := typed.(*string)
+			*ptr = string(buff)
+			return nil
+		} else {
+			return err
+		}
+	}
+
+	json_marshaler = func(contentType string, resp http.ResponseWriter, typed interface{}, noHeader ...nht) error {
 		if buff, err := json.Marshal(typed); err == nil {
-			resp.Header().Add("Content-Type", contentType)
+			if len(noHeader) == 0 {
+				resp.Header().Add("Content-Type", contentType)
+			}
 			resp.Write(buff)
 			return nil
 		} else {
@@ -42,7 +67,16 @@ var (
 		return dec.Decode(typed)
 	}
 
-	proto_marshaler = func(contentType string, resp http.ResponseWriter, any interface{}) error {
+	json_logging_unmarshaler = func(body io.ReadCloser, typed interface{}) error {
+		buff, err := ioutil.ReadAll(body)
+		if err != nil {
+			return err
+		}
+		glog.V(100).Infoln("Unmarshal [", string(buff), "]")
+		return json.Unmarshal(buff, typed)
+	}
+
+	proto_marshaler = func(contentType string, resp http.ResponseWriter, any interface{}, noHeader ...nht) error {
 		typed, ok := any.(proto.Message)
 		if !ok {
 			return ErrIncompatibleType
@@ -68,22 +102,22 @@ var (
 		return proto.Unmarshal(buff, typed)
 	}
 
-	marshalers = map[string]func(string, http.ResponseWriter, interface{}) error{
+	marshalers = map[string]func(string, http.ResponseWriter, interface{}, ...nht) error{
 		"":                     json_marshaler,
 		"application/json":     json_marshaler,
 		"application/protobuf": proto_marshaler,
+		"text/plain":           string_marshaler,
 		"text/html":            nil,
 	}
 
 	unmarshalers = map[string]func(io.ReadCloser, interface{}) error{
-		"":                     json_unmarshaler,
-		"application/json":     json_unmarshaler,
+		"":                     json_logging_unmarshaler,
+		"application/json":     json_logging_unmarshaler,
 		"application/protobuf": proto_unmarshaler,
+		"text/plain":           string_unmarshaler,
 		"text/html":            nil,
 	}
 )
-
-type Handler func(http.ResponseWriter, *http.Request)
 
 type ServiceMethodImpl struct {
 	Api                  api.MethodSpec // note this is by copy -- so that behavior is deterministic after initialization
@@ -113,51 +147,28 @@ func SetAuthenticatedHandler(serviceId string, m api.MethodSpec, h auth.HttpHand
 	}
 }
 
-type EngineEvent struct {
-	Domain        string
-	Service       string
-	ServiceMethod api.ServiceMethod
-	Body          interface{}
-}
-
-type Engine interface {
-	Bind(...*ServiceMethodImpl)
-	Handle(string, http.Handler)
-	ServeHTTP(http.ResponseWriter, *http.Request)
-	GetUrlParameter(*http.Request, string) string
-	GetHttpHeaders(*http.Request, api.HttpHeaders) (map[string][]string, error)
-	GetUrlQueries(*http.Request, api.UrlQueries) (api.UrlQueries, error)
-	Unmarshal(*http.Request, proto.Message) error
-	Marshal(*http.Request, proto.Message, http.ResponseWriter) error
-	UnmarshalJSON(*http.Request, interface{}) error
-	MarshalJSON(*http.Request, interface{}, http.ResponseWriter) error
-	HandleError(http.ResponseWriter, *http.Request, string, int) error
-	EventChannel() chan<- *EngineEvent
-}
-
 type engine struct {
-	spec       *api.ServiceMethods
-	router     *mux.Router
-	auth       auth.Service
-	event_chan chan *EngineEvent
-	done_chan  chan bool
-	webhooks   WebhookManager
+	spec        *api.ServiceMethods
+	router      *mux.Router
+	auth        auth.Service
+	event_chan  chan *EngineEvent
+	done_chan   chan bool
+	webhooks    WebhookManager
+	sseChannels map[string]*sseChannel
+	lock        sync.Mutex
 }
 
 func NewEngine(spec *api.ServiceMethods, auth auth.Service, webhooks WebhookManager) *engine {
 	e := &engine{
-		spec:       spec,
-		router:     mux.NewRouter(),
-		auth:       auth,
-		event_chan: make(chan *EngineEvent),
-		done_chan:  make(chan bool),
-		webhooks:   webhooks,
+		spec:        spec,
+		router:      mux.NewRouter(),
+		auth:        auth,
+		event_chan:  make(chan *EngineEvent),
+		done_chan:   make(chan bool),
+		webhooks:    webhooks,
+		sseChannels: make(map[string]*sseChannel),
 	}
 	return e
-}
-
-func (this *engine) Router() *mux.Router {
-	return this.router
 }
 
 func (this *engine) ServeHTTP(resp http.ResponseWriter, request *http.Request) {
@@ -209,6 +220,11 @@ func (this *engine) GetHttpHeaders(req *http.Request, m api.HttpHeaders) (map[st
 		}
 	}
 	return q, nil
+}
+
+func (this *engine) GetPostForm(req *http.Request, m api.FormParams) (api.FormParams, error) {
+	q, err := this.GetUrlQueries(req, api.UrlQueries(m))
+	return api.FormParams(q), err
 }
 
 func (this *engine) GetUrlQueries(req *http.Request, m api.UrlQueries) (api.UrlQueries, error) {
@@ -266,10 +282,20 @@ func (this *engine) Bind(endpoints ...*ServiceMethodImpl) {
 			this.router.HandleFunc(ep.Api.UrlRoute, ep.Handler).Methods(string(ep.Api.HttpMethod))
 
 		case ep.AuthenticatedHandler != nil:
-			this.router.HandleFunc(ep.Api.UrlRoute,
+			h := this.router.HandleFunc(ep.Api.UrlRoute,
 				this.auth.RequiresAuth(ep.Api.AuthScope, func(token *auth.Token) []string {
 					return strings.Split(token.GetString(ep.ServiceId+"/@scopes"), ",")
-				}, ep.AuthenticatedHandler)).Methods(string(ep.Api.HttpMethod))
+				}, ep.AuthenticatedHandler))
+			if ep.Api.HttpMethod != "" {
+				h.Methods(string(ep.Api.HttpMethod))
+			}
+			if len(ep.Api.HttpMethods) > 0 {
+				s := []string{}
+				for _, m := range ep.Api.HttpMethods {
+					s = append(s, string(m))
+				}
+				h.Methods(s...)
+			}
 
 		case ep.Handler == nil && ep.AuthenticatedHandler == nil:
 			panic(errors.New(fmt.Sprintf("No implementation for REST endpoint[%d]: %s", i, ep)))
@@ -382,7 +408,10 @@ func (this *engine) MarshalJSON(req *http.Request, any interface{}, resp http.Re
 
 func (this *engine) HandleError(resp http.ResponseWriter, req *http.Request, message string, code int) (err error) {
 	resp.WriteHeader(code)
-	resp.Write([]byte(fmt.Sprintf("{\"error\":\"%s\"}", message)))
+	if len(message) > 0 {
+		escaped := strings.Replace(message, "\"", "'", -1)
+		resp.Write([]byte(fmt.Sprintf("{\"error\":\"%s\"}", escaped)))
+	}
 	return
 }
 

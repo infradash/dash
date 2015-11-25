@@ -5,7 +5,7 @@ import (
 	"github.com/qorio/maestro/pkg/docker"
 )
 
-type SchedulerExecutor chan<- []Job
+type SchedulerExecutor chan<- []Task
 
 type HostContainerStates interface {
 	Instances(service ServiceKey, image string) []*Fsm

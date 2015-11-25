@@ -40,7 +40,7 @@ func (suite *TestSuiteAgent) TestParseAuthIdentity(c *C) {
 	c.Assert(a.Email, Equals, "joe@foo.com")
 }
 
-func (suite *TestSuiteAgent) TestParseJobPullImage(c *C) {
+func (suite *TestSuiteAgent) TestParseTaskPullImage(c *C) {
 	release_action := `
 {
   "auth" : {
@@ -50,14 +50,14 @@ func (suite *TestSuiteAgent) TestParseJobPullImage(c *C) {
   }
 }
 `
-	ra := &Job{}
+	ra := &Task{}
 	err := json.Unmarshal([]byte(release_action), ra)
 	c.Assert(err, Equals, nil)
 
 	c.Assert(ra.AuthIdentity.Username, Equals, "joe")
 }
 
-func (suite *TestSuiteAgent) TestParseJobStartContainers(c *C) {
+func (suite *TestSuiteAgent) TestParseTaskStartContainers(c *C) {
 	release_action := `
 {
   "auth" : {
@@ -84,7 +84,7 @@ func (suite *TestSuiteAgent) TestParseJobStartContainers(c *C) {
   ]
 }
 `
-	ra := &Job{}
+	ra := &Task{}
 	err := json.Unmarshal([]byte(release_action), ra)
 	c.Assert(err, Equals, nil)
 

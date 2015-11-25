@@ -6,6 +6,7 @@ import (
 	"github.com/golang/glog"
 	. "github.com/infradash/dash/pkg/dash"
 	"github.com/qorio/maestro/pkg/docker"
+	"github.com/qorio/maestro/pkg/registry"
 	"github.com/qorio/maestro/pkg/zk"
 	"sync"
 	"time"
@@ -57,27 +58,19 @@ func (this *Domain) do_register() error {
 		return ErrNotConnectedToRegistry
 	}
 
-	key, value, err := RegistryKeyValue(KDash, this)
-	glog.Infoln("Register self as key=", key, "value=", value, "err=", err)
-	if err != nil {
-		return err
+	key := registry.NewPath(this.Domain, "dash", this.Host)
+	err := zk.CreateOrSet(this.zk, key, this.agent.info(), true)
+	glog.Infoln("Register self, key=", key, "err=", err)
+	if err == nil {
+		// Update this only on successful registration
+		this.Identity = key.Path()
 	}
-	n, err := this.zk.CreateEphemeral(key, nil)
-	if err != nil {
-		return err
-	} else {
-		err = n.Set([]byte(value))
-		if err == nil {
-			// Update this only on successful registration
-			this.Identity = key
-		}
-	}
-	return nil
+	return err
 }
 
 func (this *Domain) StartServices(tags QualifyByTags) (*Domain, error) {
 	// Schedulers
-	for service, scheduler := range this.Config.Schedulers {
+	for service, scheduler := range this.Config.Services {
 		if scheduler.QualifyByTags.Matches(tags.Tags) {
 
 			applied := new(Scheduler)
@@ -92,6 +85,10 @@ func (this *Domain) StartServices(tags QualifyByTags) (*Domain, error) {
 			}
 
 			*scheduler = *applied
+
+			if scheduler.RegisterOnly() {
+				scheduler.Register.registerOnly = true
+			}
 
 			if !scheduler.IsValid() {
 				glog.Warningln("Bad scheduler specification:", *scheduler)
@@ -148,9 +145,11 @@ func (this *Domain) SynchronizeSchedule() error {
 	for service, scheduler := range this.schedulers {
 		glog.Infoln("Synchronize Service=", service)
 
-		scheduler.Job.zk = this.zk
+		scheduler.Task.zk = this.zk
+		scheduler.Task.domain = this.Domain
+		scheduler.Task.service = service
 
-		global := &scheduler.Job
+		global := &scheduler.Task
 		local := this.tracker
 
 		err := scheduler.Synchronize(this.Domain, service, local, global, this.scheduleExecutor.Inbox)
@@ -166,41 +165,53 @@ func (this *Domain) AddScheduler(service ServiceKey, scheduler *Scheduler) (chan
 	channel := this.tracker.AddStatesListener(service)
 	stopper := make(chan bool)
 
-	scheduler.Job.zk = this.zk
-	global := &scheduler.Job
+	scheduler.Task.zk = this.zk
+	global := &scheduler.Task
 
 	err := scheduler.Run(this.Domain, service, global, channel, stopper, this.scheduleExecutor.Inbox)
 	if err != nil {
 		return nil, err
 	}
 
-	if scheduler.TriggerPath != nil {
-		watch := string(*scheduler.TriggerPath)
-		context := &scheduler.Job
-		err = this.triggers.AddWatcher(watch, context, func(e zk.Event) bool {
-
-			glog.Infoln("Event for trigger", watch, e)
-			if e.State == zk.StateDisconnected {
-				glog.Warningln(watch, "disconnected: No action.")
-				return true
-			}
-
-			syncError := scheduler.Synchronize(this.Domain, service, this.tracker, global, this.scheduleExecutor.Inbox)
-			switch syncError {
-			case nil:
-				return true
-			case ErrNoImage:
-				ExceptionEvent(syncError, context, "Cannot determine image from referenced node")
-				return true
-			case zk.ErrNotExist:
-				ExceptionEvent(syncError, context, "Referenced node does not exist.  Ok to continue watch")
-				return true
-			default:
-				ExceptionEvent(syncError, context, "Error watching release")
-				return true
-			}
+	if scheduler.TriggerPath == nil {
+		glog.Infoln("No Trigger specified. Create one based on domain and service")
+		defaultWatchPath, _, err := RegistryKeyValue(KReleaseWatch, map[string]interface{}{
+			"Domain":  this.Domain,
+			"Service": service,
 		})
+		if err != nil {
+			glog.Warningln("No trigger path - not watching for releases")
+			return stopper, nil
+		}
+		trigger := Trigger(defaultWatchPath)
+		scheduler.TriggerPath = &trigger
 	}
+
+	watch := string(*scheduler.TriggerPath)
+	context := &scheduler.Task
+	err = this.triggers.AddWatcher(watch, context, func(e zk.Event) bool {
+
+		glog.Infoln("Event for trigger", watch, e)
+		if e.State == zk.StateDisconnected {
+			glog.Warningln(watch, "disconnected: No action.")
+			return true
+		}
+
+		syncError := scheduler.Synchronize(this.Domain, service, this.tracker, global, this.scheduleExecutor.Inbox)
+		switch syncError {
+		case nil:
+			return true
+		case ErrNoImage:
+			ExceptionEvent(syncError, context, "Cannot determine image from referenced node")
+			return true
+		case zk.ErrNotExist:
+			ExceptionEvent(syncError, context, "Referenced node does not exist.  Ok to continue watch")
+			return true
+		default:
+			ExceptionEvent(syncError, context, "Error watching release")
+			return true
+		}
+	})
 
 	return stopper, nil
 }
@@ -210,18 +221,18 @@ func label(this *docker.Container) string {
 }
 
 // Based on the scheduler information, derive the rules for discovery and monitoring of containers
-func (this *Domain) GetContainerWatcherSpecs() (map[ServiceKey]*WatchContainerSpec, error) {
-	matched := map[ServiceKey]*WatchContainerSpec{}
-	// Go through all the scheduler settings and derive the WatchContainerSpec
-	for service, scheduler := range this.Config.Schedulers {
+func (this *Domain) GetContainerWatcherSpecs() (map[ServiceKey]*MatchContainerRule, error) {
+	matched := map[ServiceKey]*MatchContainerRule{}
+	// Go through all the scheduler settings and derive the MatchContainerRule
+	for service, scheduler := range this.Config.Services {
 		if scheduler.QualifyByTags.Matches(this.agent.QualifyByTags.Tags) {
-			matched[service] = scheduler.GetWatchContainerSpec()
+			matched[service] = scheduler.GetMatchContainerRule()
 		}
 	}
 	return matched, nil
 }
 
-func (this *Domain) WatchContainer(service ServiceKey, spec *WatchContainerSpec) error {
+func (this *Domain) WatchContainer(service ServiceKey, spec *MatchContainerRule) error {
 	key := fmt.Sprintf("%s-%s", service, spec.Image)
 
 	if this.container_watchers == nil {

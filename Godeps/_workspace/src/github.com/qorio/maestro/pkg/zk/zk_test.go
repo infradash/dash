@@ -14,8 +14,14 @@ type ZkTests struct{}
 
 var _ = Suite(&ZkTests{})
 
+func (suite *ZkTests) TearDownSuite(c *C) {
+	z, err := Connect(ZkHosts(), 5*time.Second)
+	c.Assert(err, Equals, nil)
+	z.Delete("/unit-test") // TODO - this fails before there are children under this node
+}
+
 func (suite *ZkTests) TestConnect(c *C) {
-	z, err := Connect([]string{"localhost:2181"}, 5*time.Second)
+	z, err := Connect(ZkHosts(), 5*time.Second)
 	c.Assert(err, Equals, nil)
 	c.Log("Got client", z)
 	c.Assert(z.conn, Not(Equals), nil)
@@ -29,13 +35,14 @@ func (suite *ZkTests) TestConnect(c *C) {
 }
 
 func (suite *ZkTests) TestBasicOperations(c *C) {
-	z, err := Connect([]string{"localhost:2181"}, time.Second)
+	z, err := Connect(ZkHosts(), time.Second)
 	c.Assert(err, Equals, nil)
 
 	defer z.Close()
 
-	path := "/test"
-	value := []byte("/test")
+	path := "/unit-test/test"
+
+	value := []byte("/unit-test/test")
 	v, err := z.Get(path)
 	c.Assert(err, Not(Equals), ErrNotConnected)
 
@@ -47,7 +54,7 @@ func (suite *ZkTests) TestBasicOperations(c *C) {
 
 	// Now create a bunch of children
 	for i := 0; i < 10; i++ {
-		k := fmt.Sprintf("/test/%d", i)
+		k := fmt.Sprintf("/unit-test/test/%d", i)
 		data := fmt.Sprintf("value-test-%04d", i)
 
 		x, err := z.Get(k)
@@ -89,14 +96,14 @@ func (suite *ZkTests) TestBasicOperations(c *C) {
 }
 
 func (suite *ZkTests) TestFullPathObjects(c *C) {
-	z, err := Connect([]string{"localhost:2181"}, time.Second)
+	z, err := Connect(ZkHosts(), time.Second)
 	c.Assert(err, Equals, nil)
 
 	defer z.Close()
 
-	top, err := z.Get("/dir1")
+	top, err := z.Get("/unit-test/dir1")
 	if err == ErrNotExist {
-		top, err = z.Create("/dir1", nil)
+		top, err = z.Create("/unit-test/dir1", nil)
 		c.Assert(err, Equals, nil)
 	}
 	c.Assert(top, Not(Equals), (*Node)(nil))
@@ -108,14 +115,14 @@ func (suite *ZkTests) TestFullPathObjects(c *C) {
 		c.Assert(err, Equals, nil)
 	}
 
-	path := "/dir1/dir2/dir3"
+	path := "/unit-test/dir1/dir2/dir3"
 	value := []byte(path)
 	v, err := z.Create(path, value)
 	c.Assert(err, Equals, nil)
 	c.Assert(v, Not(Equals), nil)
 
 	for i := 0; i < 5; i++ {
-		k := fmt.Sprintf("/dir1/dir2/dir3/dir4/%04d", i)
+		k := fmt.Sprintf("/unit-test/dir1/dir2/dir3/dir4/%04d", i)
 		v := fmt.Sprintf("%s", i)
 		_, err := z.Create(k, []byte(v))
 		c.Assert(err, Equals, nil)
@@ -131,21 +138,21 @@ func (suite *ZkTests) TestFullPathObjects(c *C) {
 }
 
 func (suite *ZkTests) TestAppEnvironments(c *C) {
-	z, err := Connect([]string{"localhost:2181"}, time.Second)
+	z, err := Connect(ZkHosts(), time.Second)
 	c.Assert(err, Equals, nil)
 
 	defer z.Close()
 
 	// Common use case of storing properties under different environments
 	expects := map[string]string{
-		"/environments/integration/database/driver":     "postgres",
-		"/environments/integration/database/dbname":     "pg_db",
-		"/environments/integration/database/user":       "pg_user",
-		"/environments/integration/database/password":   "password",
-		"/environments/integration/database/port":       "5432",
-		"/environments/integration/env/S3_API_KEY":      "s3-api-key",
-		"/environments/integration/env/S3_API_SECRET":   "s3-api-secret",
-		"/environments/integration/env/SERVICE_API_KEY": "service-api-key",
+		"/unit-test/environments/integration/database/driver":     "postgres",
+		"/unit-test/environments/integration/database/dbname":     "pg_db",
+		"/unit-test/environments/integration/database/user":       "pg_user",
+		"/unit-test/environments/integration/database/password":   "password",
+		"/unit-test/environments/integration/database/port":       "5432",
+		"/unit-test/environments/integration/env/S3_API_KEY":      "s3-api-key",
+		"/unit-test/environments/integration/env/S3_API_SECRET":   "s3-api-secret",
+		"/unit-test/environments/integration/env/SERVICE_API_KEY": "service-api-key",
 	}
 
 	for k, v := range expects {
@@ -154,7 +161,7 @@ func (suite *ZkTests) TestAppEnvironments(c *C) {
 		//c.Assert(err, Equals, nil)
 	}
 
-	integration, err := z.Get("/environments/integration")
+	integration, err := z.Get("/unit-test/environments/integration")
 	c.Assert(err, Equals, nil)
 
 	all, err := integration.FilterChildrenRecursive(func(z *Node) bool {
@@ -174,10 +181,10 @@ func (suite *ZkTests) TestAppEnvironments(c *C) {
 }
 
 func (suite *ZkTests) TestEphemeral(c *C) {
-	z1, err := Connect([]string{"localhost:2181"}, time.Second)
+	z1, err := Connect(ZkHosts(), time.Second)
 	c.Assert(err, Equals, nil)
 
-	p := "/e1/e2"
+	p := "/unit-test/e1/e2"
 	top1, err := z1.Get(p)
 	if err == ErrNotExist {
 		top1, err = z1.Create(p, nil)
@@ -191,7 +198,7 @@ func (suite *ZkTests) TestEphemeral(c *C) {
 	c.Assert(err, Equals, nil)
 	c.Log("top1", top11)
 
-	z2, err := Connect([]string{"localhost:2181"}, time.Second)
+	z2, err := Connect(ZkHosts(), time.Second)
 	c.Assert(err, Equals, nil)
 	top2, err := z2.Get(p + "/11")
 	c.Assert(err, Not(Equals), ErrNotExist)
@@ -212,10 +219,10 @@ func (suite *ZkTests) TestEphemeral(c *C) {
 }
 
 func (suite *ZkTests) TestWatcher(c *C) {
-	z1, err := Connect([]string{"localhost:2181"}, time.Second)
+	z1, err := Connect(ZkHosts(), time.Second)
 	c.Assert(err, Equals, nil)
 
-	p := "/e1/e2"
+	p := "/unit-test/e1/e2"
 	top1, err := z1.Get(p)
 	if err == ErrNotExist {
 		top1, err = z1.Create(p, nil)
@@ -230,7 +237,7 @@ func (suite *ZkTests) TestWatcher(c *C) {
 	c.Log("top1", top11)
 
 	// Watched by another client
-	z2, err := Connect([]string{"localhost:2181"}, time.Second)
+	z2, err := Connect(ZkHosts(), time.Second)
 	c.Assert(err, Equals, nil)
 
 	top22, err := z2.Get(p + "/11")
@@ -248,7 +255,7 @@ func (suite *ZkTests) TestWatcher(c *C) {
 	top22.Set([]byte("New value"))
 
 	// Now watch something else
-	new_path := "/new/path/to/be/created"
+	new_path := "/unit-test/new/path/to/be/created"
 	stop23, err := z2.Watch(new_path, func(e Event) {
 		if e.State != zk.StateDisconnected {
 			c.Log("Got event -----", e)

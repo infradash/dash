@@ -30,22 +30,26 @@ dependencies:
   override:
     - source ./hack/env.sh
 
-  post:
-    - source ./hack/env.sh && make GODEP=godep all
-
 ## Customize test commands
 test:
   override:
     - echo "Running tests."
     - godep go test ./pkg/... -v -check.vv -logtostderr
 
-
 ## Customize deployment commands
 deployment:
-   docker:
+   git:
      branch: /release\/.*/
      commands:
-      - cp $BUILD_DIR/dash $CIRCLE_ARTIFACTS
-      - cp $BUILD_DIR/dash docker/dash
-      - cd docker/dash && make push && cd ..
-      - make deploy-git
+       - source ./hack/env.sh && make GODEP=godep build
+       - cp $BUILD_DIR/dash $CIRCLE_ARTIFACTS
+       - source ./hack/env.sh && make deploy-git
+
+   docker:
+     branch: /v[0-9]+(\.[0-9]+)*/
+     commands:
+       - source ./hack/env.sh && make GODEP=godep build
+       - cp $BUILD_DIR/dash $CIRCLE_ARTIFACTS
+       - source ./hack/env.sh && make deploy-git-docker-image-version
+       - cp $BUILD_DIR/dash docker/dash
+       - cd docker/dash && make push && cd ..

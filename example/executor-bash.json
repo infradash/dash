@@ -1,0 +1,42 @@
+{
+    "trigger":{
+	"registry": {
+	    "change": "/{{.Domain}}/task/bash"
+	}
+    },
+
+    "cmd": {
+	"path" : "ls",
+	"args" : [ "-al" ]
+    },
+
+
+    "info": "/{{.Domain}}/task/bash/{{.Id}}",
+    "status": "mqtt://iot.eclipse.org:1883/test.com/task/bash/{{.Id}}",
+    "stdin": "mqtt://iot.eclipse.org:1883/test.com/task/bash/{{.Id}}/stdin",
+    "name": "test-bash",
+    "print_pre" : "Starting up the shell",
+    "print_post" : "Finished the shell",
+    "print_err" : "Error from shell",
+    "watch": [{
+        "domain":"{{.Domain}}",
+	"service":"test",
+	"value_location":{
+		"path":"/{{.Domain}}/test"
+	},
+	"reload":{
+		"description" : "nginx",
+        	"config_url": "file:///Users/david/go/src/github.com/infradash/dash/example/nginx.conf",
+        	"config_destination":"/Users/david/go/src/github.com/infradash/dash/example/nginx.applied",
+        	"cmd":["service", "nginx", "reload"]
+    	}
+    }],
+    "tail": [
+        {
+            "path": "/Users/david/go/src/github.com/infradash/dash/example/test.log",
+	    "output":"mqtt",
+            "registry_path":"/{{.Domain}}/mqtt",
+	    "mqtt_topic":"/{{.Domain}}/test.log/{{.Host}}"
+        }
+    ]
+}

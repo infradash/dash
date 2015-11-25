@@ -1,0 +1,43 @@
+[
+    {
+        "domain": "{{.DASH_DOMAIN}}",
+
+        "services" : {
+            "blinker": {
+                "tags":["appserver"],
+                "auth_info_path":"/code.blinker.com/docker/authconfig",
+                "max_attempts": 2,
+                "actions" : [{
+                    "container_name_template": "{{.Service}}-{{.Version}}-{{.Build}}-{{.Sequence}}",
+                    "Env" : [ "VALET_DOMAIN={{.Domain}}", "ZOOKEEPER_HOSTS={{.DASH_ZK_HOSTS}}"],
+		    "Cmd" : [ "-config_source_url=http://blinkergit.github.io/ops-maintenance/blinker/blinker/blinker-cloud.json"],
+                    "host_config" : { "PublishAllPorts" : true }
+                }],
+		"register": {
+		    "repository" : "blinker/blinker",
+		    "match_container_port" : 3000,
+		    "match_first": [
+			{ "container_labels" : { "DASH_SERVICE":"blinker" } },
+			{ "container_name": "blinker-(.*)-([0-9]+).([0-9]+)-([0-9]+)" }
+		    ]
+		},
+                "constraint" : {
+                    "min_instances_global" : 1,
+                    "max_instances_global" : 100,
+                    "min_instances_per_host" : 1,
+                    "max_instances_per_host" : 1
+                }
+            }
+        },
+
+        "vacuums" : {
+            "blinker": {
+                "tags": ["appserver"],
+                "run_interval_seconds": 600,
+                "export_container" : false,
+                "by_version": { "versions_to_keep" : 2 },
+		"remove_image" : true
+            }
+        }
+    }
+]

@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-func (this *Agent) createDockerApiHandler(dir string, endpoint string) http.Handler {
+func (this *Agent) createDockerApiHandler(endpoint string) http.Handler {
 	var h http.Handler
 
 	switch {

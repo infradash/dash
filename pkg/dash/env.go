@@ -2,62 +2,75 @@ package dash
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
-	"fmt"
 	"github.com/golang/glog"
+	"github.com/qorio/maestro/pkg/registry"
+	"github.com/qorio/maestro/pkg/template"
 	"github.com/qorio/maestro/pkg/zk"
-	"os"
+	"io"
 	"sort"
 	"strings"
 )
 
-type Env struct {
-	ZkSettings
-	EnvSource // specifies input
-
-	RegistryEntryBase // specifies output
-
-	Publish   bool
-	Overwrite bool
-
-	zk zk.ZK
+func (this *EnvSource) IsZero() bool {
+	if this.RegistryEntryBase.CheckRequires() {
+		return false
+	}
+	return this.Url == ""
 }
 
-func (this *Env) EnvFromStdin() func() ([]string, map[string]string) {
-	return func() ([]string, map[string]string) {
-
-		glog.Infoln("Loading env from stdin")
-
-		keys := make([]string, 0)
-		env := make(map[string]string)
-		scanner := bufio.NewScanner(os.Stdin)
-		for scanner.Scan() {
-			line := scanner.Text()
-			i := strings.Index(line, "=")
-			if i > 0 {
-				key := line[0:i]
-				value := line[i+1:]
-				keys = append(keys, key)
-				env[key] = value
-			}
-		}
-		sort.Strings(keys)
-		glog.Infoln("Loaded", len(keys), "entries from stdin")
-		return keys, env
+func (this *EnvSource) Source(authToken string, zc zk.ZK) func() ([]string, map[string]interface{}) {
+	switch {
+	case this.Url != "":
+		return this.EnvFromUrl(this.Url, authToken, zc)
+	default:
+		return this.EnvFromZk(zc)
 	}
 }
 
-func (this *Env) EnvFromZk() func() ([]string, map[string]string) {
-	return func() ([]string, map[string]string) {
+func (this *EnvSource) EnvFromUrl(url string, authToken string, zc zk.ZK) func() ([]string, map[string]interface{}) {
+	return func() ([]string, map[string]interface{}) {
+		body, _, err := template.FetchUrl(url, map[string]string{"Authorization": "Bearer " + authToken}, zc)
+		if err != nil {
+			return []string{}, map[string]interface{}{}
+		}
+		return parse_env(bytes.NewBufferString(body))
+	}
+}
 
-		path := this.Path
-		glog.Infoln("Loading env from", path)
-		if path == "" {
-			panic(errors.New("no-path-env-param-not-set"))
+func (this *EnvSource) EnvFromReader(reader io.Reader) func() ([]string, map[string]interface{}) {
+	return func() ([]string, map[string]interface{}) {
+		return parse_env(reader)
+	}
+}
+
+func (this *EnvSource) EnvFromZk(zc zk.ZK) func() ([]string, map[string]interface{}) {
+	return func() ([]string, map[string]interface{}) {
+
+		if !this.CheckRequires() {
+			panic(ErrNoPath)
 		}
 
-		root_node, err := this.zk.Get(path)
-		if err != nil {
+		// Path takes precedence over derived path based on domain, service, version, etc.
+		var env_path string
+		if this.Path != "" {
+			env_path = this.Path
+		} else {
+			key, _, err := RegistryKeyValue(KEnvRoot, this)
+			if err != nil {
+				panic(err)
+			}
+			env_path = key
+		}
+
+		glog.Infoln("Loading env from", env_path)
+		root_node, err := zk.Follow(zc, registry.Path(env_path))
+		switch err {
+		case nil:
+		case zk.ErrNotExist:
+			return []string{}, map[string]interface{}{}
+		default:
 			panic(err)
 		}
 
@@ -71,105 +84,35 @@ func (this *Env) EnvFromZk() func() ([]string, map[string]string) {
 		}
 
 		keys := make([]string, 0)
-		env := make(map[string]string)
+		env := make(map[string]interface{})
 		for _, node := range all {
-			key := node.GetBasename()
-			value := node.GetValueString()
-			env[key] = value
-			keys = append(keys, key)
+			key, value, err := zk.Resolve(zc, registry.Path(node.GetBasename()), node.GetValueString())
+			if err != nil {
+				panic(errors.New("bad env reference:" + key.Path() + "=>" + value))
+			}
+
+			env[key.Path()] = value
+			keys = append(keys, key.Path())
 		}
 		sort.Strings(keys)
-		glog.Infoln("Loaded", len(keys), "entries from", path)
 		return keys, env
 	}
 }
 
-func (this *Env) Run() error {
-
-	var source func() ([]string, map[string]string) = nil
-
-	if this.ReadStdin {
-		source = this.EnvFromStdin()
-	} else {
-
-		// Simple check to see if path and destination env path are the same
-		check, _, _ := RegistryKeyValue(KEnvRoot, this)
-		if this.Path == check {
-			glog.Infoln("Source", this.Path, "and destination", check, "are the same. Nothing to do.")
-			return nil
-		}
-
-		zookeeper, err := zk.Connect(strings.Split(this.Hosts, ","), this.Timeout)
-		if err != nil {
-			panic(err)
-		}
-		this.zk = zookeeper
-
-		source = this.EnvFromZk()
-	}
-
-	if !this.RegistryEntryBase.CheckRequires() {
-		return errors.New("no-path")
-	}
-
-	// Now run it
-	vars, env := source()
-
-	if this.Publish && this.zk == nil {
-		zookeeper, err := zk.Connect(strings.Split(this.Hosts, ","), this.Timeout)
-		if err != nil {
-			panic(err)
-		}
-		this.zk = zookeeper
-	}
-
-	for _, k := range vars {
-
-		entry := &RegistryEnvEntry{RegistryEntryBase: this.RegistryEntryBase, EnvName: k, EnvValue: env[k]}
-		key, value, err := RegistryKeyValue(KEnv, entry)
-
-		if err != nil {
-			return err
-		}
-
-		if this.Publish {
-			// Upsert
-			n, err := this.zk.Get(key)
-			switch {
-
-			case err == zk.ErrNotExist:
-				n, err = this.zk.Create(key, []byte(value))
-				glog.Infoln("Created", key, "err=", err)
-
-			case err != nil:
-				glog.Warningln("Error upsert", key, "err=", err)
-				continue
-
-			}
-
-			if value != n.GetValueString() {
-
-				if this.Overwrite {
-					if err := n.Set([]byte(value)); err != nil {
-						glog.Warningln("Error upsert", key, "err=", err)
-					} else {
-						glog.Warningln("Committed", key, "err=", err)
-					}
-				} else {
-					glog.Infoln("No overwrite -- key=", key, "source=", value, "to=", n.GetValueString())
-				}
-
-			} else {
-				glog.Infoln("Key", key, "have same values. Nothing updated.")
-			}
-
-		} else {
-			fmt.Fprintf(os.Stdout, "%s/%s=>%s\n", this.Path, k, key)
+func parse_env(reader io.Reader) ([]string, map[string]interface{}) {
+	keys := make([]string, 0)
+	env := make(map[string]interface{})
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		line := scanner.Text()
+		i := strings.Index(line, "=")
+		if i > 0 {
+			key := line[0:i]
+			value := line[i+1:]
+			keys = append(keys, key)
+			env[key] = value
 		}
 	}
-
-	if this.zk != nil {
-		this.zk.Close()
-	}
-	return nil
+	sort.Strings(keys)
+	return keys, env
 }

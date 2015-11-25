@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"github.com/golang/glog"
-	"github.com/qorio/maestro/pkg/docker"
 	"github.com/qorio/maestro/pkg/zk"
 	"path/filepath"
 	"strings"
@@ -47,63 +46,7 @@ const (
 {{define "KEY"}}/{{.Domain}}/{{.Service}}/live{{end}}
 {{define "VALUE"}}/{{.Domain}}/{{.Service}}/{{.Version}}/container/{{.Image}},/{{.Domain}}/{{.Service}}/{{.Version}}/env{{end}}
 `
-	KDash = `
-{{define "KEY"}}/{{.Domain}}/dash/{{.Host}}:{{.ContainerPort}}:{{.HostPort}}{{end}}
-{{define "VALUE"}}{{.Host}}:{{.HostPort}}{{end}}
-`
-	KAgent = `
-{{define "KEY"}}/dash/{{.Host}}:{{.ContainerPort}}:{{.HostPort}}{{end}}
-{{define "VALUE"}}{{.Host}}:{{.HostPort}}{{end}}
-`
 )
-
-type DomainKey string
-type ServiceKey string
-
-// Represents an entry in the Env namespace
-type RegistryEntryBase struct {
-	Domain  string `json:"domain,omitempty"`
-	Service string `json:"service,omitempty"`
-	Version string `json:"version,omitempty"` // git tag
-	Path    string `json:"path,omitempty"`
-}
-
-type EnvSource struct {
-	RegistryEntryBase
-	ReadStdin bool `json:"stdin"`
-}
-
-func (this *RegistryEntryBase) CheckRequires() bool {
-	return (this.Domain != "" && this.Service != "" && this.Version != "") || this.Path != ""
-}
-
-type RegistryEnvEntry struct {
-	RegistryEntryBase
-	EnvValue string `json:"value"`
-	EnvName  string `json:"env"`
-}
-
-type RegistryReleaseEntry struct {
-	RegistryEntryBase
-
-	Image string `json:"image,omitempty"`
-	Build string `json:"build,omitempty"`
-}
-
-type RegistryLiveEntry struct {
-	RegistryReleaseEntry
-
-	Live bool `json:"live"`
-}
-
-type RegistryContainerEntry struct {
-	RegistryReleaseEntry
-
-	Name        string `json:"name,omitempty"` // docker name
-	Host        string `json:"host,omitempty"`
-	ContainerId string `json:"container_id,omitempty"`
-	docker.Port
-}
 
 var templates = make(map[string]*template.Template)
 
@@ -114,10 +57,8 @@ func init() {
 	must_compile_template(KContainer)
 	must_compile_template(KEnvRoot)
 	must_compile_template(KEnv)
-	must_compile_template(KDash)
 	must_compile_template(KLive)
 	must_compile_template(KLiveWatch)
-	must_compile_template(KAgent)
 }
 
 func must_compile_template(k string) {
@@ -130,13 +71,23 @@ func must_compile_template(k string) {
 	}
 }
 
-func RegistryKeyValue(k string, object interface{}) (key, value string, err error) {
+func RegistryKeyValue(k string, object interface{}, funcs ...template.FuncMap) (key, value string, err error) {
 	var keyBuff, valueBuff bytes.Buffer
-	err = templates[k].Lookup("KEY").Execute(&keyBuff, object)
+	t := templates[k]
+	if t == nil {
+		err = errors.New("no-template")
+		return
+	}
+
+	if len(funcs) > 0 {
+		t = t.Funcs(funcs[0])
+	}
+
+	err = t.Lookup("KEY").Execute(&keyBuff, object)
 	if err != nil {
 		return
 	}
-	err = templates[k].Lookup("VALUE").Execute(&valueBuff, object)
+	err = t.Lookup("VALUE").Execute(&valueBuff, object)
 	if err != nil {
 		return
 	}

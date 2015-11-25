@@ -13,23 +13,7 @@ import (
 	"regexp"
 )
 
-type Config struct {
-	User     string `json:"user"`
-	Project  string `json:"project"`
-	ApiToken string `json:"token"`
-}
-
-type BuildArtifact struct {
-	Path       string `json:"path,omitempty"`
-	PrettyPath string `json:"pretty_path,omitempty"`
-	URL        string `json:"url,omitempty"`
-	Name       string `json:"name,omitempty"`
-	circleci   *Config
-}
-
-const CircleApiPrefix = "https://circleci.com/api/v1"
-
-func (this *Config) url(format string, parts ...interface{}) (*url.URL, error) {
+func (this *Build) url(format string, parts ...interface{}) (*url.URL, error) {
 	url_main := CircleApiPrefix + fmt.Sprintf(format, parts...)
 	url, err := url.Parse(url_main)
 	if err != nil {
@@ -57,7 +41,7 @@ func MatchPathAndBinary(path, binary string) (BuildArtifactFilter, error) {
 	}, nil
 }
 
-func (this *Config) FetchBuildArtifacts(buildNum int64, filter BuildArtifactFilter) ([]BuildArtifact, error) {
+func (this *Build) FetchBuildArtifacts(buildNum int, filter BuildArtifactFilter) ([]BuildArtifact, error) {
 	url, err := this.url("/project/%s/%s/%d/artifacts", this.User, this.Project, buildNum)
 	if err != nil {
 		return nil, err

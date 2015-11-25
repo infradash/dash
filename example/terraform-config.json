@@ -1,0 +1,11 @@
+{
+     "ensemble":[ { "ip":"10.0.0.1" }, { "ip":"10.0.0.2" }, { "ip":"10.0.0.3" } ],
+     "zookeeper" : {
+         "template":"file:///Users/david/go/src/github.com/infradash/dash/example/zk_exhibitor.json",
+         "endpoint":"file:///Users/david/go/src/github.com/infradash/dash/example/zk_exhibitor.applied"
+     },
+     "kafka": {
+         "template":"file:///Users/david/go/src/github.com/infradash/dash/example/kafka.properties",
+         "endpoint":"file:///Users/david/go/src/github.com/infradash/dash/example/kafka.applied"
+     }
+}

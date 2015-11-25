@@ -21,21 +21,23 @@ func (suite *TestSuiteDiscover) SetUpSuite(c *C) {
 func (suite *TestSuiteDiscover) TearDownSuite(c *C) {
 }
 
-func test_container(image, domain, name string, port int64, envs ...string) *docker.Container {
+func test_container(running bool, image, domain, name string, port int64, labels map[string]string, envs ...string) *docker.Container {
 	c := &docker.Container{
 		Image: image,
 		DockerData: &_docker.Container{
 			Config: &_docker.Config{
 				Env: []string{
-					domain,
+					"DASH_DOMAIN=" + domain,
 				},
 			},
+			State: _docker.State{Running: running},
 		},
-		Ports: []docker.Port{
-			docker.Port{
-				ContainerPort: port,
-			},
-		},
+	}
+	if running {
+		c.Ports = []docker.Port{docker.Port{ContainerPort: port}}
+	}
+	if len(labels) > 0 {
+		c.DockerData.Config.Labels = labels
 	}
 	if len(name) > 0 {
 		c.Name = name
@@ -47,11 +49,9 @@ func test_container(image, domain, name string, port int64, envs ...string) *doc
 }
 
 func test_match(c *C, m *DiscoveryContainerMatcher, dc *docker.Container, match bool) {
-	isMatch, rule := m.Match(dc)
+	rules := m.Match(dc)
+	isMatch := len(rules) > 0
 	c.Assert(isMatch, Equals, match)
-	if isMatch {
-		c.Assert(rule, Not(Equals), nil)
-	}
 }
 
 func (suite *TestSuiteDiscover) TestContainerMatch(c *C) {
@@ -63,44 +63,82 @@ func (suite *TestSuiteDiscover) TestContainerMatch(c *C) {
 	nginx_http := 80
 
 	m := new(DiscoveryContainerMatcher).Init()
-	m.C("test.infradash.com", ServiceKey("sidekiq"), &WatchContainerSpec{
-		Image:              docker.Image{Repository: "infradash/infradash"},
-		MatchContainerName: &sidekiq,
+	m.C("test.com", ServiceKey("sidekiq"), &MatchContainerRule{
+		Image: docker.Image{Repository: "infradash/infradash"},
+		MatchFirst: []ContainerMatchRulesUnion{
+			ContainerMatchRulesUnion{
+				ByContainerName: &sidekiq,
+			},
+		},
 	})
-	m.C("test.infradash.com", ServiceKey("infradash"), &WatchContainerSpec{
+	m.C("test.com", ServiceKey("infradash"), &MatchContainerRule{
 		Image:              docker.Image{Repository: "infradash/infradash"},
 		MatchContainerPort: &infradash_port,
+		MatchFirst: []ContainerMatchRulesUnion{
+			ContainerMatchRulesUnion{
+				ByContainerLabels: map[string]string{"DASH_SERVICE": "infradash"},
+			},
+		},
 	})
-	m.C("test.infradash.com", ServiceKey("mqtt"), &WatchContainerSpec{
+
+	m.C("test.com", ServiceKey("mqtt"), &MatchContainerRule{
 		Image:              docker.Image{Repository: "infradash/mqtt"},
 		MatchContainerPort: &mqtt_port,
 	})
-	m.C("test.infradash.com", ServiceKey("nginx"), &WatchContainerSpec{
-		Image:                     docker.Image{Repository: "infradash/nginx"},
-		MatchContainerPort:        &nginx_https,
-		MatchContainerEnvironment: []string{"DASH_SERVICE=https"},
+	m.C("test.com", ServiceKey("nginx"), &MatchContainerRule{
+		Image:              docker.Image{Repository: "infradash/nginx"},
+		MatchContainerPort: &nginx_https,
+		MatchFirst: []ContainerMatchRulesUnion{
+			ContainerMatchRulesUnion{
+				ByContainerEnvironment: []string{"DASH_SERVICE=proxy"},
+			},
+		},
 	})
-	m.C("test.infradash.com", ServiceKey("nginx-http"), &WatchContainerSpec{
-		Image:                     docker.Image{Repository: "infradash/nginx"},
-		MatchContainerPort:        &nginx_http,
-		MatchContainerEnvironment: []string{"DASH_SERVICE=https"},
+	m.C("test.com", ServiceKey("nginx-http"), &MatchContainerRule{
+		Image:              docker.Image{Repository: "infradash/nginx"},
+		MatchContainerPort: &nginx_https,
+		MatchFirst: []ContainerMatchRulesUnion{
+			ContainerMatchRulesUnion{
+				ByContainerEnvironment: []string{"DASH_SERVICE=https"},
+			},
+		},
 	})
-	m.C("test.infradash.com", ServiceKey("nginx-http2"), &WatchContainerSpec{
-		Image:                     docker.Image{Repository: "infradash/nginx"},
-		MatchContainerPort:        &nginx_http,
-		MatchContainerEnvironment: []string{"DASH_SERVICE=http2"},
+	m.C("test.com", ServiceKey("nginx-http2"), &MatchContainerRule{
+		Image:              docker.Image{Repository: "infradash/nginx"},
+		MatchContainerPort: &nginx_http,
+		MatchFirst: []ContainerMatchRulesUnion{
+			ContainerMatchRulesUnion{
+				ByContainerEnvironment: []string{"DASH_SERVICE=http2"},
+			},
+		},
 	})
 
-	test_match(c, m, test_container("infradash/infradash:v1.0.0-1234.5678", "DASH_DOMAIN=test.infradash.com", "a", 3000), true)
-	test_match(c, m, test_container("infradash/infradash:v1.0.0-1234.5678", "DASH_DOMAIN=test.infradash.com", "sidekiq", 0), true)
-	test_match(c, m, test_container("infradash/preview:v1.0.0-1234.5678", "DASH_DOMAIN=test.infradash.com", "p", 3000), false)
-	test_match(c, m, test_container("infradash/infradash:v1.0.0-1234.5678", "DASH_DOMAIN=prod.infradash.com", "z", 3000), false)
-	test_match(c, m, test_container("infradash/infradash:v1.0.0-1234.5678", "", "", 3000), false)
-	test_match(c, m, test_container("infradash/mqtt:latest", "DASH_DOMAIN=test.infradash.com", "x", 1883), true)
-	test_match(c, m, test_container("infradash/nginx", "DASH_DOMAIN=test.infradash.com", "y", 443), false)
-	test_match(c, m, test_container("infradash/nginx", "DASH_DOMAIN=test.infradash.com", "y", 443, "DASH_SERVICE=ssl2"), false)
-	test_match(c, m, test_container("infradash/nginx", "DASH_DOMAIN=test.infradash.com", "y", 443, "DASH_SERVICE=https"), true)
-	test_match(c, m, test_container("infradash/nginx", "DASH_DOMAIN=test.infradash.com", "y", 80, "DASH_SERVICE=http2"), true)
+	// match when no port (container not running)
+	var dc *docker.Container
+
+	dc = test_container(false, "infradash/infradash:v1.0.0-1234.5678", "test.com", "sidekiq", 0,
+		map[string]string{"DASH_SERVICE": "sidekiq"})
+	test_match(c, m, dc, true)
+
+	dc = test_container(false, "infradash/infradash:v1.0.0-1234.5678", "test.com", "infradash", 3000,
+		map[string]string{"DASH_SERVICE": "infradash"})
+	test_match(c, m, dc, true)
+
+	test_match(c, m, test_container(true, "infradash/infradash:v1.0.0-1234.5678", "test.com", "infradash", 3000,
+		map[string]string{"DASH_SERVICE": "infradash"}), true)
+
+	test_match(c, m, test_container(true, "infradash/infradash:v1.0.0-1234.5678", "test.com", "sidekiq", 0, nil), true)
+	test_match(c, m, test_container(true, "infradash/preview:v1.0.0-1234.5678", "test.com", "p", 3000, nil), false)
+	test_match(c, m, test_container(true, "infradash/infradash:v1.0.0-1234.5678", "prod.infradash.com", "z", 3000, nil), false)
+	test_match(c, m, test_container(true, "infradash/infradash:v1.0.0-1234.5678", "", "", 3000, nil), false)
+
+	test_match(c, m, test_container(true, "infradash/mqtt:latest", "test.com", "x", 1883, nil), true)
+
+	test_match(c, m, test_container(true, "infradash/nginx", "test.com", "y", 443, nil, "DASH_SERVICE=https"), true)
+	test_match(c, m, test_container(true, "infradash/nginx", "test.com", "y", 80, nil, "DASH_SERVICE=http2"), true)
+	test_match(c, m, test_container(true, "infradash/nginx", "test.com", "y", 443, nil, "DASH_SERVICE=ssl2"), false)
+	test_match(c, m, test_container(true, "infradash/nginx", "test.com", "y", 443, nil), false)
+
 }
 
 func (suite *TestSuiteDiscover) TestImageMatch(c *C) {

@@ -1,0 +1,26 @@
+{
+    "info": "/{{.Domain}}/{{.Service}}/{{.Host}}",
+    "status": "mqtt://iot.eclipse.org:1883/{{.Domain}}/{{.Service}}/{{.Host}}",
+
+    "configs": [
+	{
+	    "description":"nginx conf {{env "EXEC_DOMAIN"}}",
+            "url": "http://BlinkerGit.github.io/ops-maintenance/redpill/nginx/nginx.conf",
+            "path":"/etc/nginx/sites-enabled/default",
+	    "reload": "/{{.Domain}}/{{.Service}}/_watch/nginx.conf",
+            "reload_cmd":["service", "nginx", "reload"]
+	}
+    ],
+    "tail": [
+        {
+            "path": "/var/log/nginx/access.log",
+	    "stderr": true,
+	    "topic": "mqtt://iot.eclipse.org:1883/{{.Domain}}/{{.Service}}/{{.Host}}/access.log"
+        },
+        {
+            "path": "/var/log/nginx/error.log",
+	    "stderr": true,
+	    "topic": "mqtt://iot.eclipse.org:1883/{{.Domain}}/{{.Service}}/{{.Host}}/error.log"
+        }
+    ]
+}

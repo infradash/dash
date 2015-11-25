@@ -91,9 +91,9 @@ func (this *Vacuum) Run() error {
 					this.ticker.Stop()
 				}
 			case <-this.ticker.C:
-				glog.Infoln("Running Vacuum:", "Domain=", this.Domain, "Service=", this.Service)
 				err := this.do_vacuum()
 				if err != nil {
+					glog.Warningln("Vacuum failed:", "Domain=", this.Domain, "Service=", this.Service, "Err=", err)
 					ExceptionEvent(err, this, "Vacuum failed")
 				}
 			}
@@ -110,42 +110,35 @@ func (this *Vacuum) do_vacuum() error {
 		// TODO
 
 	case this.Config.ByVersion != nil:
+
 		versions := this.local.CountVersions(this.Service)
 		if versions <= this.Config.ByVersion.VersionsToKeep {
-			glog.Infoln("Domain=", this.Domain, "Service=", this.Service, "Nothing to do: versions=", versions)
 			return nil
 		}
 
 		image, instances := this.local.OldestVersion(this.Service)
-		if len(instances) > 0 {
+		for _, instance := range instances {
+
+			state := instance.Current().State
+			containerId := instance.CustomData.(string)
 			glog.Infoln("Domain=", this.Domain, "Service=", this.Service,
-				"Image=", image, "Instances=", len(instances))
+				"Id=", containerId[0:12], "State=", state.String(), "Image=", image, "to be vacuummed.")
 
-			for _, instance := range instances {
-				state := instance.Current().State
-				containerId := instance.CustomData.(string)
-				glog.Infoln("Id=", containerId[0:12], "State=", state.String(), "To be vacuummed")
-
-				switch instance.Current().State {
-				case Running:
-					go func() {
-						err := this.docker.StopContainer(nil, containerId, 10*time.Second)
-						glog.Infoln("StopContainer", "Id=", containerId, "Err=", err)
-					}()
-				case Removed:
-					if this.Config.RemoveImage {
-						go func() {
-							// TODO - remove image
-							glog.Infoln("TODO ====>  Container removed.  Now removing image:", image)
-
-						}()
-					}
-				default:
-					go func() {
-						err := this.docker.RemoveContainer(nil, containerId, false, false)
-						glog.Infoln("RemoveContainer", "Id=", containerId, "Err=", err)
-					}()
+			switch state {
+			case Running:
+				glog.Infoln("StopContainer", "Id=", containerId)
+				err := this.docker.StopContainer(nil, containerId, 10*time.Second)
+				glog.Infoln("StopContainer", "Id=", containerId, "Err=", err)
+			case Removed:
+				if this.Config.RemoveImage {
+					glog.Infoln("Container removed.  Now removing image:", image)
+					err := this.docker.RemoveImage(image, true, true)
+					glog.Infoln("RemoveImage: err=", err)
 				}
+			case Stopped, Failed:
+				glog.Infoln("RemoveContainer", "Id=", containerId)
+				err := this.docker.RemoveContainer(nil, containerId, false, false)
+				glog.Infoln("RemoveContainer", "Id=", containerId, "Err=", err)
 			}
 		}
 	default:

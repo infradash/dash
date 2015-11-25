@@ -5,7 +5,6 @@ import (
 	"github.com/golang/glog"
 	. "github.com/infradash/dash/pkg/dash"
 	"github.com/qorio/maestro/pkg/docker"
-	"regexp"
 	"strings"
 )
 
@@ -47,13 +46,14 @@ func (this *Agent) DiscoverSelfInDocker() error {
 }
 
 type ContainerMatchRule struct {
-	WatchContainerSpec
+	MatchContainerRule
 
-	Domain  string
-	Service ServiceKey
+	Domain      string
+	Service     ServiceKey
+	PortMatched bool
 }
 
-func (this *WatchContainerSpec) GetMatchContainerPort() int {
+func (this *MatchContainerRule) GetMatchContainerPort() int {
 	if this.MatchContainerPort != nil {
 		return *this.MatchContainerPort
 	} else {
@@ -62,61 +62,18 @@ func (this *WatchContainerSpec) GetMatchContainerPort() int {
 }
 
 func (this *ContainerMatchRule) GetMatchContainerPort() int {
-	return this.WatchContainerSpec.GetMatchContainerPort()
+	return this.MatchContainerRule.GetMatchContainerPort()
 }
 
-func (this *ContainerMatchRule) match_by_environment(c *docker.Container) bool {
-	if len(this.MatchContainerEnvironment) == 0 {
-		return true // Don't care
-	}
-
-	// want to match, but have no environments defined:
-	if c.DockerData == nil || c.DockerData.Config == nil || len(c.DockerData.Config.Env) == 0 {
-		return false
-	}
-
-	// name=value (regexp) pairs separated by comma ==> AND'ing
-	to_match := map[string]string{}
-	for _, nv := range this.MatchContainerEnvironment {
-		to_match[nv] = nv
-	}
-
-	for _, env := range c.DockerData.Config.Env {
-		for k, pattern := range to_match {
-			// use the full nv (e.g. FOO=BAR) as regexp
-			if match, _ := regexp.MatchString(pattern, env); match {
-				delete(to_match, k) // remove it so we don't match again
-				break
-			}
-		}
-	}
-	return len(to_match) == 0
-}
-
-func (this *ContainerMatchRule) match_by_name_regexp(c *docker.Container) bool {
-	if this.MatchContainerName == nil {
-		return true // Don't care
-	}
-	regex := *this.MatchContainerName
-	m, _ := regexp.MatchString(regex, c.Name)
-	return m
-}
-
-func (this *ContainerMatchRule) match_by_live_port(c *docker.Container) bool {
+func (this *ContainerMatchRule) match_by_running_port(c *docker.Container) bool {
 	if this.MatchContainerPort == nil {
-		return true // Don't care
+		return false // Don't care
 	}
-
-	// When the container isn't running, the port information is erased.
-	// So we count on other conditions to match.
-	if c.DockerData != nil && !c.DockerData.State.Running {
-		return true
-	}
-
 	port := *this.MatchContainerPort
 	if port > 0 {
 		for _, p := range c.Ports {
 			if port == int(p.ContainerPort) {
+				this.PortMatched = true
 				return true
 			}
 		}
@@ -125,27 +82,46 @@ func (this *ContainerMatchRule) match_by_live_port(c *docker.Container) bool {
 }
 
 func (this *ContainerMatchRule) match(c *docker.Container) bool {
-	// We need to take into account of the fact that when a container stopped,
-	// its port inforrmation is gone.  Therefore, anything that tries to match
-	// by port number will fail.
+	if c.DockerData == nil {
+		return false
+	}
 
 	// We first try by matching image. Then by name, environment variable.
 	if !ImageMatch(c.Image, &this.Image) {
 		return false
 	}
 
-	if !this.match_by_name_regexp(c) {
+	// When the container isn't running, the port information is erased.
+	// So we count on other conditions to match -- we at least eliminate the negative case
+	// where it's running and the port doesn't match
+	if c.DockerData.State.Running && this.MatchContainerPort != nil && !this.match_by_running_port(c) {
 		return false
 	}
 
-	if !this.match_by_environment(c) {
+	// If we have no other criteria by now, just match
+	if len(this.MatchAll) == 0 && len(this.MatchFirst) == 0 {
+		return true
+	}
+
+	match := true
+	for _, r := range this.MatchAll {
+		match = match && r.Match(c)
+	}
+	if !match {
 		return false
 	}
 
-	return this.match_by_live_port(c)
+	match = false // reset
+	for _, r := range this.MatchFirst {
+		if r.Match(c) {
+			match = true
+			break
+		}
+	}
+	return match
 }
 
-type CheckContainer func(*docker.Container) (bool, *ContainerMatchRule)
+type CheckContainer func(*docker.Container) map[ServiceKey]*ContainerMatchRule
 type OnMatch func(*docker.Container, *ContainerMatchRule)
 
 func (this *Agent) DiscoverRunningContainers(check CheckContainer, do OnMatch) error {
@@ -158,62 +134,88 @@ func (this *Agent) DiscoverRunningContainers(check CheckContainer, do OnMatch) e
 	glog.Infoln("Found", len(all_containers), "containers")
 
 	for _, container := range all_containers {
-		glog.V(100).Infoln("Checking", "Name=", container.Name, "Image=", container.Image, "Id=", container.Id[0:12])
-		if match, match_rule := check(container); match {
-			glog.V(100).Infoln("Matched", "Name=", container.Name, "Id=", container.Id[0:12],
-				"Image=", container.Image, "Service=", match_rule.Service)
-			do(container, match_rule)
+		glog.Infoln("Checking", "Name=", container.Name, "Image=", container.Image, "Id=", container.Id[0:12])
+		match_rules := check(container)
+
+		glog.Infoln("For container=", container, "matched_rules=", match_rules)
+
+		for serviceKey, rule := range match_rules {
+			glog.Infoln("==========================>>>>  Matched",
+				"ServiceKey=", serviceKey,
+				"Rule=", rule,
+				"Name=", container.Name,
+				"Id=", container.Id[0:12],
+				"Image=", container.Image)
+			do(container, rule)
 		}
 	}
 	return nil
 }
 
 type DiscoveryContainerMatcher struct {
-	imagesByDomain map[string]map[ServiceKey]ContainerMatchRule
+	rulesByDomainService map[string]map[ServiceKey]*ContainerMatchRule
 }
 
 func (this *DiscoveryContainerMatcher) Init() *DiscoveryContainerMatcher {
-	this.imagesByDomain = make(map[string]map[ServiceKey]ContainerMatchRule)
+	this.rulesByDomainService = make(map[string]map[ServiceKey]*ContainerMatchRule)
 	return this
 }
 
-func (this *DiscoveryContainerMatcher) C(domain string, service ServiceKey, spec *WatchContainerSpec) *DiscoveryContainerMatcher {
-	match_rule := ContainerMatchRule{
-		WatchContainerSpec: *spec,
+func (this *DiscoveryContainerMatcher) C(domain string, service ServiceKey, spec *MatchContainerRule) *DiscoveryContainerMatcher {
+	match_rule := &ContainerMatchRule{
+		MatchContainerRule: *spec,
 		Domain:             domain,
 		Service:            service,
 	}
-	if _, has := this.imagesByDomain[domain]; !has {
-		this.imagesByDomain[domain] = map[ServiceKey]ContainerMatchRule{service: match_rule}
-	} else {
-		this.imagesByDomain[domain][service] = match_rule
+	if _, has := this.rulesByDomainService[domain]; !has {
+		this.rulesByDomainService[domain] = map[ServiceKey]*ContainerMatchRule{}
 	}
+
+	this.rulesByDomainService[domain][service] = match_rule
 	return this
 }
 
+// This is critical for the discovery to know how to locate the rule for matching.  This is because rules are
+// organized by domain and service.  We look for hints in the container's metadata to determine which domain
+// this container may belong to.
 func findContainerDomain(c *docker.Container) *string {
 	if c.DockerData == nil || c.DockerData.Config == nil {
 		return nil
 	}
-
 	v := ""
-	// First we check to see if the docker container was started with a particular environment
-	search := fmt.Sprintf("%s=", EnvDomain)
+	// Find by label or environment variables
 	if c.DockerData != nil && c.DockerData.Config != nil {
-		for _, env := range c.DockerData.Config.Env {
-			index := strings.Index(env, search)
-			if index == 0 {
-				v = env[len(search):]
-				break
-			}
+		if len(c.DockerData.Config.Labels) > 0 {
+			v = find_container_domain_by_label(c)
+		}
+		if v == "" && len(c.DockerData.Config.Env) > 0 {
+			v = find_container_domain_by_env(c)
 		}
 	}
 	return &v
 }
 
+func find_container_domain_by_label(c *docker.Container) string {
+	if l, exists := c.DockerData.Config.Labels[EnvDomain]; exists {
+		return l
+	}
+	return ""
+}
+
+func find_container_domain_by_env(c *docker.Container) string {
+	search := fmt.Sprintf("%s=", EnvDomain)
+	for _, env := range c.DockerData.Config.Env {
+		index := strings.Index(env, search)
+		if index == 0 {
+			return env[len(search):]
+		}
+	}
+	return ""
+}
+
 func (this *DiscoveryContainerMatcher) MatcherForDomain(domain string, service ServiceKey) func(docker.Action, *docker.Container) bool {
 	// get the rule
-	if service_rule_map, has_domain := this.imagesByDomain[domain]; has_domain {
+	if service_rule_map, has_domain := this.rulesByDomainService[domain]; has_domain {
 		if rule, has_map := service_rule_map[service]; has_map {
 			return func(a docker.Action, c *docker.Container) bool {
 				if a == docker.Remove {
@@ -234,38 +236,51 @@ func (this *DiscoveryContainerMatcher) MatcherForDomain(domain string, service S
 	}
 }
 
-func (this *DiscoveryContainerMatcher) match(domain *string, c *docker.Container) (bool, *ContainerMatchRule) {
+func (this *DiscoveryContainerMatcher) Match(c *docker.Container) map[ServiceKey]*ContainerMatchRule {
+	return this.match(findContainerDomain(c), c)
+}
+
+func (this *DiscoveryContainerMatcher) match(domain *string, c *docker.Container) map[ServiceKey]*ContainerMatchRule {
 	if domain != nil {
+		matches := map[ServiceKey]*ContainerMatchRule{}
+
+		rules_by_service := this.rulesByDomainService[*domain]
 		// Now we have matched by the domain of the container.  Let's see if it's running an image we care about:
-		for _, match_rule := range this.imagesByDomain[*domain] {
+		for serviceKey, match_rule := range rules_by_service {
+			glog.Infoln("Checking domain=", domain, "service=", serviceKey, "rule=", match_rule)
+
+			matched := false
 			if env := findContainerDomain(c); env != nil {
-				if *env == *domain && match_rule.match(c) {
-					return true, &match_rule
-				}
-			} else if match_rule.match(c) {
-				return true, &match_rule
+				matched = *env == *domain && match_rule.match(c)
+			} else {
+				matched = match_rule.match(c)
+			}
+
+			glog.Infoln(">>>>>> matched=", matched)
+			if matched {
+				matches[serviceKey] = match_rule
 			}
 		}
-		return false, nil
+		glog.Infoln("==> Matched Rules:", matches)
+		return matches
 	} else {
+		matches := map[ServiceKey]*ContainerMatchRule{}
 		// if we don't know the domain, then search through all the images...
-		for _, rules := range this.imagesByDomain {
-			for _, match_rule := range rules {
+		for _, rules := range this.rulesByDomainService {
+			for serviceKey, match_rule := range rules {
 				if match_rule.match(c) {
-					return true, &match_rule
+					glog.Infoln("Matched service=", serviceKey, "rule=", match_rule)
+					matches[serviceKey] = match_rule
 				}
 			}
 		}
-		return false, nil
+		return matches
 	}
 
 }
 
-func (this *DiscoveryContainerMatcher) Match(c *docker.Container) (bool, *ContainerMatchRule) {
-	return this.match(findContainerDomain(c), c)
-}
-
 func ImageMatch(image string, spec *docker.Image) bool {
+	glog.V(100).Infoln("Matching image", image, "vs", spec)
 	if spec.Tag != "" {
 		return image == fmt.Sprintf("%s:%s", spec.Repository, spec.Tag)
 	} else {

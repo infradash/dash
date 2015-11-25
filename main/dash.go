@@ -4,10 +4,14 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/infradash/dash/pkg/agent"
-	"github.com/infradash/dash/pkg/executor"
-	. "github.com/infradash/dash/pkg/dash"
 	"github.com/golang/glog"
+	"github.com/infradash/dash/pkg/agent"
+	"github.com/infradash/dash/pkg/circleci"
+	. "github.com/infradash/dash/pkg/dash"
+	"github.com/infradash/dash/pkg/env"
+	"github.com/infradash/dash/pkg/executor"
+	"github.com/infradash/dash/pkg/registry"
+	"github.com/infradash/dash/pkg/terraform"
 	"github.com/qorio/omni/version"
 	"os"
 	"strings"
@@ -35,6 +39,10 @@ func main() {
 		flag.PrintDefaults()
 	}
 
+	identity := &Identity{}
+	identity.Init()
+	identity.BindFlags()
+
 	zkSettings := &ZkSettings{}
 	zkSettings.BindFlags()
 
@@ -50,17 +58,16 @@ func main() {
 	regContainerEntry := &RegistryContainerEntry{}
 	regContainerEntry.BindFlags()
 
-	env := &Env{}
+	env := &env.Env{}
 	env.BindFlags()
 
 	regReleaseEntry := &RegistryReleaseEntry{}
 	regReleaseEntry.BindFlags()
 
-	registry := &Registry{}
+	registry := &registry.Registry{}
 	registry.BindFlags()
 
 	initializer := &ConfigLoader{Context: MergeMaps(get_envs(), EscapeVars(ConfigVariables...))}
-
 	initializer.BindFlags()
 
 	agent := &agent.Agent{Initializer: initializer}
@@ -69,8 +76,11 @@ func main() {
 	executor := &executor.Executor{Initializer: initializer}
 	executor.BindFlags()
 
-	circleci := &CircleCi{}
+	circleci := &circleci.CircleCi{}
 	circleci.BindFlags()
+
+	terraform := &terraform.Terraform{Initializer: initializer}
+	terraform.BindFlags()
 
 	flag.Parse()
 
@@ -87,26 +97,78 @@ func main() {
 
 	verb := flag.Args()[0]
 
+	regContainerEntry.Identity = *identity
+
+	executor.Identity = *identity
+	executor.QualifyByTags.Tags = tags
+	executor.ZkSettings = *zkSettings
+	envSource.RegistryEntryBase = *regEntryBase
+	executor.EnvSource = *envSource
+	if len(flag.Args()) > 1 {
+		executor.Cmd = flag.Args()[1]
+	}
+	if len(flag.Args()) > 2 {
+		executor.Args = flag.Args()[2:]
+	}
+
 	switch verb {
-	case "exec":
 
-		executor.QualifyByTags.Tags = tags
-		executor.ZkSettings = *zkSettings
-		envSource.RegistryEntryBase = *regEntryBase
-		executor.EnvSource = *envSource
+	case "terraform":
 
-		if len(flag.Args()) > 1 {
-			executor.Cmd = flag.Args()[1]
-		}
-		if len(flag.Args()) > 2 {
-			executor.Args = flag.Args()[2:]
-		}
+		glog.Infoln(buildInfo.Notice())
 
-		glog.Infoln("Exec:", executor)
-		err := executor.Exec()
+		// disable the initializer so that it's loaded by terraform instead
+		executor.Initializer = nil
+		terraform.Executor = *executor
+
+		// start terraform steps in a separate thread
+		terraform_done := make(chan error)
+		go func() {
+			glog.Infoln("Starting terraform CONFIG:", *terraform, terraform.Identity.String(), terraform.Initializer.Context)
+			terraform_done <- terraform.Run()
+		}()
+
+		glog.Infoln("Starting terraform EXEC:", *terraform, terraform.Identity.String(), terraform.Initializer.Context)
+		terraform.Executor.Exec()
+
+		// Make sure terrforming is complete
+		err := <-terraform_done
 		if err != nil {
 			panic(err)
 		}
+
+		// now just loop
+		if terraform.Executor.Daemon {
+			glog.Infoln("Terraform in daemon mode.")
+			forever := make(chan error)
+			<-forever
+		}
+
+	case "exec":
+
+		glog.Infoln(buildInfo.Notice())
+		glog.Infoln("Exec:", executor, executor.Identity.String(), executor.Initializer.Context)
+		executor.Exec()
+		err := executor.Wait()
+		if err != nil {
+			panic(err)
+		}
+
+	case "agent":
+
+		agent.RegistryContainerEntry = *regContainerEntry
+		agent.QualifyByTags.Tags = tags
+		agent.ZkSettings = *zkSettings
+		agent.DockerSettings = *dockerSettings
+		agent.RegistryContainerEntry.RegistryReleaseEntry = *regReleaseEntry
+		agent.RegistryContainerEntry.RegistryReleaseEntry.RegistryEntryBase = *regEntryBase
+
+		glog.Infoln(buildInfo.Notice())
+
+		glog.Infoln("Agent.Name=", agent.RegistryContainerEntry.Identity.Name)
+		glog.Infoln("Starting agent:", *agent, agent.Identity.String(), agent.Initializer.Context)
+
+		agent.Run() // blocks
 
 	case "env":
 
@@ -118,20 +180,6 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-
-	case "agent":
-
-		agent.QualifyByTags.Tags = tags
-		agent.ZkSettings = *zkSettings
-		agent.DockerSettings = *dockerSettings
-		agent.RegistryContainerEntry = *regContainerEntry
-		agent.RegistryContainerEntry.RegistryReleaseEntry = *regReleaseEntry
-		agent.RegistryContainerEntry.RegistryReleaseEntry.RegistryEntryBase = *regEntryBase
-
-		glog.Infoln(buildInfo.Notice())
-		glog.Infoln("Starting agent:", *agent, agent.Initializer.Context)
-
-		agent.Run() // blocks
 
 	case "registry":
 
@@ -147,6 +195,14 @@ func main() {
 	case "circleci":
 
 		circleci.ZkSettings = *zkSettings
+
+		if len(flag.Args()) > 1 {
+			circleci.Cmd = flag.Args()[1]
+		}
+		if len(flag.Args()) > 2 {
+			circleci.Args = flag.Args()[2:]
+		}
+
 		err := circleci.Run() // blocks
 		if err != nil {
 			panic(err)

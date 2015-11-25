@@ -1,15 +1,15 @@
 {
-    "registry_watch": [{
+    "watch": [{
         "domain":"{{.Domain}}",
 	"service":"test",
 	"value_location":{
 		"path":"/{{.Domain}}/test"
 	},
-	"reload_config":{
+	"reload":{
 		"description" : "nginx",
-        	"config_template_url": "file:///Users/david/go/src/github.com/infradash/dash/example/nginx.conf",
-        	"config_destination_path":"/Users/david/go/src/github.com/infradash/dash/example/nginx.applied",
-        	"reload_cmd":["service", "nginx", "reload"]
+        	"config_url": "file:///Users/david/go/src/github.com/infradash/dash/example/nginx.conf",
+        	"config_destination":"/Users/david/go/src/github.com/infradash/dash/example/nginx.applied",
+        	"cmd":["service", "nginx", "reload"]
     	}
     }],
     "tail": [

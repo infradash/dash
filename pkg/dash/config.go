@@ -1,65 +1,74 @@
 package dash
 
 import (
-	"bytes"
 	"encoding/json"
 	"github.com/golang/glog"
-	"io/ioutil"
-	"os"
-	"strings"
-	"text/template"
+	"github.com/qorio/maestro/pkg/template"
+	"github.com/qorio/maestro/pkg/zk"
+	"net/url"
+	gotemplate "text/template"
+	"time"
 )
 
 type ConfigLoader struct {
-	SourceUrl string      `json:"config_source_url"`
-	Context   interface{} `json:"-"`
+	ConfigUrl     string        `json:"config_url"`
+	Context       interface{}   `json:"-"`
+	RetryInterval time.Duration `json:"retry_interval"`
 }
 
-func (this *ConfigLoader) Load(prototype interface{}) (err error) {
-	if this.SourceUrl == "" {
-		return nil
+func (this *ConfigLoader) Load(prototype interface{}, auth string, zc zk.ZK, funcs ...gotemplate.FuncMap) (loaded bool, err error) {
+	if this.ConfigUrl == "" {
+		glog.Infoln("No config URL. Skip.")
+		return false, nil
+	}
+
+	// parse the url
+	_, err = url.Parse(this.ConfigUrl)
+	if err != nil {
+		glog.Infoln("Config url is not valid:", this.ConfigUrl)
+		return false, err
+	}
+
+	headers := map[string]string{
+		"Authorization": "Bearer " + auth,
 	}
 
 	var body string
-	if strings.Index(this.SourceUrl, "file://") == 0 {
-		file := this.SourceUrl[len("file://"):]
-		glog.Infoln("Loading from file", file)
-		f, err := os.Open(file)
-		if err != nil {
-			return err
-		}
-		if buff, err := ioutil.ReadAll(f); err != nil {
-			return err
+
+	for {
+		body, _, err = template.FetchUrl(this.ConfigUrl, headers)
+		if err == nil {
+			glog.Infoln("Fetched config from", this.ConfigUrl)
+			break
 		} else {
-			body = string(buff)
-		}
-	} else {
-		if body, _, err = FetchUrl(this.SourceUrl); err != nil {
-			return err
+			glog.Infoln("Waiting ", this.ConfigUrl)
+			time.Sleep(this.RetryInterval) // need to block synchronously.
 		}
 	}
-	if applied, err := this.applyTemplate(body); err != nil {
-		return err
+
+	if len(body) == 0 {
+		return false, err
+	}
+
+	// Treat the entire body as a template
+	applied, err := this.applyTemplate(body, funcs...)
+	if err != nil {
+		return false, err
+	}
+
+	glog.Infoln("Parsing configuration:", applied)
+	err = json.Unmarshal([]byte(applied), prototype)
+	if err != nil {
+		glog.Warningln("Err parsing configuration. Err=", err)
+		return false, err
 	} else {
-		glog.Infoln("Parsing configuration:", applied)
-		return json.Unmarshal([]byte(applied), prototype)
+		return true, nil
 	}
 }
 
-func (this *ConfigLoader) applyTemplate(body string) (string, error) {
+func (this *ConfigLoader) applyTemplate(body string, funcs ...gotemplate.FuncMap) (string, error) {
 	if this.Context == nil {
 		return body, nil
 	}
-
-	t, err := template.New(body).Parse(body)
-	if err != nil {
-		return "", err
-	}
-
-	var buff bytes.Buffer
-	if err := t.Execute(&buff, this.Context); err != nil {
-		return "", err
-	} else {
-		return buff.String(), nil
-	}
+	return template.ApplyTemplate(body, this.Context, funcs...)
 }

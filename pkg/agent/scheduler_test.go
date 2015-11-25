@@ -23,8 +23,8 @@ func ref(i int) *int {
 	return &i
 }
 
-func (suite *TestSuiteScheduler) TestSwarmSchedule(c *C) {
-	ss := SwarmSchedule{}
+func (suite *TestSuiteScheduler) TestConstraint(c *C) {
+	ss := Constraint{}
 	ss.MaxInstancesGlobal = ref(1)
 
 	gmax, gmin, lmax, lmin, err := ss.check()
