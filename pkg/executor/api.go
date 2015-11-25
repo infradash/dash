@@ -7,6 +7,7 @@ import (
 
 const (
 	ApiGetInfo api.ServiceMethod = iota
+	ApiProcessList
 	ApiQuitQuitQuit
 )
 
@@ -21,6 +22,14 @@ Returns information about the server.
 		ContentTypes: []string{"application/json"},
 		ResponseBody: Types.Info,
 	},
+	ApiProcessList: api.MethodSpec{
+		Doc: `
+Proccess list
+`,
+		UrlRoute:     "/v1/ps",
+		HttpMethod:   "GET",
+		ContentTypes: []string{"application/json"},
+	},
 	ApiQuitQuitQuit: api.MethodSpec{
 		Doc: `
 Exits the process
@@ -28,7 +37,7 @@ Exits the process
 		UrlRoute:     "/v1/quitquitquit",
 		HttpMethod:   "POST",
 		ContentTypes: []string{"application/json"},
-		UrlQueries: api.UrlQueries{
+		FormParams: api.FormParams{
 			"wait": "5s",
 		},
 	},

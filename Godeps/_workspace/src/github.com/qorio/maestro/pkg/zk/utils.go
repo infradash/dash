@@ -8,16 +8,26 @@ import (
 	"strings"
 )
 
+const (
+	PrefixEnv = "env://"
+	PrefixZk  = "zk://"
+)
+
 // Node value
 func Follow(zc ZK, key registry.Path) (*Node, error) {
 	n, err := zc.Get(key.Path())
 	if err != nil {
 		return nil, err
 	}
-	if strings.Index(n.GetValueString(), "env://") == 0 {
-		next := n.GetValueString()[len("env://"):]
+
+	switch {
+	case strings.Index(n.GetValueString(), PrefixEnv) == 0:
+		next := n.GetValueString()[len(PrefixEnv):]
 		return Follow(zc, registry.Path(next))
-	} else {
+	case strings.Index(n.GetValueString(), PrefixZk) == 0:
+		next := n.GetValueString()[len(PrefixZk):]
+		return Follow(zc, registry.Path(next))
+	default:
 		return n, nil
 	}
 }
@@ -26,8 +36,9 @@ func Follow(zc ZK, key registry.Path) (*Node, error) {
 // Returns key, value, error
 func Resolve(zc ZK, key registry.Path, value string) (registry.Path, string, error) {
 	// de-reference the pointer...
-	if strings.Index(value, "env://") == 0 {
-		p := value[len("env://"):]
+	switch {
+	case strings.Index(value, PrefixEnv) == 0:
+		p := value[len(PrefixEnv):]
 		n, err := zc.Get(p)
 		switch {
 		case err == ErrNotExist:
@@ -37,7 +48,18 @@ func Resolve(zc ZK, key registry.Path, value string) (registry.Path, string, err
 		}
 		glog.Infoln("Resolving", key, "=", value, "==>", n.GetValueString())
 		return Resolve(zc, key, n.GetValueString())
-	} else {
+	case strings.Index(value, PrefixZk) == 0:
+		p := value[len(PrefixZk):]
+		n, err := zc.Get(p)
+		switch {
+		case err == ErrNotExist:
+			return key, "", nil
+		case err != nil:
+			return key, "", err
+		}
+		glog.Infoln("Resolving", key, "=", value, "==>", n.GetValueString())
+		return Resolve(zc, key, n.GetValueString())
+	default:
 		return key, value, nil
 	}
 }

@@ -65,7 +65,7 @@ func (this *EnvSource) EnvFromZk(zc zk.ZK) func() ([]string, map[string]interfac
 		}
 
 		glog.Infoln("Loading env from", env_path)
-		root_node, err := zc.Get(env_path)
+		root_node, err := zk.Follow(zc, registry.Path(env_path))
 		switch err {
 		case nil:
 		case zk.ErrNotExist:

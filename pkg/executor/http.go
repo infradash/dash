@@ -3,11 +3,11 @@ package executor
 import (
 	"fmt"
 	"github.com/golang/glog"
-	ps "github.com/mitchellh/go-ps"
 	"github.com/qorio/omni/rest"
 	"github.com/qorio/omni/version"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -27,6 +27,7 @@ func NewApiEndPoint(executor *Executor) (ep *EndPoint, err error) {
 
 	ep.engine.Bind(
 		rest.SetHandler(Methods[ApiGetInfo], ep.GetInfo),
+		rest.SetHandler(Methods[ApiProcessList], ep.ProcessList),
 		rest.SetHandler(Methods[ApiQuitQuitQuit], ep.QuitQuitQuit),
 	)
 	return ep, nil
@@ -54,10 +55,23 @@ func (this *EndPoint) GetInfo(resp http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func (this *EndPoint) ProcessList(resp http.ResponseWriter, req *http.Request) {
+	result, err := children_processes()
+	if err != nil {
+		this.engine.HandleError(resp, req, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	err = this.engine.MarshalJSON(req, result, resp)
+	if err != nil {
+		this.engine.HandleError(resp, req, "malformed", http.StatusInternalServerError)
+		return
+	}
+}
+
 func (this *EndPoint) QuitQuitQuit(resp http.ResponseWriter, req *http.Request) {
 	wait_duration := 5 * time.Second
-	if queries, err := this.engine.GetUrlQueries(req, Methods[ApiQuitQuitQuit].UrlQueries); err == nil {
-		if parsed, err := time.ParseDuration(queries["wait"].(string)); err == nil {
+	if form, err := this.engine.GetPostForm(req, Methods[ApiQuitQuitQuit].FormParams); err == nil {
+		if parsed, err := time.ParseDuration(form["wait"].(string)); err == nil {
 			wait_duration = parsed
 		}
 	}
@@ -66,24 +80,29 @@ func (this *EndPoint) QuitQuitQuit(resp http.ResponseWriter, req *http.Request) 
 	this.engine.HandleError(resp, req, message, http.StatusServiceUnavailable)
 	go func() {
 
-		myPid := os.Getpid()
-
-		glog.Infoln("PID=", myPid, "Show processes:")
-		// TODO - go through all the child processes and stop them one by one for clean stop
-		pss, err := ps.Processes()
-		if err == nil {
-			for _, p := range pss {
-				glog.Infoln("PPID=", p.PPid(), "PID=", p.Pid(), "CMD=", p.Executable())
-				if p.PPid() == myPid {
-					glog.Infoln("Child process ==>", p.Pid(), "cmd=", p.Executable())
-				}
-			}
-
-		} else {
-			glog.Infoln("Failed to get ps:", err)
-		}
-		glog.Infoln("Executor going down!!!!!!!!!")
+		glog.Infoln("Shutdown in", wait_duration, "!!!!!!!!!!!!!")
 		time.Sleep(wait_duration)
+
+		var wg sync.WaitGroup
+
+		result, err := children_processes()
+		if err == nil {
+
+			for _, p := range result {
+				go func() {
+					defer wg.Done()
+					state, err := p.Process.Wait()
+					glog.Infoln("state=", state, "err=", err)
+				}()
+				wg.Add(1)
+				err := p.Process.Kill()
+				glog.Infoln("Killing process", p, err)
+			}
+		}
+
+		wg.Wait()
+
+		glog.Infoln("Executor going down!!!!!!!!!")
 		glog.Infoln("Bye")
 		os.Exit(0)
 	}()

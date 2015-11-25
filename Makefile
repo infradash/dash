@@ -102,12 +102,14 @@ run-local-execonly:
 
 run-local-execonly-daemon:
 	DASH_DOMAIN="test.com" \
-	DASH_ZK_HOSTS="localhost:21810" \
+	DASH_ZK_HOSTS="192.168.99.100:2181" \
 	${GODEP} go run main/dash.go --logtostderr \
 		--service=infradash --version=develop \
 		--custom_vars=EXEC_TS="{{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
-		--daemon=true --exec_only --no_source_env \
-	exec echo {{.EXEC_DOMAIN}}
+		--daemon=true --exec_only \
+	exec env
+
+#/bin/bash -c "for i in \`seq 1 100\`; do echo \$$\(PARAM2\); sleep 1; done"
 
 run-local-exec:
 	DASH_DOMAIN="test.com" \
