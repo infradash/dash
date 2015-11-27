@@ -2,13 +2,11 @@ package executor
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"github.com/golang/glog"
 	. "github.com/infradash/dash/pkg/dash"
 	"github.com/qorio/maestro/pkg/registry"
 	"github.com/qorio/maestro/pkg/task"
-	mtemplate "github.com/qorio/maestro/pkg/template"
 	"github.com/qorio/maestro/pkg/zk"
 	"github.com/qorio/omni/common"
 	"github.com/qorio/omni/runtime"
@@ -28,8 +26,6 @@ type Executor struct {
 	QualifyByTags
 	ZkSettings
 	EnvSource
-
-	Context string `json:"context,omitempty"`
 
 	Config *ExecutorConfig `json:"config,omitempty"`
 
@@ -103,31 +99,6 @@ func (this *Executor) Stdin() io.Reader {
 	return os.Stdin
 }
 
-func (this *Executor) load_context() (map[string]interface{}, error) {
-	if this.Context == "" {
-		return nil, nil
-	}
-
-	if strings.Index(this.Context, "env://") == 0 {
-		err := this.connect_zk()
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	body, _, err := mtemplate.FetchUrl(this.Context, nil, this.zk)
-	if err != nil {
-		return nil, err
-	}
-
-	context := map[string]interface{}{}
-	err = json.Unmarshal([]byte(body), &context)
-	if err != nil {
-		return nil, err
-	}
-	return context, nil
-}
-
 // For sourcing additional environments specified in the config -- TODO - clean up this code
 func (this *Executor) source_envs(envlist []string, env map[string]interface{}) []string {
 	if this.Config == nil {
@@ -186,14 +157,7 @@ func (this *Executor) Exec() {
 		envlist = append(envlist, fmt.Sprintf("%s=%s", k, env[k]))
 	}
 
-	// Get any task context from a datasource url
-	taskContext, err := this.load_context()
-	if err != nil {
-		panic(err)
-	}
-
 	var taskFromInitializer *task.Task
-
 	if this.Initializer != nil {
 		glog.Infoln("Loading configuration from", this.Initializer.ConfigUrl)
 		this.Initializer.Context = this
@@ -201,9 +165,6 @@ func (this *Executor) Exec() {
 		loaded, err := this.Initializer.Load(executorConfig, this.AuthToken, this.zk, template.FuncMap{
 			"env": func(k string) interface{} {
 				return env[k]
-			},
-			"context": func(k string) interface{} {
-				return taskContext[k]
 			},
 		})
 		if err != nil {
@@ -284,20 +245,6 @@ func (this *Executor) Exec() {
 		}
 
 		target = *merged
-	}
-
-	// One final pass of applying taskContext to the command as if the command is a template:
-	if taskContext != nil {
-		applied := task.Cmd{}
-		err := ApplyVarSubs(target.Cmd, &applied, map[string]interface{}{
-			"Task":    this,
-			"Env":     env,
-			"Context": taskContext,
-		})
-		if err != nil {
-			panic(err)
-		}
-		target.Cmd = &applied
 	}
 
 	if this.Daemon {
