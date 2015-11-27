@@ -46,5 +46,5 @@ func (this *RegistryContainerEntry) BindFlags() {
 }
 
 func (this *EnvSource) BindFlags() {
-	flag.StringVar(&this.Url, "url", "", "Url to source env from")
+	flag.StringVar(&this.Url, "env_url", "", "Url to source env from")
 }

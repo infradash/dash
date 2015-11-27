@@ -1,18 +1,32 @@
 {
     "name": "{{.Name}}",
     "info": "/{{.Domain}}/task/{{.Name}}/{{.Id}}",
+    "announce": "/{{.Domain}}/task/{{.Name}}/{{.Id}}",
     "success": "/{{.Domain}}/task/{{.Name}}/{{.Id}}/success",
     "error": "/{{.Domain}}/task/{{.Name}}/{{.Id}}/error",
     "status": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}",
-    "stdin": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}/stdin",
-    "stdout": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}/stdout",
-    "stderr": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}/stderr",
+    "stdin": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}.in",
+    "stdout": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}.out",
+    "stderr": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}.out",
     "configs": [
 	{
 	    "init": true,
 	    "description":"Runing task {{.Name}} in {{env "EXEC_DOMAIN"}}",
-            "url": "file:///Users/david/go/src/github.com/infradash/dash/example/task-tty.conf",
-            "path": "/Users/david/go/src/github.com/infradash/dash/example/task-tty.{{.Id}}"
+            "url": "file://~/go/src/github.com/infradash/dash/example/task-tty.conf",
+            "path": "/Users/david/go/src/github.com/infradash/dash/example/task-tty-conf-{{.Id}}"
+	}
+    ],
+    "__envs" : [
+	"zk:///dev.qoriolabs.com/global/env"
+    ],
+    "__mounts" : [
+	{
+	    "mount" : "/mnt/dash/mqtt",
+	    "resource":"mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}/mnt"
+	},
+	{
+	    "mount" : "/mnt/dash/zk",
+	    "resource": "zk:///{{.Domain}}/task/{{.Name}}/{{.Id}}/mnt"
 	}
     ]
 }

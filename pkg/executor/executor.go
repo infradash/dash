@@ -12,6 +12,7 @@ import (
 	"github.com/qorio/maestro/pkg/zk"
 	"github.com/qorio/omni/common"
 	"github.com/qorio/omni/runtime"
+	"github.com/qorio/omni/version"
 	"io"
 	"net/http"
 	"os"
@@ -30,9 +31,11 @@ type Executor struct {
 
 	Context string `json:"context,omitempty"`
 
-	StartTimeUnix int64
+	Config *ExecutorConfig `json:"config,omitempty"`
 
-	NoSourceEnv bool
+	StartTimeUnix int64 `json:"start_time_unix"`
+
+	NoSourceEnv bool `json:"no_source_env"`
 
 	// e.g. [ 'BOOT_TIME', '{{.StartTimestamp}}']
 	// where the value is a template to apply to the state of the Exector object.
@@ -67,6 +70,14 @@ type Executor struct {
 	MQTTConnectionRetryWaitTime time.Duration `json:"mqtt_connection_wait_time"`
 	TailFileOpenRetries         int           `json:"tail_file_open_retries"`
 	TailFileRetryWaitTime       time.Duration `json:"tail_file_retry_wait_time"`
+}
+
+func (this *Executor) GetInfo() *Info {
+	return &Info{
+		Executor: this,
+		Version:  *version.BuildInfo(),
+		Environ:  os.Environ(),
+	}
 }
 
 func must(err error) {
@@ -115,6 +126,26 @@ func (this *Executor) load_context() (map[string]interface{}, error) {
 		return nil, err
 	}
 	return context, nil
+}
+
+// For sourcing additional environments specified in the config -- TODO - clean up this code
+func (this *Executor) source_envs(envlist []string, env map[string]interface{}) []string {
+	if this.Config == nil {
+		return envlist
+	}
+	for _, s := range this.Config.Envs {
+		es := &EnvSource{
+			Url: s,
+		}
+		vars, kv := es.Source(this.AuthToken, this.zk)()
+		for _, k := range vars {
+			value := kv[k]
+			os.Setenv(k, fmt.Sprintf("%s", value))
+			envlist = append(envlist, fmt.Sprintf("%s=%s", k, kv[k]))
+			env[k] = value
+		}
+	}
+	return envlist
 }
 
 func (this *Executor) Exec() {
@@ -220,8 +251,11 @@ func (this *Executor) Exec() {
 				}
 			}
 
+			this.Config = executorConfig
 		}
 	}
+
+	envlist = this.source_envs(envlist, env)
 
 	// Default task based on what's entered in the command line, which takes precedence.
 	target := task.Task{
@@ -325,6 +359,22 @@ func (this *Executor) Exec() {
 		}
 
 		taskRuntime.CaptureStdout()
+
+		if this.Config.AnnounceNamespace != nil {
+			glog.Infoln("Annoucing in namespace", this.Config.AnnounceNamespace)
+			taskRuntime.Announce() <- task.Announce{
+				Key:       "running",
+				Value:     target,
+				Ephemeral: true,
+			}
+
+			taskRuntime.Announce() <- task.Announce{
+				Key:       "info",
+				Value:     this.GetInfo(),
+				Ephemeral: false,
+			}
+
+		}
 
 		done, err := taskRuntime.Start()
 		if err != nil {

@@ -53,7 +53,7 @@ run-local-agent:
 
 run-local-agent-blinker:
 	DASH_HOST=`hostname` \
-	DASH_DOMAIN="dev.blinker.com" \
+	DASH_DOMAIN="dev.qoriolabs.com" \
 	DASH_VERSION="integration" \
 	DASH_TAGS="appserver" \
 	DASH_NAME="dash" \
@@ -78,7 +78,7 @@ run-exec-bash-export:
 	exec
 
 run-exec-nginx:
-	DASH_DOMAIN="ops-test.blinker.com" \
+	DASH_DOMAIN="dev.qoriolabs.com" \
 	DASH_SERVICE="redpill-nginx" \
 	DASH_ZK_HOSTS="localhost:2181" \
 	${GODEP} go run main/dash.go --logtostderr -v=500 \
@@ -183,16 +183,17 @@ run-aws-cli2:
 		--context='string://{"Foo":"Bar"}' --exec_only \
 	exec echo {{.Context.Foo}}
 
-run-tty:
-	DASH_DOMAIN="test.com" \
+# 11/25/2015 -- tested with redpill
+run-task-tty-local:
+	DASH_DOMAIN="dev.qoriolabs.com" \
 	DASH_ZK_HOSTS="localhost:2181" \
-	DASH_NAME="test-tty" \
+	DASH_NAME="run-task-ttyl-local" \
 	${GODEP} go run main/dash.go --logtostderr \
-		--service=infradash --version=develop \
-		--daemon=false --exec_only --ignore_child_process_fails=true \
+		--service=run-task-tty  --version=local \
+		--daemon --exec_only --ignore_child_process_fails=true --no_source_env \
 		--custom_vars="EXEC_TS={{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
-		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/task-tty.json" \
-	exec ${CMD}
+		--config_url="file://~/go/src/github.com/infradash/dash/example/task-tty.json" \
+	exec /bin/bash
 
 # Example: copy env from v0.1.2 to v0.1.3
 run-publish-env:
