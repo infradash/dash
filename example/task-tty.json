@@ -16,7 +16,7 @@
             "path": "/Users/david/go/src/github.com/infradash/dash/example/task-tty-conf-{{.Id}}"
 	}
     ],
-    "__envs" : [
+    "envs" : [
 	"zk:///dev.qoriolabs.com/global/env"
     ],
     "__mounts" : [

@@ -424,16 +424,21 @@ func (this *Executor) exec_wait(done chan error, timeout <-chan time.Time) {
 	}
 }
 
+// Command-line custom vars can be templates with ${var} for shell environment expansion.
+// Parse these first.
 func (this *Executor) ParseCustomVars() error {
 	this.customVars = make(map[string]*template.Template)
-
 	for _, expression := range strings.Split(this.CustomVarsCommaSeparated, ",") {
-		parts := strings.Split(expression, "=")
-		if len(parts) != 2 {
-			return ErrBadTemplate
-		}
-		key, exp := parts[0], parts[1]
-		if t, err := template.New(key).Parse(exp); err != nil {
+		mid := strings.Index(expression, "=")
+		key := expression[0:mid]
+		exp := os.ExpandEnv(expression[mid+1:]) // also expand based on environment variables
+
+		glog.Infoln("Expanded from", expression[mid+1:], "to", exp)
+		if t, err := template.New(key).Funcs(template.FuncMap{
+			"env": func(k string) interface{} {
+				return os.Getenv(k)
+			},
+		}).Parse(exp); err != nil {
 			return err
 		} else {
 			this.customVars[key] = t
@@ -442,6 +447,7 @@ func (this *Executor) ParseCustomVars() error {
 	return nil
 }
 
+// Evaluate all the custom var expressions based on the current state of the executor.
 func (this *Executor) InjectCustomVars(env map[string]interface{}) ([]string, error) {
 	for k, t := range this.customVars {
 		var buff bytes.Buffer
