@@ -27,6 +27,8 @@ type Executor struct {
 	ZkSettings
 	EnvSource
 
+	task.Cmd
+
 	Config *ExecutorConfig `json:"config,omitempty"`
 
 	StartTimeUnix int64 `json:"start_time_unix"`
@@ -37,10 +39,11 @@ type Executor struct {
 	// where the value is a template to apply to the state of the Exector object.
 	customVars map[string]*template.Template
 
-	Host string   `json:"host"`
-	Dir  string   `json:"dir"`
-	Cmd  string   `json:"cmd"`
-	Args []string `json:"args"`
+	Host string `json:"host"`
+
+	// Dir  string   `json:"dir"`
+	// Cmd  string   `json:"cmd"`
+	// Args []string `json:"args"`
 
 	Initializer *ConfigLoader `json:"config_loader"`
 
@@ -178,6 +181,7 @@ func (this *Executor) Exec() {
 				must(this.connect_zk())
 			}
 			for _, c := range executorConfig.ConfigFiles {
+
 				// Set up any watch related to config reload
 				this.HandleConfigReload(&c)
 			}
@@ -217,33 +221,27 @@ func (this *Executor) Exec() {
 	}
 
 	envlist = this.source_envs(envlist, env)
+	this.Cmd.Env = envlist
 
 	// Default task based on what's entered in the command line, which takes precedence.
 	target := task.Task{
-		Id: this.Id,
-		Cmd: &task.Cmd{
-			Dir:  this.Dir,
-			Path: this.Cmd,
-			Args: this.Args,
-			Env:  envlist,
-		},
+		Id:       this.Id,
+		Cmd:      &this.Cmd,
 		ExecOnly: this.ExecOnly,
 	}
 
 	if taskFromInitializer != nil {
-
 		merged, err := taskFromInitializer.Copy()
 		if err != nil {
 			panic(err)
 		}
-
-		// What's specified in the command line wins
 		merged.Id = target.Id
-
-		if this.Cmd != "" {
-			merged.Cmd = target.Cmd
+		if merged.Cmd != nil {
+			glog.Infoln("Using cmd from config:", merged.Cmd)
+		} else {
+			merged.Cmd = &this.Cmd
+			glog.Infoln("Using cmd from commadline:", merged.Cmd)
 		}
-
 		target = *merged
 	}
 

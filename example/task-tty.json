@@ -8,18 +8,21 @@
     "stdin": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}.in",
     "stdout": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}.out",
     "stderr": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}.out",
-    "configs": [
+    "cmd" : {
+	"path": "/bin/bash"
+    },
+    "config": [
 	{
 	    "init": true,
 	    "description":"Runing task {{.Name}} in {{env "EXEC_DOMAIN"}}",
             "url": "file://~/go/src/github.com/infradash/dash/example/task-tty.conf",
-            "path": "/Users/david/go/src/github.com/infradash/dash/example/task-tty-conf-{{.Id}}"
+            "path": "~/go/src/github.com/infradash/dash/example/task-tty-conf-{{.Id}}"
 	}
     ],
-    "envs" : [
+    "source" : [
 	"zk:///dev.qoriolabs.com/global/env"
     ],
-    "__mounts" : [
+    "__mount" : [
 	{
 	    "mount" : "/mnt/dash/mqtt",
 	    "resource":"mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}/mnt"

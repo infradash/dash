@@ -105,10 +105,10 @@ func main() {
 	envSource.RegistryEntryBase = *regEntryBase
 	executor.EnvSource = *envSource
 	if len(flag.Args()) > 1 {
-		executor.Cmd = flag.Args()[1]
+		executor.Cmd.Path = flag.Args()[1]
 	}
 	if len(flag.Args()) > 2 {
-		executor.Args = flag.Args()[2:]
+		executor.Cmd.Args = flag.Args()[2:]
 	}
 
 	switch verb {

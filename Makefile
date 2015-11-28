@@ -185,6 +185,7 @@ run-aws-cli2:
 
 # 11/25/2015 -- tested with redpill
 # Note the customVars needs $$ if you want shell env variable expansion (because of Make)
+# Note the config specified the actual command to execute.
 run-task-tty-local:
 	DASH_DOMAIN="dev.qoriolabs.com" \
 	DASH_ZK_HOSTS="localhost:2181" \
@@ -194,7 +195,8 @@ run-task-tty-local:
 		--daemon --exec_only --ignore_child_process_fails=true --no_source_env \
 		--custom_vars='EXEC_TS={{.StartTimeUnix}},EXEC_DOMAIN={{env "DASH_DOMAIN"}},ZK_HOSTS_FROM_ENV=$$DASH_ZK_HOSTS' \
 		--config_url="file://~/go/src/github.com/infradash/dash/example/task-tty.json" \
-	exec /bin/bash
+	exec
+
 
 # Example: copy env from v0.1.2 to v0.1.3
 run-publish-env:
