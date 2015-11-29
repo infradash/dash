@@ -169,23 +169,17 @@ func (this *Executor) Exec() {
 			"domain":  this.Domain,
 			"service": this.Service,
 			"version": this.Version,
-			"runtime": map[string]interface{}{
-				"id":     "{{.id}}",
-				"name":   "{{.name}}",
-				"start":  "{{.start}}",
-				"exit":   "{{.exit}}",
-				"status": "{{.status}}",
-			},
+			"environ": env,
+			"now":     time.Now().Unix(),
+			"runtime": EscapeVars(
+				"id",
+				"name",
+				"start",
+				"exit",
+				"status"),
 		}
 		executorConfig := new(ExecutorConfig)
-		loaded, err := this.Initializer.Load(executorConfig, this.AuthToken, this.zk, template.FuncMap{
-			"env": func(k string) interface{} {
-				return env[k]
-			},
-			"now": func() int64 {
-				return time.Now().Unix()
-			},
-		})
+		loaded, err := this.Initializer.Load(executorConfig, this.AuthToken, this.zk)
 		if err != nil {
 			panic(err)
 		}

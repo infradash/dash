@@ -57,13 +57,11 @@ func (this *ConfigLoader) Load(prototype interface{}, auth string, zc zk.ZK, fun
 	}
 
 	glog.Infoln("Parsing configuration:", applied)
-	err = json.Unmarshal([]byte(applied), prototype)
-	if err != nil {
+	if err = json.Unmarshal([]byte(applied), prototype); err != nil {
 		glog.Warningln("Err parsing configuration. Err=", err)
 		return false, err
-	} else {
-		return true, nil
 	}
+	return true, nil
 }
 
 func (this *ConfigLoader) applyTemplate(body string, funcs ...gotemplate.FuncMap) (string, error) {

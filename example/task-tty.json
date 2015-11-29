@@ -17,7 +17,7 @@
     "config": [
 	{
 	    "init": true,
-	    "description":"Runing task {{.name}} in {{env "EXEC_DOMAIN"}}",
+	    "description":"Runing task {{.name}} in {{.environ.DASH_DOMAIN}}",
             "url": "file://~/go/src/github.com/infradash/dash/example/task-tty.conf",
             "path": "~/go/src/github.com/infradash/dash/example/task-tty-conf-{{.id}}"
 	}
