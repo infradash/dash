@@ -1,13 +1,16 @@
 {
     "name": "{{.Name}}",
-    "info": "/{{.Domain}}/task/{{.Name}}/{{.Id}}",
-    "announce": "/{{.Domain}}/task/{{.Name}}/{{.Id}}",
+    "namespace": "/{{.Domain}}/task/{{.Name}}/{{.Id}}",
     "success": "/{{.Domain}}/task/{{.Name}}/{{.Id}}/success",
     "error": "/{{.Domain}}/task/{{.Name}}/{{.Id}}/error",
-    "status": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}",
-    "stdin": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}.in",
-    "stdout": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}.out",
-    "stderr": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}.out",
+    "log": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}",
+    "stdin": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}/in",
+    "stdout": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}/out",
+    "stderr": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}/out",
+    "log_template_start" : "##start,name={{.Name}}",
+    "log_template_stop" : "##stop,name={{.Name}}",
+    "log_template_success" : "##ok,name={{.Name}}",
+    "log_template_error" : "##error,name={{.Name}}",
     "cmd" : {
 	"path": "/bin/bash"
     },
