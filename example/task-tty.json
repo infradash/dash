@@ -1,25 +1,25 @@
 {
-    "name": "{{.Name}}",
-    "namespace": "/{{.Domain}}/task/{{.Name}}/{{.Id}}",
-    "success": "/{{.Domain}}/task/{{.Name}}/{{.Id}}/success",
-    "error": "/{{.Domain}}/task/{{.Name}}/{{.Id}}/error",
-    "log": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}",
-    "stdin": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}/in",
-    "stdout": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}/out",
-    "stderr": "mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}/out",
-    "log_template_start" : "##start,name={{.Name}}",
-    "log_template_stop" : "##stop,name={{.Name}}",
-    "log_template_success" : "##ok,name={{.Name}}",
-    "log_template_error" : "##error,name={{.Name}}",
+    "name": "{{.name}}",
+    "namespace": "/{{.domain}}/task/{{.name}}/{{.id}}",
+    "success": "/{{.domain}}/task/{{.name}}/{{.id}}/success",
+    "error": "/{{.domain}}/task/{{.name}}/{{.id}}/error",
+    "log": "mqtt://iot.eclipse.org:1883/{{.domain}}/task/{{.name}}/{{.id}}",
+    "stdin": "mqtt://iot.eclipse.org:1883/{{.domain}}/task/{{.name}}/{{.id}}/in",
+    "stdout": "mqtt://iot.eclipse.org:1883/{{.domain}}/task/{{.name}}/{{.id}}/out",
+    "stderr": "mqtt://iot.eclipse.org:1883/{{.domain}}/task/{{.name}}/{{.id}}/out",
+    "log_template_start" : "#start,id={{.runtime.id}},name={{.runtime.name}},ts={{.runtime.start}}",
+    "log_template_stop" : "#stop,name={{.runtime.name}},ts={{.runtime.exit}},status={{.runtime.status}}",
+    "log_template_success" : "#ok,name={{.runtime.name}},ts={{.runtime.exit}},status={{.runtime.status}}",
+    "log_template_error" : "#error,name={{.runtime.name}},ts={{.runtime.exit}},status={{.runtime.status}}",
     "cmd" : {
 	"path": "/bin/bash"
     },
     "config": [
 	{
 	    "init": true,
-	    "description":"Runing task {{.Name}} in {{env "EXEC_DOMAIN"}}",
+	    "description":"Runing task {{.name}} in {{env "EXEC_DOMAIN"}}",
             "url": "file://~/go/src/github.com/infradash/dash/example/task-tty.conf",
-            "path": "~/go/src/github.com/infradash/dash/example/task-tty-conf-{{.Id}}"
+            "path": "~/go/src/github.com/infradash/dash/example/task-tty-conf-{{.id}}"
 	}
     ],
     "source" : [
@@ -28,11 +28,11 @@
     "__mount" : [
 	{
 	    "mount" : "/mnt/dash/mqtt",
-	    "resource":"mqtt://iot.eclipse.org:1883/{{.Domain}}/task/{{.Name}}/{{.Id}}/mnt"
+	    "resource":"mqtt://iot.eclipse.org:1883/{{.domain}}/task/{{.name}}/{{.id}}/mnt"
 	},
 	{
 	    "mount" : "/mnt/dash/zk",
-	    "resource": "zk:///{{.Domain}}/task/{{.Name}}/{{.Id}}/mnt"
+	    "resource": "zk:///{{.domain}}/task/{{.name}}/{{.id}}/mnt"
 	}
     ]
 }

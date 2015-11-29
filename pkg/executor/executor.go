@@ -163,11 +163,27 @@ func (this *Executor) Exec() {
 	var taskFromInitializer *task.Task
 	if this.Initializer != nil {
 		glog.Infoln("Loading configuration from", this.Initializer.ConfigUrl)
-		this.Initializer.Context = this
+		this.Initializer.Context = map[string]interface{}{
+			"name":    this.Name,
+			"id":      this.Id,
+			"domain":  this.Domain,
+			"service": this.Service,
+			"version": this.Version,
+			"runtime": map[string]interface{}{
+				"id":     "{{.id}}",
+				"name":   "{{.name}}",
+				"start":  "{{.start}}",
+				"exit":   "{{.exit}}",
+				"status": "{{.status}}",
+			},
+		}
 		executorConfig := new(ExecutorConfig)
 		loaded, err := this.Initializer.Load(executorConfig, this.AuthToken, this.zk, template.FuncMap{
 			"env": func(k string) interface{} {
 				return env[k]
+			},
+			"now": func() int64 {
+				return time.Now().Unix()
 			},
 		})
 		if err != nil {
