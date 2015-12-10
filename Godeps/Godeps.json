@@ -91,43 +91,43 @@
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/circleci",
-			"Comment": "v1.0.1-9-g0e22806",
-			"Rev": "0e2280611da8ac29990d4f21b5fb5c1accd01a2d"
+			"Comment": "v1.0.1-12-g18170f2",
+			"Rev": "18170f2d728f5b8cf8256629c74aecbeb611508a"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/docker",
-			"Comment": "v1.0.1-9-g0e22806",
-			"Rev": "0e2280611da8ac29990d4f21b5fb5c1accd01a2d"
+			"Comment": "v1.0.1-12-g18170f2",
+			"Rev": "18170f2d728f5b8cf8256629c74aecbeb611508a"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/mqtt",
-			"Comment": "v1.0.1-9-g0e22806",
-			"Rev": "0e2280611da8ac29990d4f21b5fb5c1accd01a2d"
+			"Comment": "v1.0.1-12-g18170f2",
+			"Rev": "18170f2d728f5b8cf8256629c74aecbeb611508a"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/pubsub",
-			"Comment": "v1.0.1-9-g0e22806",
-			"Rev": "0e2280611da8ac29990d4f21b5fb5c1accd01a2d"
+			"Comment": "v1.0.1-12-g18170f2",
+			"Rev": "18170f2d728f5b8cf8256629c74aecbeb611508a"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/registry",
-			"Comment": "v1.0.1-9-g0e22806",
-			"Rev": "0e2280611da8ac29990d4f21b5fb5c1accd01a2d"
+			"Comment": "v1.0.1-12-g18170f2",
+			"Rev": "18170f2d728f5b8cf8256629c74aecbeb611508a"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/task",
-			"Comment": "v1.0.1-9-g0e22806",
-			"Rev": "0e2280611da8ac29990d4f21b5fb5c1accd01a2d"
+			"Comment": "v1.0.1-12-g18170f2",
+			"Rev": "18170f2d728f5b8cf8256629c74aecbeb611508a"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/template",
-			"Comment": "v1.0.1-9-g0e22806",
-			"Rev": "0e2280611da8ac29990d4f21b5fb5c1accd01a2d"
+			"Comment": "v1.0.1-12-g18170f2",
+			"Rev": "18170f2d728f5b8cf8256629c74aecbeb611508a"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/zk",
-			"Comment": "v1.0.1-9-g0e22806",
-			"Rev": "0e2280611da8ac29990d4f21b5fb5c1accd01a2d"
+			"Comment": "v1.0.1-12-g18170f2",
+			"Rev": "18170f2d728f5b8cf8256629c74aecbeb611508a"
 		},
 		{
 			"ImportPath": "github.com/qorio/omni/api",

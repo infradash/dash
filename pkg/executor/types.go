@@ -4,6 +4,7 @@ import (
 	"github.com/qorio/maestro/pkg/pubsub"
 	"github.com/qorio/maestro/pkg/registry"
 	"github.com/qorio/maestro/pkg/task"
+	"github.com/qorio/maestro/pkg/zk"
 	"github.com/qorio/omni/version"
 )
 
@@ -44,4 +45,6 @@ type Fuse struct {
 	MountPoint string `json:"mount"`
 	Resource   string `json:"resource"`
 	Perm       string `json:"perm,omitempty"`
+
+	zc zk.ZK
 }

@@ -12,7 +12,9 @@
     "log_template_success" : "#ok,name={{.runtime.name}},ts={{.runtime.exit}},status={{.runtime.status}}",
     "log_template_error" : "#error,name={{.runtime.name}},ts={{.runtime.exit}},status={{.runtime.status}}",
     "cmd" : {
-	"path": "/bin/bash"
+	"pathx": "/bin/bash",
+	"path": "ls",
+	"args" : ["-al","/Users/david/go/src/github.com/infradash/dash/fuse-test/mnt"]
     },
     "config": [
 	{
@@ -25,14 +27,10 @@
     "source" : [
 	"zk:///dev.qoriolabs.com/global/env"
     ],
-    "__mount" : [
+    "mount" : [
 	{
-	    "mount" : "/mnt/dash/mqtt",
-	    "resource":"mqtt://iot.eclipse.org:1883/{{.domain}}/task/{{.name}}/{{.id}}/mnt"
-	},
-	{
-	    "mount" : "/mnt/dash/zk",
-	    "resource": "zk:///{{.domain}}/task/{{.name}}/{{.id}}/mnt"
+	    "mount" : "./fuse-test/mnt",
+	    "resource": "zk:///dev.qoriolabs.com/global/env"
 	}
     ]
 }

@@ -226,6 +226,11 @@ func (this *Executor) Exec() {
 				}
 			}
 
+			// mount filesystems
+			if err := StartFileMounts(executorConfig.Mounts, this.zk); err != nil {
+				panic(err)
+			}
+
 			this.Config = executorConfig
 		}
 	}
@@ -276,6 +281,9 @@ func (this *Executor) Exec() {
 						err = this.zk.Close()
 						glog.Infoln("Stopped zk", err)
 					}
+
+					glog.Infoln("Stopping file mounts")
+					StopFileMounts()
 
 					this.exit <- err
 					return err

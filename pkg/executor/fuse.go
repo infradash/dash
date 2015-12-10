@@ -1,19 +1,19 @@
 package executor
 
 import (
-	"bazil.org/fuse"
-	"bazil.org/fuse/fs"
 	"errors"
 	"fmt"
 	"github.com/golang/glog"
-	"github.com/qorio/maestro/pkg/pubsub"
 	"github.com/qorio/maestro/pkg/registry"
-	"golang.org/x/net/context"
+	"github.com/qorio/maestro/pkg/zk"
 	"os"
-	"path/filepath"
 	"strings"
-	"time"
 )
+
+type FileSystem interface {
+	Mount(dir string, perm os.FileMode) error
+	Close() error
+}
 
 var (
 	ErrMissingMount         = errors.New("err-missing-mount-point")
@@ -24,22 +24,15 @@ var (
 	ResourceZk              = "zk://"
 	ResourceTypes           = []string{ResourceMqtt, ResourceZk}
 
-	resourceFS = map[string]func(resource string) fs.FS{
-		ResourceMqtt: func(resource string) fs.FS {
-			return &MqttFs{
-				Topic: pubsub.Topic(resource),
-			}
-		},
-		ResourceZk: func(resource string) fs.FS {
-			return &ZkFs{
-				Path: registry.Path(resource),
-			}
+	resourceFS = map[string]func(resource string, zc zk.ZK) FileSystem{
+		ResourceZk: func(resource string, zc zk.ZK) FileSystem {
+			return NewZkFS(zc, registry.Path(resource))
 		},
 	}
 
-	fsOpen     = map[*fuse.Conn]*fuse.Conn{}
-	fsRegister = make(chan *fuse.Conn)
-	fsClose    = make(chan *fuse.Conn)
+	fsOpen     = map[FileSystem]FileSystem{}
+	fsRegister = make(chan FileSystem)
+	fsClose    = make(chan FileSystem)
 	fsErrors   = make(chan error)
 )
 
@@ -59,24 +52,26 @@ func init() {
 	}()
 }
 
-func StartFileMounts(list []Fuse) error {
+func StartFileMounts(list []Fuse, zc zk.ZK) error {
 	for _, f := range list {
 		if err := f.IsValid(); err != nil {
 			fsErrors <- err
 			return err
 		}
-		if c, err := f.Mount(); err != nil {
+		f.zc = zc
+		if fs, err := f.Mount(); err != nil {
+			glog.Infoln("Error mounting filesystem:", f, "err=", err)
 			fsErrors <- err
 			return err
 		} else {
-			fsRegister <- c
+			fsRegister <- fs
 		}
 	}
 	return nil
 }
 
 func StopFileMounts() {
-	stop := []*fuse.Conn{}
+	stop := []FileSystem{}
 	for c, _ := range fsOpen {
 		stop = append(stop, c)
 	}
@@ -92,10 +87,6 @@ func (this *Fuse) IsValid() error {
 	if len(this.Resource) == 0 {
 		return ErrMissingResource
 	}
-	if !filepath.IsAbs(this.MountPoint) {
-		return ErrMountPointNotAbs
-	}
-
 	misses := 0
 	for _, p := range ResourceTypes {
 		if strings.Index(this.Resource, p) != 0 {
@@ -118,7 +109,20 @@ func (this *Fuse) GetResourceType() string {
 	return ""
 }
 
-func (this *Fuse) Mount() (*fuse.Conn, error) {
+func strip_resource_type(p string) string {
+	switch {
+	case strings.Index(p, ResourceMqtt) == 0:
+		return p[len(ResourceMqtt):]
+	case strings.Index(p, ResourceZk) == 0:
+		return p[len(ResourceZk):]
+	default:
+		return p
+	}
+}
+
+func (this *Fuse) Mount() (FileSystem, error) {
+	glog.Infoln(">>>>>>", this)
+
 	if err := this.IsValid(); err != nil {
 		return nil, err
 	}
@@ -130,75 +134,37 @@ func (this *Fuse) Mount() (*fuse.Conn, error) {
 		this.MountPoint = strings.Replace(this.MountPoint, "~", os.Getenv("HOME"), 1)
 	}
 
-	var perm os.FileMode = 0777
+	var perm os.FileMode = 0644
 	fmt.Sscanf(this.Perm, "%v", &perm)
 
 	if err := os.MkdirAll(this.MountPoint, perm); err != nil {
 		return nil, err
 	}
 
-	filesys := resourceFS[this.GetResourceType()](this.Resource)
-	c, err := fuse.Mount(this.MountPoint)
-	if err != nil {
-		return nil, err
+	filesys := resourceFS[this.GetResourceType()](strip_resource_type(this.Resource), this.zc)
+	glog.Infoln("Mounting filesystem:", this, "type=", this.GetResourceType(), "filesys=", filesys)
+	go func() {
+		glog.Infoln("Start serving", filesys, "on", this.MountPoint)
+		filesys.Mount(this.MountPoint, perm)
+	}()
+
+	return filesys, nil
+}
+
+func NewZkFS(zc zk.ZK, path registry.Path) *zkFs {
+	return &zkFs{
+		impl: zk.NewFS(zc, path),
 	}
-
-	//	go func() {
-	if err := fs.Serve(c, filesys); err != nil {
-		fsClose <- c
-		fsErrors <- err
-	}
-	// check if the mount process has an error to report
-	<-c.Ready
-	if err := c.MountError; err != nil {
-		fsErrors <- err
-	}
-	glog.Infoln("FS", filesys, "done serving")
-	//	}()
-
-	return c, nil
 }
 
-type MqttFs struct {
-	Topic pubsub.Topic
+type zkFs struct {
+	impl *zk.FS
 }
 
-type ZkFs struct {
-	Path registry.Path
+func (this *zkFs) Close() error {
+	return this.impl.Shutdown()
 }
 
-func (this *MqttFs) Root() (fs.Node, error) {
-	return &Dir{}, nil
-}
-
-type Dir struct {
-}
-
-var _ = fs.Node(&Dir{})
-var _ = fs.HandleReadDirAller(&Dir{})
-
-func (d *Dir) ReadDirAll(ctx context.Context) ([]fuse.Dirent, error) {
-	res := []fuse.Dirent{
-		fuse.Dirent{
-			Name: "test",
-			Type: fuse.DT_File,
-		},
-	}
-	return res, nil
-}
-
-type file struct {
-}
-
-func (this *Dir) Attr(c context.Context, attr *fuse.Attr) error {
-	attr.Mode = 0755
-	attr.Size = 0
-	attr.Mtime = time.Now()
-	attr.Ctime = time.Now()
-	attr.Crtime = time.Now()
-	return nil
-}
-
-func (this *ZkFs) Root() (fs.Node, error) {
-	return nil, nil
+func (this *zkFs) Mount(dir string, perm os.FileMode) error {
+	return this.impl.Mount(dir, perm)
 }
