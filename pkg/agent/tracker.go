@@ -3,8 +3,8 @@ package agent
 import (
 	"container/heap"
 	"fmt"
-	. "github.com/infradash/dash/pkg/dash"
 	"github.com/golang/glog"
+	. "github.com/infradash/dash/pkg/dash"
 	"github.com/qorio/maestro/pkg/docker"
 	"sync"
 )
@@ -33,6 +33,13 @@ func NewContainerTracker(domain string) *ContainerTracker {
 		statesListener:   make(map[ServiceKey][]chan<- HostContainerStates),
 	}
 	return c
+}
+
+func (this *ContainerTracker) Reset() {
+	defer this.lock.Unlock()
+	this.lock.Lock()
+	this.minVersionHeap = make(map[ServiceKey]*MinVersionHeap)
+	this.minStartTimeHeap = make(map[ServiceKey]*MinStartTimeHeap)
 }
 
 type HostContainerStatesChanged <-chan HostContainerStates

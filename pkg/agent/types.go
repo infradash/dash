@@ -19,10 +19,20 @@ const (
 )
 
 type Info struct {
-	Version version.Build `json:"version"`
-	Now     time.Time     `json:"now"`
-	Uptime  time.Duration `json:"uptime,omitempty"`
-	Agent   *Agent        `json:"agent"`
+	Version     version.Build `json:"version"`
+	Now         time.Time     `json:"now"`
+	Uptime      time.Duration `json:"uptime,omitempty"`
+	Api         string        `json:"api,omitempty"`
+	DockerApi   string        `json:"dockerapi,omitempty"`
+	DockerUi    string        `json:"dockerui,omitempty"`
+	StatusTopic string        `json:"status_topic,omitempty"`
+	Environ     []string      `json:"environ,omitempty"`
+	Agent       *Agent        `json:"agent"`
+}
+
+type Health struct {
+	Status        string  `json:"status"`
+	UptimeSeconds float64 `json:uptime_seconds,omitempty`
 }
 
 type MatchContainerRule struct {

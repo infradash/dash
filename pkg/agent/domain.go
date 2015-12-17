@@ -59,7 +59,7 @@ func (this *Domain) do_register() error {
 	}
 
 	key := registry.NewPath(this.Domain, "dash", this.Host)
-	err := zk.CreateOrSet(this.zk, key, this.agent.info(), true)
+	err := zk.CreateOrSet(this.zk, key, this.agent.GetInfo(), true)
 	glog.Infoln("Register self, key=", key, "err=", err)
 	if err == nil {
 		// Update this only on successful registration
