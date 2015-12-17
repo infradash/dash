@@ -121,8 +121,6 @@ func strip_resource_type(p string) string {
 }
 
 func (this *Fuse) Mount() (FileSystem, error) {
-	glog.Infoln(">>>>>>", this)
-
 	if err := this.IsValid(); err != nil {
 		return nil, err
 	}
@@ -142,9 +140,9 @@ func (this *Fuse) Mount() (FileSystem, error) {
 	}
 
 	filesys := resourceFS[this.GetResourceType()](strip_resource_type(this.Resource), this.zc)
-	glog.Infoln("Mounting filesystem:", this, "type=", this.GetResourceType(), "filesys=", filesys)
 	go func() {
-		glog.Infoln("Start serving", filesys, "on", this.MountPoint)
+		glog.Infoln("Mounting filesystem:", this, "type=", this.GetResourceType(), "filesys=", filesys)
+		glog.Infoln("Start serving", filesys, "on", this.MountPoint, "backed", this.Resource)
 		filesys.Mount(this.MountPoint, perm)
 	}()
 
