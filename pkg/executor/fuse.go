@@ -52,7 +52,7 @@ func init() {
 	}()
 }
 
-func StartFileMounts(list []Fuse, zc zk.ZK) error {
+func StartFileMounts(list []*Fuse, zc zk.ZK) error {
 	for _, f := range list {
 		if err := f.IsValid(); err != nil {
 			fsErrors <- err

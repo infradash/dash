@@ -19,10 +19,10 @@ type Info struct {
 type ExecutorConfig struct {
 	task.Task
 
-	Envs        []string     `json:"source,omitempty"`
-	Mounts      []Fuse       `json:"mount,omitempty"`
-	ConfigFiles []ConfigFile `json:"config"`
-	TailFiles   []TailFile   `json:"tail,omitempty"`
+	Envs        []string      `json:"source,omitempty"`
+	Mounts      []*Fuse       `json:"mount,omitempty"`
+	ConfigFiles []*ConfigFile `json:"config"`
+	TailFiles   []*TailFile   `json:"tail,omitempty"`
 }
 
 type TailFile struct {

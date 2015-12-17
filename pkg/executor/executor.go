@@ -193,13 +193,13 @@ func (this *Executor) Exec() {
 			for _, c := range executorConfig.ConfigFiles {
 
 				// Set up any watch related to config reload
-				this.HandleConfigReload(&c)
+				this.HandleConfigReload(c)
 			}
 
 			// collect the tail files and topics
 			tails := map[string]string{}
 			for _, t := range executorConfig.TailFiles {
-				this.HandleTailFile(&t)
+				this.HandleTailFile(t)
 
 				if len(t.Topic) > 0 {
 					tails[t.Path] = t.Topic.String()
@@ -219,7 +219,7 @@ func (this *Executor) Exec() {
 				if c.Init {
 					glog.Infoln("Initializing config. Url=", c.Url, "Description=", c.Description)
 					// Initialize and load the config first.
-					if err := this.Reload(&c); err != nil {
+					if err := this.Reload(c); err != nil {
 						glog.Warningln("Error initializing config", c, "Err=", err)
 						panic(err)
 					}
