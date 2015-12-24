@@ -90,43 +90,43 @@
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/circleci",
-			"Comment": "v1.0.2-6-ga9617f4",
-			"Rev": "a9617f4f7652ec1bbf658d18cb7a6c070aade88e"
+			"Comment": "v1.0.2-7-ge9ca726",
+			"Rev": "e9ca7264d2f9c2e277fb8c85d921048e639bbd0d"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/docker",
-			"Comment": "v1.0.2-6-ga9617f4",
-			"Rev": "a9617f4f7652ec1bbf658d18cb7a6c070aade88e"
+			"Comment": "v1.0.2-7-ge9ca726",
+			"Rev": "e9ca7264d2f9c2e277fb8c85d921048e639bbd0d"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/mqtt",
-			"Comment": "v1.0.2-6-ga9617f4",
-			"Rev": "a9617f4f7652ec1bbf658d18cb7a6c070aade88e"
+			"Comment": "v1.0.2-7-ge9ca726",
+			"Rev": "e9ca7264d2f9c2e277fb8c85d921048e639bbd0d"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/pubsub",
-			"Comment": "v1.0.2-6-ga9617f4",
-			"Rev": "a9617f4f7652ec1bbf658d18cb7a6c070aade88e"
+			"Comment": "v1.0.2-7-ge9ca726",
+			"Rev": "e9ca7264d2f9c2e277fb8c85d921048e639bbd0d"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/registry",
-			"Comment": "v1.0.2-6-ga9617f4",
-			"Rev": "a9617f4f7652ec1bbf658d18cb7a6c070aade88e"
+			"Comment": "v1.0.2-7-ge9ca726",
+			"Rev": "e9ca7264d2f9c2e277fb8c85d921048e639bbd0d"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/task",
-			"Comment": "v1.0.2-6-ga9617f4",
-			"Rev": "a9617f4f7652ec1bbf658d18cb7a6c070aade88e"
+			"Comment": "v1.0.2-7-ge9ca726",
+			"Rev": "e9ca7264d2f9c2e277fb8c85d921048e639bbd0d"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/template",
-			"Comment": "v1.0.2-6-ga9617f4",
-			"Rev": "a9617f4f7652ec1bbf658d18cb7a6c070aade88e"
+			"Comment": "v1.0.2-7-ge9ca726",
+			"Rev": "e9ca7264d2f9c2e277fb8c85d921048e639bbd0d"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/zk",
-			"Comment": "v1.0.2-6-ga9617f4",
-			"Rev": "a9617f4f7652ec1bbf658d18cb7a6c070aade88e"
+			"Comment": "v1.0.2-7-ge9ca726",
+			"Rev": "e9ca7264d2f9c2e277fb8c85d921048e639bbd0d"
 		},
 		{
 			"ImportPath": "github.com/qorio/omni/api",
