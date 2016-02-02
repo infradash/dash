@@ -7,9 +7,6 @@ import (
 	. "github.com/infradash/dash/pkg/dash"
 	"golang.org/x/net/context"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
-	"strings"
 	"time"
 )
 
@@ -99,27 +96,5 @@ func (this *Proxy) proxy(ctx context.Context, resp http.ResponseWriter, req *htt
 	hostPort := server.GetUrlParameter(req, "host_port")
 	url := server.GetUrlParameter(req, "url")
 	glog.V(100).Infoln(req.Method, req.URL, "HostPort=", hostPort, "forward=", url)
-	strip := "/" + hostPort
-	h := http.StripPrefix(strip, reverseProxyHandler(this.BackendProtocol, hostPort))
-	h.ServeHTTP(resp, req)
-}
-
-func reverseProxyHandler(scheme, hostPort string) http.Handler {
-	u, err := url.Parse(scheme + "://" + hostPort)
-	if err != nil {
-		glog.Fatal(err)
-	}
-	rp := httputil.NewSingleHostReverseProxy(u)
-	host := strings.Split(hostPort, ":")[0]
-
-	// We need to rewrite the request to change the host. This is so that
-	// some CDNs that checks for the Host header won't barf.
-	// We modify this only after the default Director has done its thing.
-	wrapped := rp.Director
-	rp.Director = func(req *http.Request) {
-		wrapped(req)
-		req.Header.Set("Host", host)
-		req.Host = host
-	}
-	return rp
+	server.NewReverseProxy().SetForwardHostPort(hostPort).Strip("/"+hostPort).ServeHTTP(resp, req)
 }
