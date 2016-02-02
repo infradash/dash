@@ -24,6 +24,15 @@ build: setup
 	echo "Building dash"
 	${GODEP} go build -o build/bin/dash -ldflags "$(LDFLAGS)" main/dash.go
 
+run-local-restart:
+	${GODEP} go run main/dash.go --logtostderr --v=500 \
+		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/restart.test" \
+	restart
+
+run-local-proxy:
+	${GODEP} go run main/dash.go --logtostderr --v=500 \
+		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/proxy.test" \
+	proxy
 
 run-local-terraform:
 	DASH_IP=10.0.0.2 \

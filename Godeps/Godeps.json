@@ -1,8 +1,9 @@
 {
 	"ImportPath": "github.com/infradash/dash",
-	"GoVersion": "go1.4.2",
+	"GoVersion": "go1.5.2",
 	"Packages": [
-		"./pkg/..."
+		"./pkg/...",
+		"main/..."
 	],
 	"Deps": [
 		{
@@ -23,6 +24,31 @@
 			"ImportPath": "git.eclipse.org/gitroot/paho/org.eclipse.paho.mqtt.golang.git",
 			"Comment": "v0.9.1-8-g1d65364",
 			"Rev": "1d6536402dac4b2528bc23f08ecc318c295c320a"
+		},
+		{
+			"ImportPath": "github.com/conductant/gohm/pkg/auth",
+			"Comment": "v0.0.1-25-g1455814",
+			"Rev": "1455814f3fbcc1da84dd0f20547e99fab62e6aa1"
+		},
+		{
+			"ImportPath": "github.com/conductant/gohm/pkg/registry",
+			"Comment": "v0.0.1-25-g1455814",
+			"Rev": "1455814f3fbcc1da84dd0f20547e99fab62e6aa1"
+		},
+		{
+			"ImportPath": "github.com/conductant/gohm/pkg/server",
+			"Comment": "v0.0.1-25-g1455814",
+			"Rev": "1455814f3fbcc1da84dd0f20547e99fab62e6aa1"
+		},
+		{
+			"ImportPath": "github.com/conductant/gohm/pkg/template",
+			"Comment": "v0.0.1-25-g1455814",
+			"Rev": "1455814f3fbcc1da84dd0f20547e99fab62e6aa1"
+		},
+		{
+			"ImportPath": "github.com/conductant/gohm/pkg/zk",
+			"Comment": "v0.0.1-25-g1455814",
+			"Rev": "1455814f3fbcc1da84dd0f20547e99fab62e6aa1"
 		},
 		{
 			"ImportPath": "github.com/deckarep/golang-set",

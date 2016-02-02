@@ -10,7 +10,9 @@ import (
 	. "github.com/infradash/dash/pkg/dash"
 	"github.com/infradash/dash/pkg/env"
 	"github.com/infradash/dash/pkg/executor"
+	"github.com/infradash/dash/pkg/proxy"
 	"github.com/infradash/dash/pkg/registry"
+	"github.com/infradash/dash/pkg/restart"
 	"github.com/infradash/dash/pkg/terraform"
 	"github.com/qorio/omni/version"
 	"os"
@@ -82,6 +84,12 @@ func main() {
 	terraform := &terraform.Terraform{Initializer: initializer}
 	terraform.BindFlags()
 
+	restart := &restart.Restart{}
+	restart.BindFlags()
+
+	proxy := &proxy.Proxy{}
+	proxy.BindFlags()
+
 	flag.Parse()
 
 	tags := strings.Split(*TagsList, ",")
@@ -113,8 +121,43 @@ func main() {
 
 	switch verb {
 
-	case "terraform":
+	case "proxy":
+		glog.Infoln(buildInfo.Notice())
 
+		proxy.Initializer = initializer
+
+		proxy_done := make(chan error)
+		go func() {
+			glog.Infoln("Starting proxy:", *proxy)
+			proxy_done <- proxy.Run()
+		}()
+
+		// Make sure proxy finishes
+		err := <-proxy_done
+		if err != nil {
+			panic(err)
+		}
+
+	case "restart":
+		glog.Infoln(buildInfo.Notice())
+
+		restart.RegistryReleaseEntry = *regReleaseEntry
+		restart.ZkSettings = *zkSettings
+		restart.Initializer = initializer
+
+		restart_done := make(chan error)
+		go func() {
+			glog.Infoln("Starting restart:", *restart)
+			restart_done <- restart.Run()
+		}()
+
+		// Make sure restart finishes
+		err := <-restart_done
+		if err != nil {
+			panic(err)
+		}
+
+	case "terraform":
 		glog.Infoln(buildInfo.Notice())
 
 		// disable the initializer so that it's loaded by terraform instead
@@ -145,8 +188,8 @@ func main() {
 		}
 
 	case "exec":
-
 		glog.Infoln(buildInfo.Notice())
+
 		glog.Infoln("Exec:", executor, executor.Identity.String(), executor.Initializer.Context)
 		executor.Exec()
 		err := executor.Wait()
@@ -155,6 +198,7 @@ func main() {
 		}
 
 	case "agent":
+		glog.Infoln(buildInfo.Notice())
 
 		agent.RegistryContainerEntry = *regContainerEntry
 		agent.QualifyByTags.Tags = tags

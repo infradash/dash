@@ -43,6 +43,8 @@ func (this *Client) Https() *Client {
 	return this
 }
 
+// Supports using a proxy url.  The reverse proxy will accept url of the format
+// http(s)://host:port/destination_host:destiantion_port/the/rest/of/the/path
 func (this *Client) GetUrl(p ...string) string {
 	url := fmt.Sprintf("%s%s:%d", this.protocol, this.host, this.port)
 	if len(this.proxyUrl) > 0 {
