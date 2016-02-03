@@ -323,7 +323,7 @@ func (this *Executor) Exec() {
 
 		taskRuntime.CaptureStdout()
 
-		if this.Config.Namespace != nil {
+		if this.Config != nil && this.Config.Namespace != nil {
 			glog.Infoln("Annoucing in namespace", this.Config.Namespace)
 			taskRuntime.Announce() <- task.Announce{
 				Key:       "running",
