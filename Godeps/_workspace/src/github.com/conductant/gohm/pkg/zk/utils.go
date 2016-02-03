@@ -6,11 +6,13 @@ import (
 	"strings"
 )
 
+// Determines the zookeeper hosts from ENV variables or
+// use the default
 func Hosts() []string {
-	servers := []string{"localhost:2181"}
-	list := os.Getenv("ZK_HOSTS")
-	if len(list) > 0 {
-		servers = strings.Split(list, ",")
+	servers := strings.Split(DefaultZkHosts, ",")
+	fromEnv := os.Getenv(EnvZkHosts)
+	if len(fromEnv) > 0 {
+		servers = strings.Split(fromEnv, ",")
 	}
 	glog.Infoln("zk-hosts:", servers)
 	return servers

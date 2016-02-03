@@ -16,7 +16,15 @@ func init() {
 func NewService(ctx context.Context, url url.URL) (Registry, error) {
 	// Look for a duration and use that as the timeout
 	timeout := ContextGetTimeout(ctx)
-	servers := strings.Split(url.Host, ",") // host:port,host:port,...
+
+	var servers []string
+	if len(url.Host) > 0 {
+		glog.Infoln("Host list:", url.Host)
+		servers = strings.Split(url.Host, ",") // host:port,host:port,...
+	} else {
+		glog.Infoln("No hosts provided. Using environment variable", EnvZkHosts, "or default.")
+		servers = Hosts()
+	}
 	return Connect(servers, timeout)
 }
 

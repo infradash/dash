@@ -41,7 +41,7 @@ func (this *ConfigLoader) Load(prototype interface{}, auth string, zc zk.ZK, fun
 			glog.Infoln("Fetched config from", this.ConfigUrl)
 			break
 		} else {
-			glog.Infoln("Waiting ", this.ConfigUrl)
+			glog.Infoln("Err:", err, "-- Waiting ", this.ConfigUrl)
 			time.Sleep(this.RetryInterval) // need to block synchronously.
 		}
 	}

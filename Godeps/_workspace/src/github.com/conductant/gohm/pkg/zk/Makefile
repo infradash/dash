@@ -19,3 +19,7 @@ test-registry:
 test-client:
 	ZK_HOSTS=$(ZK_HOSTS) \
 	${GODEP} go test ./... -check.f TestSuiteClient -check.vv -v -logtostderr ${TEST_ARGS}
+
+test-source:
+	ZK_HOSTS=$(ZK_HOSTS) \
+	${GODEP} go test ./... -check.f TestSuiteSource -check.vv -v -logtostderr ${TEST_ARGS}

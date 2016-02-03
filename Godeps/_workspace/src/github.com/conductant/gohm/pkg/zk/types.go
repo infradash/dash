@@ -22,7 +22,14 @@ const (
 	EventNodeDeleted         = zk.EventNodeDeleted
 	EventNodeChildrenChanged = zk.EventNodeChildrenChanged
 
+	// Default Zk timeout
 	DefaultTimeout = 1 * time.Hour
+
+	// Defaults to localhost at port 2181.
+	DefaultZkHosts = "localhost:2181"
+
+	// Environment variable to use when hosts are not specified explicitly.
+	EnvZkHosts = "ZK_HOSTS"
 )
 
 type Node struct {

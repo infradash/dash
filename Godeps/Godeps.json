@@ -27,28 +27,28 @@
 		},
 		{
 			"ImportPath": "github.com/conductant/gohm/pkg/auth",
-			"Comment": "v0.0.1-25-g1455814",
-			"Rev": "1455814f3fbcc1da84dd0f20547e99fab62e6aa1"
+			"Comment": "v0.0.1-26-g2fc4a7f",
+			"Rev": "2fc4a7f525ff0cbbe07d41b2a11f346c97b8c42a"
 		},
 		{
 			"ImportPath": "github.com/conductant/gohm/pkg/registry",
-			"Comment": "v0.0.1-25-g1455814",
-			"Rev": "1455814f3fbcc1da84dd0f20547e99fab62e6aa1"
+			"Comment": "v0.0.1-26-g2fc4a7f",
+			"Rev": "2fc4a7f525ff0cbbe07d41b2a11f346c97b8c42a"
 		},
 		{
 			"ImportPath": "github.com/conductant/gohm/pkg/server",
-			"Comment": "v0.0.1-25-g1455814",
-			"Rev": "1455814f3fbcc1da84dd0f20547e99fab62e6aa1"
+			"Comment": "v0.0.1-26-g2fc4a7f",
+			"Rev": "2fc4a7f525ff0cbbe07d41b2a11f346c97b8c42a"
 		},
 		{
 			"ImportPath": "github.com/conductant/gohm/pkg/template",
-			"Comment": "v0.0.1-25-g1455814",
-			"Rev": "1455814f3fbcc1da84dd0f20547e99fab62e6aa1"
+			"Comment": "v0.0.1-26-g2fc4a7f",
+			"Rev": "2fc4a7f525ff0cbbe07d41b2a11f346c97b8c42a"
 		},
 		{
 			"ImportPath": "github.com/conductant/gohm/pkg/zk",
-			"Comment": "v0.0.1-25-g1455814",
-			"Rev": "1455814f3fbcc1da84dd0f20547e99fab62e6aa1"
+			"Comment": "v0.0.1-26-g2fc4a7f",
+			"Rev": "2fc4a7f525ff0cbbe07d41b2a11f346c97b8c42a"
 		},
 		{
 			"ImportPath": "github.com/deckarep/golang-set",

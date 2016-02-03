@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"fmt"
 	p "path"
 	"strings"
 )
@@ -18,6 +19,10 @@ type path string
 
 func NewPath(s string, parts ...string) Path {
 	return path(p.Clean(p.Join("/", s, p.Join(parts...))))
+}
+
+func NewPathf(format string, args ...interface{}) Path {
+	return path(p.Clean(fmt.Sprintf(format, args...)))
 }
 
 func (this path) String() string {

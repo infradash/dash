@@ -10,6 +10,13 @@ import (
 	"strings"
 )
 
+const (
+	SourceHttp   = "http"
+	SourceHttps  = "https"
+	SourceString = "string"
+	SourceFile   = "file"
+)
+
 type SourceFunc func(context.Context, string) ([]byte, error)
 
 var (
@@ -17,18 +24,25 @@ var (
 )
 
 func init() {
-	Register("http", HttpSource)
-	Register("https", HttpSource)
-	Register("string", StringSource)
-	Register("file", FileSource)
+	Register(SourceHttp, HttpSource)
+	Register(SourceHttps, HttpSource)
+	Register(SourceString, StringSource)
+	Register(SourceFile, FileSource)
 }
 
+// Packages providing different backend support for this should call this
+// in its `init()` function.
 func Register(protocol string, source SourceFunc) {
 	lock.Lock()
 	defer lock.Unlock()
 	protocols[protocol] = source
 }
 
+// This is the function most user will use.  Using the protocol/scheme provided
+// with the url, different implementations will be invoked.  There are standard
+// implementations in this package (see constants).
+// Other packages using different backends can call the `Register` function to
+// register different implementations.
 func Source(ctx context.Context, url string) ([]byte, error) {
 	parsed, err := net.Parse(url)
 	if err != nil {
