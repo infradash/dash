@@ -9,14 +9,8 @@ import (
 	"sync"
 )
 
-type nht int
-
-const (
-	no_header nht = 1
-)
-
 type methodBinding struct {
-	Api     ServiceMethod
+	Api     Endpoint
 	Handler Handler
 }
 

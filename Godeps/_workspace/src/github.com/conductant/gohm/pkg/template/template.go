@@ -2,6 +2,7 @@ package template
 
 import (
 	"bytes"
+	"github.com/conductant/gohm/pkg/resource"
 	"golang.org/x/net/context"
 	"hash/fnv"
 	"strconv"
@@ -76,7 +77,7 @@ func Execute(ctx context.Context, uri string, funcs ...template.FuncMap) ([]byte
 			}
 		}
 	default:
-		body, err = Source(ctx, url)
+		body, err = resource.Fetch(ctx, url)
 		if err != nil {
 			return nil, err
 		}

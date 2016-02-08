@@ -68,22 +68,22 @@ func ContextGetStreamer(ctx context.Context) Streamer {
 	return nil
 }
 
-// If the scope of the caller of this function is the scope of a function bound to the ServiceMethod of the api,
+// If the scope of the caller of this function is the scope of a function bound to the Endpoint of the api,
 // then return that Api according to the binding.  Otherwise, return NotDefined.
-func ApiForScope(ctx context.Context) ServiceMethod {
+func ApiForScope(ctx context.Context) Endpoint {
 	if engine, ok := (ctx.Value(EngineContextKey)).(*engine); ok {
 		if pc, _, _, ok := runtime.Caller(1); ok {
 			return engine.apiFromPC(pc)
 		}
 	}
-	return ServiceMethod{}
+	return Endpoint{}
 }
 
-func ApiForFunc(ctx context.Context, f func(context.Context, http.ResponseWriter, *http.Request)) ServiceMethod {
+func ApiForFunc(ctx context.Context, f func(context.Context, http.ResponseWriter, *http.Request)) Endpoint {
 	if engine, ok := (ctx.Value(ApiDiscoveryContextKey)).(ApiDiscovery); ok {
 		return engine.ApiForFunc(f)
 	}
-	return ServiceMethod{}
+	return Endpoint{}
 }
 
 func HandleError(ctx context.Context, code int, message string) {

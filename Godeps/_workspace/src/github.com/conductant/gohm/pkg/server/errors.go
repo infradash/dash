@@ -8,18 +8,19 @@ import (
 )
 
 var (
-	ErrMissingInput                 = errors.New("error-missing-input")
-	ErrUnknownContentType           = errors.New("error-no-content-type")
-	ErrUnknownMethod                = errors.New("error-unknown-method")
-	ErrIncompatibleType             = errors.New("error-incompatible-type")
-	ErrNotSupportedUrlParameterType = errors.New("error-not-supported-url-query-param-type")
-	ErrNoHttpHeaderSpec             = errors.New("error-no-http-header-spec")
-	ErrNoSignKey                    = errors.New("no-sign-key")
-	ErrNoVerifyKey                  = errors.New("no-verify-key")
-	ErrInvalidAuthToken             = errors.New("invalid-token")
-	ErrExpiredAuthToken             = errors.New("token-expired")
-	ErrNoAuthToken                  = errors.New("no-auth-token")
+	ErrMissingInput                 = errors.New("err-missing-input")
+	ErrUnknownMethod                = errors.New("err-unknown-method")
+	ErrNotSupportedUrlParameterType = errors.New("err-not-supported-url-query-param-type")
+	ErrNoHttpHeaderSpec             = errors.New("err-no-http-header-spec")
+	ErrNoSignKey                    = errors.New("err-no-sign-key")
+	ErrNoVerifyKey                  = errors.New("err-no-verify-key")
+	ErrInvalidAuthToken             = errors.New("err-invalid-token")
+	ErrExpiredAuthToken             = errors.New("err-token-expired")
+	ErrNoAuthToken                  = errors.New("err-no-auth-token")
+	ErrBadContentType               = errors.New("err-bad-content-type")
+)
 
+var (
 	DefaultErrorRenderer = func(resp http.ResponseWriter, req *http.Request, message string, code int) error {
 		resp.WriteHeader(code)
 		escaped := message

@@ -31,6 +31,10 @@ run-local-restart:
 
 run-local-proxy:
 	${GODEP} go run main/dash.go --logtostderr --v=500 \
+	proxy file:///Users/david/go/src/github.com/infradash/dash/example/proxy.test
+
+run-local-proxy-old:
+	${GODEP} go run main/dash.go --logtostderr --v=500 \
 		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/proxy.test" \
 	proxy
 

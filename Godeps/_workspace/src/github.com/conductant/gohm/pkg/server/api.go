@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/conductant/gohm/pkg/encoding"
 	"net/http"
 	"reflect"
 )
@@ -9,14 +10,13 @@ type AuthScope string
 type EventKey string
 
 type HttpMethod string
-type ContentType string
 type QueryDefault interface{}
 type UrlQueries map[string]QueryDefault
 type FormParams UrlQueries
 type HttpHeaders map[string]string
 
 var (
-	NotDefined = ServiceMethod{}
+	NotDefined = Endpoint{}
 
 	AuthScopeNone = AuthScope("*")
 
@@ -27,15 +27,9 @@ var (
 	PUT       HttpMethod = HttpMethod("PUT")
 	DELETE    HttpMethod = HttpMethod("DELETE")
 	MULTIPART HttpMethod = HttpMethod("POST")
-
-	ContentTypeDefault  ContentType = ContentType("")
-	ContentTypeJSON     ContentType = ContentType("application/json")
-	ContentTypeProtobuf ContentType = ContentType("application/protobuf")
-	ContentTypeHTML     ContentType = ContentType("text/html")
-	ContentTypePlain    ContentType = ContentType("text/plain")
 )
 
-type ServiceMethod struct {
+type Endpoint struct {
 	Doc                  string                          `json:"doc,omitempty"`
 	UrlRoute             string                          `json:"route,omitempty"`
 	HttpHeaders          HttpHeaders                     `json:"headers,omitempty"`
@@ -43,7 +37,7 @@ type ServiceMethod struct {
 	HttpMethods          []HttpMethod                    `json:"methods,omitempty"`
 	UrlQueries           UrlQueries                      `json:"queries,omitempty"`
 	FormParams           FormParams                      `json:"params,omitempty"`
-	ContentType          ContentType                     `json:"contentType,omitempty"`
+	ContentType          encoding.ContentType            `json:"contentType,omitempty"`
 	RequestBody          func(*http.Request) interface{} `json:"requestBody,omitempty"`
 	ResponseBody         func(*http.Request) interface{} `json:"responseBody,omitempty"`
 	CallbackEvent        EventKey                        `json:"callbackEvent,omitempty"`
@@ -51,6 +45,6 @@ type ServiceMethod struct {
 	AuthScope            AuthScope                       `json:"scope,omitempty"`
 }
 
-func (sm ServiceMethod) Equals(other ServiceMethod) bool {
+func (sm Endpoint) Equals(other Endpoint) bool {
 	return reflect.DeepEqual(sm, other)
 }

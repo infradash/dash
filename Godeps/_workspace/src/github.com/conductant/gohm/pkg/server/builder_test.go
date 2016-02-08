@@ -25,11 +25,11 @@ func (suite *TestSuiteBuilder) TearDownSuite(c *C) {
 }
 
 var (
-	test_method1 = ServiceMethod{
+	test_method1 = Endpoint{
 		UrlRoute:   "/method1",
 		HttpMethod: GET,
 	}
-	test_method2 = ServiceMethod{
+	test_method2 = Endpoint{
 		UrlRoute:   "/method2",
 		HttpMethod: GET,
 	}

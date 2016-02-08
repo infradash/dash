@@ -1,7 +1,9 @@
 package zk
 
 import (
+	"fmt"
 	. "github.com/conductant/gohm/pkg/registry"
+	. "github.com/conductant/gohm/pkg/store"
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
 	"net/url"
@@ -10,22 +12,35 @@ import (
 
 func init() {
 	Register("zk", NewService)
+	RegisterSanitizer("zk", SanitizeUrl)
+}
+
+func SanitizeUrl(url url.URL) url.URL {
+	if len(url.Host) > 0 {
+		glog.Infoln("Host list:", url.Host)
+		return url
+	} else {
+		glog.Infoln("No hosts provided. Using environment variable", EnvZkHosts, "or default.")
+		copy := url
+		copy.Host = strings.Join(Hosts(), ",")
+		return copy
+	}
 }
 
 // Optional parameter is timeout, in Duration.
-func NewService(ctx context.Context, url url.URL) (Registry, error) {
+func NewService(ctx context.Context, url url.URL, close Dispose) (Registry, error) {
 	// Look for a duration and use that as the timeout
 	timeout := ContextGetTimeout(ctx)
-
-	var servers []string
-	if len(url.Host) > 0 {
-		glog.Infoln("Host list:", url.Host)
-		servers = strings.Split(url.Host, ",") // host:port,host:port,...
-	} else {
-		glog.Infoln("No hosts provided. Using environment variable", EnvZkHosts, "or default.")
-		servers = Hosts()
+	servers := strings.Split(url.Host, ",") // host:port,host:port,...
+	if len(servers) == 0 {
+		panic(fmt.Errorf("No zk servers"))
 	}
-	return Connect(servers, timeout)
+	cl, err := Connect(servers, timeout)
+	if err != nil {
+		return nil, err
+	}
+	cl.close = close
+	return cl, err
 }
 
 func (this *client) Id() url.URL {

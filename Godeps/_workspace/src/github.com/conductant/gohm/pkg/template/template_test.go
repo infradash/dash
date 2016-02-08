@@ -2,6 +2,7 @@ package template
 
 import (
 	"github.com/conductant/gohm/pkg/auth"
+	"github.com/conductant/gohm/pkg/resource"
 	"github.com/conductant/gohm/pkg/server"
 	"github.com/conductant/gohm/pkg/testutil"
 	"golang.org/x/net/context"
@@ -27,7 +28,7 @@ func (suite *TestSuiteTemplate) SetUpSuite(c *C) {
 	suite.stop, suite.stopped = server.NewService().
 		ListenPort(suite.port).
 		WithAuth(server.Auth{VerifyKeyFunc: testutil.PublicKeyFunc}.Init()).
-		Route(server.ServiceMethod{UrlRoute: "/secure", HttpMethod: server.GET, AuthScope: server.AuthScope("secure")}).
+		Route(server.Endpoint{UrlRoute: "/secure", HttpMethod: server.GET, AuthScope: server.AuthScope("secure")}).
 		To(func(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
 		resp.Write([]byte(suite.template))
 	}).Start()
@@ -53,7 +54,7 @@ func (suite *TestSuiteTemplate) TestTemplateToFile(c *C) {
 		"Age":  20,
 		"port": suite.port,
 	}
-	ctx := ContextPutTemplateData(ContextPutHttpHeader(context.Background(), header), data)
+	ctx := ContextPutTemplateData(resource.ContextPutHttpHeader(context.Background(), header), data)
 
 	text, err := Execute(ctx, url)
 	c.Assert(err, IsNil)

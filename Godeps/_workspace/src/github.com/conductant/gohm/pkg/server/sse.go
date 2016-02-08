@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/golang/glog"
@@ -40,15 +41,15 @@ func (this *engine) DirectHttpStream(w http.ResponseWriter, r *http.Request) (ch
 
 			// by type switch
 			switch t := msg.(type) {
-			default:
-				fmt.Fprintf(w, "event: %s\n", t)
-				fmt.Fprint(w, "data: ")
-				json_marshaler("application/json", w, &msg, no_header)
-				fmt.Fprint(w, "\n\n")
 			case string:
 				fmt.Fprintf(w, "%s\n", msg.(string))
 			case []byte:
 				fmt.Fprintf(w, "%s\n", string(msg.([]byte)))
+			default:
+				fmt.Fprintf(w, "event: %s\n", t)
+				fmt.Fprint(w, "data: ")
+				json.NewEncoder(w).Encode(&msg)
+				fmt.Fprint(w, "\n\n")
 			}
 
 			// Flush the response.  This is only possible if
@@ -287,20 +288,13 @@ func (this *sseChannel) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		switch this.ContentType {
-		case "application/json":
-			fmt.Fprintf(w, "event: %s\n", this.EventType)
-			fmt.Fprint(w, "data: ")
-			json_marshaler(this.ContentType, w, &msg, no_header)
-			fmt.Fprint(w, "\n\n")
 		case "text/plain":
 			fmt.Fprintf(w, "%s\n", msg)
 		default:
-			if m, ok := marshalers[this.ContentType]; ok {
-				fmt.Fprintf(w, "event: %s\n", this.EventType)
-				fmt.Fprint(w, "data: ")
-				m(this.ContentType, w, &msg, no_header)
-				fmt.Fprint(w, "\n\n")
-			}
+			fmt.Fprintf(w, "event: %s\n", this.EventType)
+			fmt.Fprint(w, "data: ")
+			json.NewEncoder(w).Encode(&msg)
+			fmt.Fprint(w, "\n\n")
 		}
 
 		// Flush the response.  This is only possible if

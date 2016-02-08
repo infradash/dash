@@ -1,6 +1,7 @@
 package zk
 
 import (
+	"github.com/conductant/gohm/pkg/store"
 	"github.com/golang/glog"
 	"github.com/samuel/go-zookeeper/zk"
 	"net/url"
@@ -30,6 +31,7 @@ type client struct {
 	watch_stops      map[chan int]bool
 
 	shutdown chan int
+	close    store.Dispose
 }
 
 func (this *client) on_connect() {
@@ -52,6 +54,7 @@ func (this *client) untrackEphemeral(path string) {
 
 func Connect(servers []string, timeout time.Duration) (*client, error) {
 	conn, events, err := zk.Connect(servers, timeout)
+	glog.Infoln("Connect to zk:", "conn=", conn, "events=", events, "err=", err)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +101,7 @@ func Connect(servers []string, timeout time.Duration) (*client, error) {
 					return
 				}
 				zz.ephemeral[add.Path] = add
-				glog.Infoln("EPHEMERAL-CACHE-ADD: Path=", add.Path, "Value=", string(add.Value))
+				glog.Infoln("ephemeral-add: Path=", add.Path, "Value=", string(add.Value))
 
 			case remove, open := <-zz.ephemeral_remove:
 				if !open {
@@ -106,7 +109,7 @@ func Connect(servers []string, timeout time.Duration) (*client, error) {
 				}
 				if _, has := zz.ephemeral[remove]; has {
 					delete(zz.ephemeral, remove)
-					glog.Infoln("EPHEMERAL-CACHE-REMOVE: Path=", remove)
+					glog.Infoln("ephemeral-remove: Path=", remove)
 				}
 			}
 		}
@@ -116,7 +119,7 @@ func Connect(servers []string, timeout time.Duration) (*client, error) {
 		for {
 			select {
 			case evt := <-events:
-				glog.Infoln("ZK-Event-Main:", evt)
+				glog.Infoln("zk-event-chan:", evt)
 				switch evt.State {
 				case StateExpired:
 					glog.Warningln("ZK state expired --> sent by server on reconnection.")
@@ -124,7 +127,6 @@ func Connect(servers []string, timeout time.Duration) (*client, error) {
 					// sends this event on reconnection.
 					zz.on_connect()
 				case StateHasSession:
-					glog.Warningln("ZK state has-session")
 					zz.on_connect()
 				case StateDisconnected:
 					glog.Warningln("ZK state disconnected")
@@ -184,9 +186,21 @@ func (this *client) Events() <-chan Event {
 }
 
 func (this *client) Close() error {
-	this.shutdown <- 1
-	// wait for a close
-	<-this.shutdown
+	ok := true
+	if this.close != nil {
+		// If this is used in connection with a registry cache. notify it we are done.
+		// The protocol here is to first propose and wait for ok to shutdown
+		glog.Infoln("Propose to close", this.close.Propose())
+		this.close.Propose() <- this
+		glog.Infoln("Waiting for accept")
+		ok = <-this.close.Accept()
+		glog.Infoln("Got accept to close=", ok)
+	}
+	if ok {
+		this.shutdown <- 1
+		// wait for a close
+		<-this.shutdown
+	}
 	return nil
 }
 
@@ -200,7 +214,11 @@ func (this *client) doShutdown() {
 	close(this.retry_stop)
 
 	for w, _ := range this.watch_stops {
-		close(w)
+		select {
+		case w <- 0:
+		default:
+		}
+		//close(w)  TODO - FIX THIS   http://blog.golang.org/pipelines
 	}
 	close(this.watch_stops_chan)
 
@@ -482,7 +500,7 @@ func (this *client) PutNode(key string, value []byte, ephemeral bool) (*Node, er
 		if err != nil {
 			return nil, err
 		} else {
-			return n, n.Set(value)
+			return n, nil
 		}
 	default:
 		return nil, err

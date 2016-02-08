@@ -38,23 +38,23 @@ func cleanFuncName(f string) string {
 	return fn
 }
 
-func (this *engine) ApiForScope() ServiceMethod {
+func (this *engine) ApiForScope() Endpoint {
 	if pc, _, _, ok := runtime.Caller(1); ok {
 		return this.apiFromPC(pc)
 	}
-	return ServiceMethod{}
+	return Endpoint{}
 }
 
-func (this *engine) ApiForFunc(f func(context.Context, http.ResponseWriter, *http.Request)) ServiceMethod {
+func (this *engine) ApiForFunc(f func(context.Context, http.ResponseWriter, *http.Request)) Endpoint {
 	pc := reflect.ValueOf(f).Pointer()
 	return this.apiFromPC(pc)
 }
 
-func (this *engine) apiFromPC(pc uintptr) ServiceMethod {
+func (this *engine) apiFromPC(pc uintptr) Endpoint {
 	callingFunc := cleanFuncName(runtime.FuncForPC(pc).Name())
 	if binding, exists := this.functionNames[callingFunc]; exists {
 		return binding.Api
 	}
-	return ServiceMethod{}
+	return Endpoint{}
 
 }

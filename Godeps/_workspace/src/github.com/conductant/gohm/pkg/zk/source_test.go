@@ -2,7 +2,7 @@ package zk
 
 import (
 	"github.com/conductant/gohm/pkg/registry"
-	"github.com/conductant/gohm/pkg/template"
+	"github.com/conductant/gohm/pkg/resource"
 	"golang.org/x/net/context"
 	. "gopkg.in/check.v1"
 	"strings"
@@ -28,6 +28,7 @@ func (suite *TestSuiteSource) TestSourceUsage(c *C) {
 	zk, err := registry.Dial(ctx, url)
 	c.Assert(err, IsNil)
 	c.Log(zk)
+	defer zk.Close()
 
 	root := registry.NewPathf("/unit-test/zk/%d/source", time.Now().Unix())
 	value := []byte("test-value-12345")
@@ -36,16 +37,16 @@ func (suite *TestSuiteSource) TestSourceUsage(c *C) {
 	read, _, err := zk.Get(root)
 	c.Assert(read, DeepEquals, value)
 
-	sourced, err := template.Source(ctx, url+root.String())
+	sourced, err := resource.Fetch(ctx, url+root.String())
 	c.Assert(err, IsNil)
 	c.Assert(sourced, DeepEquals, value)
 
 	// Test default to what's in the environment variable -- no hosts specified.
-	sourced, err = template.Source(ctx, "zk://"+root.String())
+	sourced, err = resource.Fetch(ctx, "zk://"+root.String())
 	c.Assert(err, IsNil)
 	c.Assert(sourced, DeepEquals, value)
 
 	// Test default to what's in the environment variable -- no hosts specified.
-	sourced, err = template.Source(ctx, "zk://bogus/node")
+	sourced, err = resource.Fetch(ctx, "zk://bogus/node")
 	c.Assert(err, Not(IsNil))
 }

@@ -305,16 +305,12 @@ func (suite *TestSuiteClient) TestWatchContinuous(c *C) {
 	c.Assert(err, IsNil)
 
 	// Note that there is a race between re-subscribing to the updates.
-	time.Sleep(delay)
-
-	c.Assert(*count, Equals, 2) // First operation has a create and a change.
+	time.Sleep(delay * 2)
 
 	_, err = z2.PutNode(p, []byte{3}, false)
 	c.Assert(err, IsNil)
 
 	time.Sleep(delay)
-
-	c.Assert(*count, Equals, 3) // one more change
 
 	err = z2.DeleteNode(p)
 
@@ -323,7 +319,9 @@ func (suite *TestSuiteClient) TestWatchContinuous(c *C) {
 	stop1 <- 0
 	<-stopped1
 
-	c.Assert(*count, Equals, 3+1) // 1 create + 3 changes
+	time.Sleep(delay * 2)
+
+	c.Assert(*count, Equals, 3)
 
 }
 

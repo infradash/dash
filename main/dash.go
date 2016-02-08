@@ -126,6 +126,10 @@ func main() {
 
 		proxy.Initializer = initializer
 
+		// Special argument after 'proxy' is interpreted as the config url
+		if len(flag.Args()) > 1 {
+			proxy.Initializer.ConfigUrl = flag.Args()[1]
+		}
 		proxy_done := make(chan error)
 		go func() {
 			glog.Infoln("Starting proxy:", *proxy)

@@ -5,6 +5,7 @@ import (
 	"github.com/conductant/gohm/pkg/registry"
 	"golang.org/x/net/context"
 	. "gopkg.in/check.v1"
+	net "net/url"
 	"strings"
 	"testing"
 	"time"
@@ -30,8 +31,9 @@ func (suite *TestSuiteRegistry) TestUsage(c *C) {
 	zk, err := registry.Dial(ctx, url)
 	c.Assert(err, IsNil)
 	c.Log(zk)
+	defer zk.Close()
 
-	p := registry.NewPath("/unit-test/registry/test")
+	p := registry.NewPath(fmt.Sprintf("/unit-test/registry/%d/test", time.Now().Unix()))
 	v := []byte("test")
 	_, err = zk.Put(p, v, false)
 	c.Assert(err, IsNil)
@@ -77,7 +79,7 @@ func (suite *TestSuiteRegistry) TestEphemeral(c *C) {
 	c.Assert(err, IsNil)
 	c.Log(zk)
 
-	p := registry.NewPath("/unit-test/registry/ephemeral")
+	p := registry.NewPath(fmt.Sprintf("/unit-test/registry/%d/ephemeral", time.Now().Unix()))
 	v := []byte("test")
 	_, err = zk.Put(p, v, true)
 	c.Assert(err, IsNil)
@@ -96,6 +98,7 @@ func (suite *TestSuiteRegistry) TestEphemeral(c *C) {
 	c.Assert(err, Equals, ErrNotExist)
 	exists, _ = zk.Exists(p)
 	c.Assert(exists, Equals, false)
+	zk.Close()
 }
 
 func (suite *TestSuiteRegistry) TestVersions(c *C) {
@@ -104,8 +107,9 @@ func (suite *TestSuiteRegistry) TestVersions(c *C) {
 	zk, err := registry.Dial(ctx, url)
 	c.Assert(err, IsNil)
 	c.Log(zk)
+	defer zk.Close()
 
-	p := registry.NewPath("/unit-test/registry/version")
+	p := registry.NewPath(fmt.Sprintf("/unit-test/registry/%d/version", time.Now().Unix()))
 	v := []byte("test")
 	version, err := zk.Put(p, v, true)
 	c.Assert(err, IsNil)
@@ -144,8 +148,9 @@ func (suite *TestSuiteRegistry) TestFollow(c *C) {
 	zk, err := registry.Dial(ctx, url)
 	c.Assert(err, IsNil)
 	c.Log(zk)
+	defer zk.Close()
 
-	p := registry.NewPath("/unit-test/registry/follow")
+	p := registry.NewPath(fmt.Sprintf("/unit-test/registry/%d/follow", time.Now().Unix()))
 
 	_, err = zk.Put(p.Sub("1"), []byte(url+p.Sub("2").String()), false)
 	c.Assert(err, IsNil)
@@ -159,11 +164,14 @@ func (suite *TestSuiteRegistry) TestFollow(c *C) {
 	_, err = zk.Put(p.Sub("4"), []byte("end"), false)
 	c.Assert(err, IsNil)
 
-	path, value, version, err := registry.Follow(ctx, zk, p.Sub("1"))
+	u, err := net.Parse(url + p.Sub("1").String())
+	c.Assert(err, IsNil)
+	path, value, version, err := registry.FollowUrl(ctx, *u)
+	c.Log("path=", path, ",value=", value, ",version=", version, ",err=", err)
 	c.Assert(err, IsNil)
 	c.Assert(value, DeepEquals, []byte("end"))
 	c.Assert(path.String(), Equals, url+p.Sub("4").String())
-	c.Assert(version > 0, Equals, true)
+	c.Assert(version, Not(Equals), registry.InvalidVersion)
 }
 
 func (suite *TestSuiteRegistry) TestTriggerCreate(c *C) {
@@ -172,6 +180,7 @@ func (suite *TestSuiteRegistry) TestTriggerCreate(c *C) {
 	zk, err := registry.Dial(ctx, url)
 	c.Assert(err, IsNil)
 	c.Log(zk)
+	defer zk.Close()
 
 	p := registry.NewPath(fmt.Sprintf("/unit-test/registry/%d/trigger/create", time.Now().Unix()))
 
@@ -199,6 +208,8 @@ func (suite *TestSuiteRegistry) TestTriggerCreate(c *C) {
 
 	done <- 1
 
+	time.Sleep(delay)
+
 	c.Assert(*count, Equals, 1)
 	stop <- 1
 }
@@ -209,6 +220,7 @@ func (suite *TestSuiteRegistry) TestTriggerDelete(c *C) {
 	zk, err := registry.Dial(ctx, url)
 	c.Assert(err, IsNil)
 	c.Log(zk)
+	defer zk.Close()
 
 	p := registry.NewPath(fmt.Sprintf("/unit-test/registry/%d/trigger/delete", time.Now().Unix()))
 
@@ -236,6 +248,9 @@ func (suite *TestSuiteRegistry) TestTriggerDelete(c *C) {
 	time.Sleep(delay)
 
 	stop <- 1
+
+	time.Sleep(delay)
+
 	c.Assert(*count, Equals, 1)
 }
 
@@ -245,6 +260,7 @@ func (suite *TestSuiteRegistry) TestTriggerChange(c *C) {
 	zk, err := registry.Dial(ctx, url)
 	c.Assert(err, IsNil)
 	c.Log(zk)
+	defer zk.Close()
 
 	p := registry.NewPath(fmt.Sprintf("/unit-test/registry/%d/trigger/change", time.Now().Unix()))
 
@@ -306,6 +322,7 @@ func (suite *TestSuiteRegistry) TestTriggerMembers(c *C) {
 	zk, err := registry.Dial(ctx, url)
 	c.Assert(err, IsNil)
 	c.Log(zk)
+	defer zk.Close()
 
 	p := registry.NewPath(fmt.Sprintf("/unit-test/registry/%d/trigger/members", time.Now().Unix()))
 

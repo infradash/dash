@@ -17,8 +17,8 @@ type testE2EServer struct {
 	c *C
 }
 
-func testApi(route string, method HttpMethod, scope AuthScope) ServiceMethod {
-	return ServiceMethod{UrlRoute: route, HttpMethod: method, AuthScope: scope}
+func testApi(route string, method HttpMethod, scope AuthScope) Endpoint {
+	return Endpoint{UrlRoute: route, HttpMethod: method, AuthScope: scope}
 }
 
 var testGetApiFromContext = testApi("/api-from-context", GET, "api-from-context")

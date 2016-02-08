@@ -1,6 +1,7 @@
 package template
 
 import (
+	"github.com/conductant/gohm/pkg/resource"
 	"golang.org/x/net/context"
 	"io/ioutil"
 	"net"
@@ -80,7 +81,7 @@ func ContentInline(ctx context.Context) interface{} {
 			return NullTemplate, err
 		}
 		url := string(applied)
-		content, err := Source(ctx, url)
+		content, err := resource.Fetch(ctx, url)
 		if err != nil {
 			return NullTemplate, err
 		}
@@ -96,7 +97,7 @@ func ContentToFile(ctx context.Context) interface{} {
 			return NullTemplate, err
 		}
 		url := string(applied)
-		content, err := Source(ctx, url)
+		content, err := resource.Fetch(ctx, url)
 		if err != nil {
 			return NullTemplate, err
 		}

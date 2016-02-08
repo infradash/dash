@@ -16,6 +16,7 @@ func Source(ctx context.Context, url string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer reg.Close()
 	bytes, _, err := reg.Get(NewPath(u.Path))
 	return bytes, err
 }

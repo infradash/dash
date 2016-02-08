@@ -25,7 +25,6 @@ type Auth struct {
 }
 
 type AuthManager interface {
-	//	GetToken(*http.Request) (*auth.Token, error)
 	IsAuthOn() bool
 	IsAuthorized(AuthScope, *http.Request) (bool, *auth.Token, error)
 
@@ -41,8 +40,8 @@ type Streamer interface {
 }
 
 type ApiDiscovery interface {
-	ApiForScope() ServiceMethod
-	ApiForFunc(func(context.Context, http.ResponseWriter, *http.Request)) ServiceMethod
+	ApiForScope() Endpoint
+	ApiForFunc(func(context.Context, http.ResponseWriter, *http.Request)) Endpoint
 }
 
 type Server interface {

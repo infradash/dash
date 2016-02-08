@@ -3,6 +3,7 @@ package template
 import (
 	"fmt"
 	"github.com/conductant/gohm/pkg/auth"
+	"github.com/conductant/gohm/pkg/resource"
 	"github.com/conductant/gohm/pkg/server"
 	"github.com/conductant/gohm/pkg/testutil"
 	"golang.org/x/net/context"
@@ -31,11 +32,11 @@ func (suite *TestSuiteFuncs) SetUpSuite(c *C) {
 	suite.stop, suite.stopped = server.NewService().
 		ListenPort(suite.port).
 		WithAuth(server.Auth{VerifyKeyFunc: testutil.PublicKeyFunc}.Init()).
-		Route(server.ServiceMethod{UrlRoute: "/content", HttpMethod: server.GET, AuthScope: server.AuthScopeNone}).
+		Route(server.Endpoint{UrlRoute: "/content", HttpMethod: server.GET, AuthScope: server.AuthScopeNone}).
 		To(func(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
 		resp.Write([]byte(suite.content))
 	}).
-		Route(server.ServiceMethod{UrlRoute: "/secure", HttpMethod: server.GET, AuthScope: server.AuthScope("secure")}).
+		Route(server.Endpoint{UrlRoute: "/secure", HttpMethod: server.GET, AuthScope: server.AuthScope("secure")}).
 		To(func(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
 		resp.Write([]byte(suite.content))
 	}).Start()
@@ -102,7 +103,7 @@ func (suite *TestSuiteFuncs) TestContentToFileWithAuthToken(c *C) {
 	token := auth.NewToken(1*time.Hour).Add("secure", 1)
 	header := http.Header{}
 	token.SetHeader(header, testutil.PrivateKeyFunc)
-	ctx := ContextPutHttpHeader(context.Background(), header)
+	ctx := resource.ContextPutHttpHeader(context.Background(), header)
 
 	// set up the content
 	suite.content = "this is a test"

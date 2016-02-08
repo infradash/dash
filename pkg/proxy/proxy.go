@@ -1,8 +1,8 @@
 package proxy
 
 import (
+	"github.com/conductant/gohm/pkg/resource"
 	"github.com/conductant/gohm/pkg/server"
-	"github.com/conductant/gohm/pkg/template"
 	"github.com/golang/glog"
 	. "github.com/infradash/dash/pkg/dash"
 	"golang.org/x/net/context"
@@ -48,22 +48,30 @@ func (this *Proxy) Run() error {
 		}
 	}
 
+	glog.Infoln("Starting proxy with config", this)
+
 	ctx := context.Background()
 
 	_, stopped := server.NewService().
 		WithAuth(this.getAuth(ctx)).ListenPort(this.Port).
 		Route(
-		server.ServiceMethod{
-			UrlRoute:   "/{host_port}/{url:.*}",
-			HttpMethod: server.GET,
-			AuthScope:  server.AuthScope(this.AuthScopeGET),
-		}).To(this.HandleGet).
-		Route(
-		server.ServiceMethod{
-			UrlRoute:   "/{host_port}/{url:.*}",
-			HttpMethod: server.POST,
-			AuthScope:  server.AuthScope(this.AuthScopePOST),
-		}).To(this.HandlePost).
+		server.Endpoint{
+			UrlRoute: "/{host_port}/{url:.*}",
+			HttpMethods: []server.HttpMethod{
+				server.GET,
+				server.POST,
+				server.PUT,
+				server.PATCH,
+				server.DELETE,
+			},
+			AuthScope: server.AuthScope(this.AuthScope),
+		}).To(
+		func(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
+			hostPort := server.GetUrlParameter(req, "host_port")
+			url := server.GetUrlParameter(req, "url")
+			glog.V(100).Infoln(req.Method, req.URL, "HostPort=", hostPort, "forward=", url)
+			server.NewReverseProxy().SetForwardHostPort(hostPort).Strip("/"+hostPort).ServeHTTP(resp, req)
+		}).
 		Start()
 
 	err = <-stopped
@@ -75,7 +83,7 @@ func (this *Proxy) getAuth(ctx context.Context) server.AuthManager {
 		glog.Infoln("Using public key for token auth:", this.PublicKeyUrl)
 		return server.Auth{
 			VerifyKeyFunc: func() []byte {
-				bytes, err := template.Source(ctx, this.PublicKeyUrl)
+				bytes, err := resource.Fetch(ctx, this.PublicKeyUrl)
 				mustNot(err)
 				return bytes
 			},
@@ -83,18 +91,4 @@ func (this *Proxy) getAuth(ctx context.Context) server.AuthManager {
 	}
 	glog.Infoln("Disabled token auth")
 	return server.DisableAuth()
-}
-
-func (this *Proxy) HandleGet(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
-	this.proxy(ctx, resp, req)
-}
-func (this *Proxy) HandlePost(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
-	this.proxy(ctx, resp, req)
-}
-
-func (this *Proxy) proxy(ctx context.Context, resp http.ResponseWriter, req *http.Request) {
-	hostPort := server.GetUrlParameter(req, "host_port")
-	url := server.GetUrlParameter(req, "url")
-	glog.V(100).Infoln(req.Method, req.URL, "HostPort=", hostPort, "forward=", url)
-	server.NewReverseProxy().SetForwardHostPort(hostPort).Strip("/"+hostPort).ServeHTTP(resp, req)
 }
