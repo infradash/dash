@@ -34,17 +34,19 @@ func (this *Proxy) Run() error {
 	this.Initializer.Context = EscapeVars(ConfigVariables...)
 	this.ProxyConfig = DefaultProxyConfig
 
-	loaded := false
-	var err error
-	for {
-		loaded, err = this.Initializer.Load(this, "", nil)
+	if this.Initializer.ConfigUrl != "" {
+		loaded := false
+		var err error
+		for {
+			loaded, err = this.Initializer.Load(this, "", nil)
 
-		if !loaded || err != nil {
-			glog.Infoln("Wait then retry:", err)
-			time.Sleep(2 * time.Second)
+			if !loaded || err != nil {
+				glog.Infoln("Wait then retry:", err)
+				time.Sleep(2 * time.Second)
 
-		} else {
-			break
+			} else {
+				break
+			}
 		}
 	}
 
@@ -74,8 +76,7 @@ func (this *Proxy) Run() error {
 		}).
 		Start()
 
-	err = <-stopped
-	return err
+	return <-stopped
 }
 
 func (this *Proxy) getAuth(ctx context.Context) server.AuthManager {
