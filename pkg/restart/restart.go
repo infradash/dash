@@ -140,7 +140,18 @@ func (this *Restart) Run() error {
 			<-incrementedWatch
 		}
 
-		time.Sleep(2 * this.RestartWaitDuration.Duration)
+		// here we poll until the count is restored
+		for {
+			c, err := reg.List(memberWatchPath)
+			if err != nil {
+				panic(err)
+			}
+			if len(c) == len(clients) {
+				break
+			}
+			glog.Infoln("Members count don't match original client count.  Waiting....")
+			time.Sleep(this.RestartWaitDuration.Duration)
+		}
 		restartComplete <- 0
 	}()
 

@@ -6,5 +6,5 @@
     "service": "blinker",
     "version": "integration",
     "image" : "blinker/blinker:integration-9532.2573",
-    "wait" : "8s"
+    "wait" : "5s"
 }
