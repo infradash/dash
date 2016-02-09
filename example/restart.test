@@ -1,0 +1,10 @@
+{
+    "proxy_url" :"http://localhost:8888",
+    "zk_hosts": "localhost:2181",
+    "domain": "integration.blinker.com",
+    "controller": "blinker-controller",
+    "service": "blinker",
+    "version": "integration",
+    "image" : "blinker/blinker:integration-9532.2573",
+    "wait" : "8s"
+}
