@@ -27,43 +27,43 @@
 		},
 		{
 			"ImportPath": "github.com/conductant/gohm/pkg/auth",
-			"Comment": "v0.0.1-32-g32e69da",
-			"Rev": "32e69da1f78f7458f0e86247a0126d5532381c40"
+			"Comment": "v0.0.1-33-gc8901e8",
+			"Rev": "c8901e8a2381608ab77fe08b83bb307a4752c40c"
 		},
 		{
 			"ImportPath": "github.com/conductant/gohm/pkg/encoding",
-			"Comment": "v0.0.1-32-g32e69da",
-			"Rev": "32e69da1f78f7458f0e86247a0126d5532381c40"
+			"Comment": "v0.0.1-33-gc8901e8",
+			"Rev": "c8901e8a2381608ab77fe08b83bb307a4752c40c"
 		},
 		{
 			"ImportPath": "github.com/conductant/gohm/pkg/registry",
-			"Comment": "v0.0.1-32-g32e69da",
-			"Rev": "32e69da1f78f7458f0e86247a0126d5532381c40"
+			"Comment": "v0.0.1-33-gc8901e8",
+			"Rev": "c8901e8a2381608ab77fe08b83bb307a4752c40c"
 		},
 		{
 			"ImportPath": "github.com/conductant/gohm/pkg/resource",
-			"Comment": "v0.0.1-32-g32e69da",
-			"Rev": "32e69da1f78f7458f0e86247a0126d5532381c40"
+			"Comment": "v0.0.1-33-gc8901e8",
+			"Rev": "c8901e8a2381608ab77fe08b83bb307a4752c40c"
 		},
 		{
 			"ImportPath": "github.com/conductant/gohm/pkg/server",
-			"Comment": "v0.0.1-32-g32e69da",
-			"Rev": "32e69da1f78f7458f0e86247a0126d5532381c40"
+			"Comment": "v0.0.1-33-gc8901e8",
+			"Rev": "c8901e8a2381608ab77fe08b83bb307a4752c40c"
 		},
 		{
 			"ImportPath": "github.com/conductant/gohm/pkg/store",
-			"Comment": "v0.0.1-32-g32e69da",
-			"Rev": "32e69da1f78f7458f0e86247a0126d5532381c40"
+			"Comment": "v0.0.1-33-gc8901e8",
+			"Rev": "c8901e8a2381608ab77fe08b83bb307a4752c40c"
 		},
 		{
 			"ImportPath": "github.com/conductant/gohm/pkg/template",
-			"Comment": "v0.0.1-32-g32e69da",
-			"Rev": "32e69da1f78f7458f0e86247a0126d5532381c40"
+			"Comment": "v0.0.1-33-gc8901e8",
+			"Rev": "c8901e8a2381608ab77fe08b83bb307a4752c40c"
 		},
 		{
 			"ImportPath": "github.com/conductant/gohm/pkg/zk",
-			"Comment": "v0.0.1-32-g32e69da",
-			"Rev": "32e69da1f78f7458f0e86247a0126d5532381c40"
+			"Comment": "v0.0.1-33-gc8901e8",
+			"Rev": "c8901e8a2381608ab77fe08b83bb307a4752c40c"
 		},
 		{
 			"ImportPath": "github.com/deckarep/golang-set",

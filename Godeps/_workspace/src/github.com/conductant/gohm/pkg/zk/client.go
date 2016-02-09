@@ -314,8 +314,12 @@ func (this *client) Watch(path string, f func(Event), errs ...chan<- error) (cha
 // A mutation on the value of a child will not trigger an event.  A creation or deletion of a child node will.
 func (this *client) WatchChildren(path string, f func(Event), errs ...chan<- error) (chan<- int, <-chan error, error) {
 	return this.watch(func() (<-chan zk.Event, error) {
-		_, _, ch, err := this.conn.ChildrenW(path)
-		return ch, err
+		if _, _, ch, err := this.conn.ChildrenW(path); err == ErrNotExist {
+			_, _, ch, err := this.conn.ExistsW(path)
+			return ch, err
+		} else {
+			return ch, err
+		}
 	}, path, f, errs...)
 }
 
@@ -394,16 +398,12 @@ func (this *client) watch(cf getChan, p string, f callBack, errs ...chan<- error
 					if success {
 						break
 					} else {
-						glog.Warningln("watch-retry: Error -", p, err)
 						for _, a := range errs {
 							select { // non blocking send
 							case a <- err:
 							default:
 							}
 						}
-						// Wait a little
-						time.Sleep(1 * time.Second)
-						glog.Infoln("watch-retry: Finished waiting. Try again to watch", p)
 						this.events <- Event{Event: zk.Event{Path: p}, Action: "watch-retry", Note: "retrying"}
 					}
 				}

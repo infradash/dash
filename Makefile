@@ -26,8 +26,8 @@ build: setup
 
 run-local-restart:
 	${GODEP} go run main/dash.go --logtostderr --v=500 \
-		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/restart.test" \
-	restart
+	restart file:///Users/david/go/src/github.com/infradash/dash/example/restart.test
+
 
 run-local-proxy:
 	${GODEP} go run main/dash.go --logtostderr --v=500 \

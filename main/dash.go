@@ -149,6 +149,10 @@ func main() {
 		restart.ZkSettings = *zkSettings
 		restart.Initializer = initializer
 
+		// Special argument after 'proxy' is interpreted as the config url
+		if len(flag.Args()) > 1 {
+			restart.Initializer.ConfigUrl = flag.Args()[1]
+		}
 		restart_done := make(chan error)
 		go func() {
 			glog.Infoln("Starting restart:", *restart)

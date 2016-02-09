@@ -104,13 +104,10 @@ func (this *Client) RemoteKill() error {
 	url := this.GetUrl("/v1/quitquitquit")
 	glog.Infoln("Calling", url)
 	c := new(http.Client)
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("POST", url, nil)
 	if err != nil {
 		return err
 	}
 	_, err = c.Do(req)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }

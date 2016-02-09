@@ -1,6 +1,7 @@
 package restart
 
 import (
+	"fmt"
 	"github.com/conductant/gohm/pkg/registry"
 	"github.com/conductant/gohm/pkg/template"
 	"github.com/conductant/gohm/pkg/zk"
@@ -60,8 +61,10 @@ func (this *Restart) Run() error {
 		this.Controller = this.Service + "-controller"
 	}
 
-	glog.Infoln("ContainerPath=", this.GetContainerPath())
+	glog.Infoln("ControllerPath=", this.GetControllerPath())
+	glog.Infoln("MemberWatchPath=", this.GetMemberWatchPath())
 	glog.Infoln("ProxyWatchPath=", this.GetProxyWatchPath())
+	glog.Infoln("RestartWaitDuration=", this.RestartConfig.RestartWaitDuration.Duration)
 
 	// Load the list of controllers
 	url := "zk://" + this.Hosts
@@ -71,8 +74,25 @@ func (this *Restart) Run() error {
 	mustNot(err)
 	defer reg.Close()
 
-	controllerPaths, err := reg.List(this.GetContainerPath())
+	controllerPath := this.GetControllerPath()
+	controllerPaths, err := reg.List(controllerPath)
 	mustNot(err)
+
+	rollingCount := len(controllerPaths)
+	glog.Infoln("Checking on containers at", controllerPath, "count=", rollingCount)
+
+	memberWatchPath := this.GetMemberWatchPath()
+
+	// get a count too
+	memberPaths, err := reg.List(memberWatchPath)
+	memberCount := len(memberPaths)
+
+	glog.Infoln("Watching members in", memberWatchPath, "count=", memberCount)
+
+	if rollingCount != memberCount {
+		// It's possibly a misconfiguration.  We expect the member count to be 1:1 with controller count
+		panic(fmt.Errorf("Count mismatch: controllers=", rollingCount, "containers=", memberCount))
+	}
 
 	clients := []*executor.Client{}
 	for _, controllerPath := range controllerPaths {
@@ -89,17 +109,103 @@ func (this *Restart) Run() error {
 	if len(clients) != len(controllerPaths) {
 		panic("Cannot access all controllers")
 	}
-	glog.Infoln("Clients", clients)
-	for _, c := range clients {
-		c.SetProxyUrl(this.ProxyUrl)
-		info, err := c.GetInfo()
-		glog.Infoln("Info=", info, "err=", err)
+
+	// Get the current value of the watch
+	proxyWatchPath := this.GetProxyWatchPath()
+	watchValueString, watchValueVersion, err := reg.Get(proxyWatchPath)
+	if err != nil {
+		panic(fmt.Errorf("Cannot get live watch value:%v", err))
 	}
+	watchValue, err := strconv.Atoi(string(watchValueString))
+	if err != nil {
+		panic(fmt.Errorf("Cannot get integer value for watch: %s, err=%v", proxyWatchPath, err))
+	}
+
+	beginRollingRestart := make(chan int)
+	incrementedWatch := make(chan int)
+	restartComplete := make(chan int)
+	processComplete := make(chan int)
+	go func() {
+		<-beginRollingRestart
+		glog.Infoln("Received signal -- begin rolling restart....")
+		for _, c := range clients {
+			c.SetProxyUrl(this.ProxyUrl)
+			info, err := c.GetInfo()
+			glog.Infoln("Info=", info, "err=", err)
+
+			// Send a kill
+			err = c.RemoteKill()
+			glog.Infoln("Kill=", err)
+
+			<-incrementedWatch
+		}
+
+		time.Sleep(2 * this.RestartWaitDuration.Duration)
+		restartComplete <- 0
+	}()
+
+	// Now we set up the watch
+	memberChanges, memberWatchStop, err := reg.Trigger(registry.Members{Path: memberWatchPath})
+	mustNot(err)
+	go func() {
+
+		version := watchValueVersion
+
+		for itr := 1; ; itr++ {
+
+			select {
+			case <-memberChanges:
+				glog.Infoln("Received membership change. Incrementing proxy watch:", proxyWatchPath)
+
+				var err error
+
+				newVal := []byte(fmt.Sprintf("%d", watchValue+itr))
+				version, err = reg.PutVersion(proxyWatchPath, newVal, version)
+				if err != nil {
+					panic(fmt.Errorf("Failed to update watch: %s, err=%v", proxyWatchPath, err))
+				}
+
+				glog.Infoln("Wait", this.RestartWaitDuration.Duration, "before shutting down next node.")
+				time.Sleep(this.RestartWaitDuration.Duration)
+				incrementedWatch <- itr
+
+			case <-restartComplete:
+
+				time.Sleep(this.RestartWaitDuration.Duration)
+
+				// Send one more...
+				glog.Infoln("Received restartComplete. Incrementing proxy watch:", proxyWatchPath)
+
+				newVal := []byte(fmt.Sprintf("%d", watchValue+itr))
+				version, err = reg.PutVersion(proxyWatchPath, newVal, version)
+				if err != nil {
+					panic(fmt.Errorf("Failed to update watch: %s, err=%v", proxyWatchPath, err))
+				}
+
+				glog.Infoln("Restart process completed.")
+				processComplete <- 0
+				return
+			}
+		}
+	}()
+
+	glog.Infoln("Begin rolling restart.")
+	beginRollingRestart <- 0
+
+	<-processComplete
+	memberWatchStop <- 0
+
 	return nil
 }
 
-func (this *Restart) GetContainerPath() registry.Path {
-	applied, err := template.Apply([]byte(this.ContainerPathFormat), this)
+func (this *Restart) GetControllerPath() registry.Path {
+	applied, err := template.Apply([]byte(this.ControllerPathFormat), this)
+	mustNot(err)
+	return registry.NewPath(string(applied))
+}
+
+func (this *Restart) GetMemberWatchPath() registry.Path {
+	applied, err := template.Apply([]byte(this.MemberWatchPathFormat), this)
 	mustNot(err)
 	return registry.NewPath(string(applied))
 }
