@@ -9,7 +9,9 @@ import (
 	. "github.com/infradash/dash/pkg/dash"
 	"github.com/infradash/dash/pkg/executor"
 	"golang.org/x/net/context"
+	"path"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -18,8 +20,10 @@ type Restart struct {
 	ZkSettings
 	RestartConfig
 
-	Controller  string        `json:"controller,omitempty"`
 	Initializer *ConfigLoader `json:"-"`
+
+	ExecuteForReal bool
+	reg            registry.Registry
 }
 
 func mustNot(err error) {
@@ -34,22 +38,31 @@ func (this *Restart) Run() error {
 		return ErrNoConfig
 	}
 
+	url := "zk://" + this.Hosts
+	ctx := zk.ContextPutTimeout(context.Background(), this.Timeout)
+	reg, err := registry.Dial(ctx, url)
+	mustNot(err)
+	defer reg.Close()
+
+	this.reg = reg
+
 	// We don't want the application of template to wipe out Domain, Service, etc. variables
 	// So escape them.
 	this.Initializer.Context = EscapeVars(ConfigVariables...)
-	this.RestartConfig = DefaultRestartConfig
 
-	loaded := false
-	var err error
-	for {
-		loaded, err = this.Initializer.Load(this, "", nil)
+	if this.Initializer.ConfigUrl != "" {
+		loaded := false
+		var err error
+		for {
+			loaded, err = this.Initializer.Load(this, "", nil)
 
-		if !loaded || err != nil {
-			glog.Infoln("Wait then retry:", err)
-			time.Sleep(2 * time.Second)
+			if !loaded || err != nil {
+				glog.Infoln("Wait then retry:", err)
+				time.Sleep(2 * time.Second)
 
-		} else {
-			break
+			} else {
+				break
+			}
 		}
 	}
 
@@ -61,19 +74,13 @@ func (this *Restart) Run() error {
 		this.Controller = this.Service + "-controller"
 	}
 
+	glog.Infoln("ProxyUrl=", this.ProxyUrl)
 	glog.Infoln("ControllerPath=", this.GetControllerPath())
 	glog.Infoln("MemberWatchPath=", this.GetMemberWatchPath())
 	glog.Infoln("ProxyWatchPath=", this.GetProxyWatchPath())
 	glog.Infoln("RestartWaitDuration=", this.RestartConfig.RestartWaitDuration.Duration)
 
 	// Load the list of controllers
-	url := "zk://" + this.Hosts
-	ctx := zk.ContextPutTimeout(context.Background(), this.Timeout)
-
-	reg, err := registry.Dial(ctx, url)
-	mustNot(err)
-	defer reg.Close()
-
 	controllerPath := this.GetControllerPath()
 	controllerPaths, err := reg.List(controllerPath)
 	mustNot(err)
@@ -129,7 +136,9 @@ func (this *Restart) Run() error {
 		<-beginRollingRestart
 		glog.Infoln("Received signal -- begin rolling restart....")
 		for _, c := range clients {
-			c.SetProxyUrl(this.ProxyUrl)
+			if this.ProxyUrl != "" {
+				c.SetProxyUrl(this.ProxyUrl)
+			}
 			info, err := c.GetInfo()
 			glog.Infoln("Info=", info, "err=", err)
 
@@ -200,8 +209,13 @@ func (this *Restart) Run() error {
 		}
 	}()
 
-	glog.Infoln("Begin rolling restart.")
-	beginRollingRestart <- 0
+	if this.ExecuteForReal {
+		glog.Infoln("Begin rolling restart.")
+		beginRollingRestart <- 0
+	} else {
+		glog.Infoln("Not going to commit.  Use --restart.commit flag to actually begin.")
+		return nil
+	}
 
 	<-processComplete
 	memberWatchStop <- 0
@@ -225,4 +239,21 @@ func (this *Restart) GetProxyWatchPath() registry.Path {
 	applied, err := template.Apply([]byte(this.ProxyWatchPathFormat), this)
 	mustNot(err)
 	return registry.NewPath(string(applied))
+}
+
+func (this *Restart) RunningImage() string {
+	if this.Image == "" {
+		// Determine the current image based on zk values
+		applied, err := template.Apply([]byte(this.CurrentImagePathFormat), this)
+		mustNot(err)
+		p := registry.NewPath(string(applied))
+		buff, _, err := this.reg.Get(p)
+		mustNot(err)
+		fullPath := strings.Split(string(buff), ",")[0]
+		d, f := path.Split(fullPath)
+		this.Image = path.Join(path.Base(d), f)
+		glog.Infoln("Getting current image from", p, "value=", this.Image)
+
+	}
+	return this.Image
 }

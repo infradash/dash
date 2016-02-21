@@ -106,7 +106,7 @@ func main() {
 	verb := flag.Args()[0]
 
 	regContainerEntry.Identity = *identity
-
+	regReleaseEntry.RegistryEntryBase = *regEntryBase
 	executor.Identity = *identity
 	executor.QualifyByTags.Tags = tags
 	executor.ZkSettings = *zkSettings

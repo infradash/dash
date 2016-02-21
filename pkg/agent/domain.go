@@ -308,18 +308,27 @@ func (this *Domain) WatchContainer(service ServiceKey, spec *MatchContainerRule)
 
 						err = entry.Remove(this.zk) // blocks
 						if err != nil {
-							glog.Warningln("Error trying to remove zk entry. Cannot sync state")
+							glog.Warningln("Error trying to remove zk entry. Cannot sync state. Entry=", entry)
+							// Go into retry...
+							for {
+								glog.Infoln("Trying to remove entry=", entry)
+								err = entry.Remove(this.zk) // blocks
+								if err != nil {
+									glog.Warningln("Error trying to remove zk entry=", entry)
+								} else {
+									// Update the tracker
+									switch action {
+									case docker.Die:
+										this.tracker.Died(service, container)
+									case docker.Stop:
+										this.tracker.Stopped(service, container)
+									case docker.Remove:
+										this.tracker.Removed(service, container)
+									}
+									break
+								}
+							}
 						}
-					}
-
-					// Update the tracker
-					switch action {
-					case docker.Die:
-						this.tracker.Died(service, container)
-					case docker.Stop:
-						this.tracker.Stopped(service, container)
-					case docker.Remove:
-						this.tracker.Removed(service, container)
 					}
 				}
 			})

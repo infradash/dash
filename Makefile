@@ -26,6 +26,13 @@ build: setup
 
 run-local-restart:
 	${GODEP} go run main/dash.go --logtostderr --v=500 \
+	-domain=sandbox.blinker.com -service=blinker -version=master \
+	-restart.proxy=http://localhost:8888 \
+	-restart.commit \
+	restart
+
+run-local-restart-config:
+	${GODEP} go run main/dash.go --logtostderr --v=500 \
 	restart file:///Users/david/go/src/github.com/infradash/dash/example/restart.test
 
 
