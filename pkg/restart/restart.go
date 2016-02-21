@@ -155,7 +155,8 @@ func (this *Restart) Run() error {
 			if err != nil {
 				panic(err)
 			}
-			if len(c) == len(clients) {
+			// In some cases the node member doesn't get deleted soon enough...
+			if len(c) >= len(clients) {
 				break
 			}
 			glog.Infoln("Members count don't match original client count.  Waiting....")
