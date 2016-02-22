@@ -50,8 +50,6 @@ deployment:
      commands:
        - source ./hack/env.sh && make GODEP=godep build
        - cp $BUILD_DIR/dash $CIRCLE_ARTIFACTS
-       - source ./hack/env.sh && make deploy-git
-       - source ./hack/env.sh && rm -rf build/deploy
-       - source ./hack/env.sh && make deploy-git-docker-image-version
        - cp $BUILD_DIR/dash docker/dash
        - cd docker/dash && make push && cd ..
+       - source ./hack/env.sh && make deploy-git-docker-image-version
