@@ -10,42 +10,7 @@ import (
 
 type VersionComparator func(imageA, imageB string) bool
 
-var IsVersionOlderByBuild = func(imageA, imageB string) bool {
-	if repoA, _, buildA, err := dash.ParseVersion(imageA); err == nil {
-		if repoB, _, buildB, err := dash.ParseVersion(imageB); err == nil {
-			if repoA != repoB {
-				return false
-			}
-
-			p1 := strings.Split(buildA, ".")
-			p2 := strings.Split(buildB, ".")
-
-			if a, err := strconv.Atoi(p1[0]); err == nil {
-				if b, err := strconv.Atoi(p2[0]); err == nil {
-					switch {
-					case a < b:
-						return true
-					case a > b:
-						return false
-					case a == b:
-						if len(p1) != len(p2) {
-							return len(p1) < len(p2)
-						} else if len(p1) > 1 {
-							if a, err := strconv.Atoi(p1[1]); err == nil {
-								if b, err := strconv.Atoi(p2[1]); err == nil {
-									return a < b
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	return false
-}
-
-var IsVersionOlderByDockerRepoTags = func(imageA, imageB string) bool {
+func CompareImages(imageA, imageB string) bool {
 	repoA, tagA, err := dash.ParseDockerImage(imageA)
 	if err != nil {
 		return false
@@ -55,20 +20,51 @@ var IsVersionOlderByDockerRepoTags = func(imageA, imageB string) bool {
 		return false
 	}
 
-	if repoA == repoB {
-		return tagA <= tagB
-	} else {
-		return repoA <= repoB
+	if repoA != repoB {
+		return false
 	}
+
+	sep := func(c rune) bool { return c == '.' || c == ',' || c == '-' }
+	min := func(a, b int) int {
+		if a < b {
+			return a
+		} else {
+			return b
+		}
+	}
+
+	// compare the tags... we tokenize the tags by delimiters such as . and -
+	fieldsA := strings.FieldsFunc(tagA, sep)
+	fieldsB := strings.FieldsFunc(tagB, sep)
+	for i := 0; i < min(len(fieldsA), len(fieldsB)); i++ {
+		a, erra := strconv.Atoi(fieldsA[i])
+		b, errb := strconv.Atoi(fieldsB[i])
+		switch {
+		case erra != nil && errb != nil:
+			if fieldsA[i] == fieldsB[i] {
+				continue
+			} else {
+				return fieldsA[i] < fieldsB[i]
+			}
+		case erra == nil && errb == nil:
+			if a == b {
+				continue
+			} else {
+				return a < b
+			}
+		case erra != nil || errb != nil:
+			return false
+		}
+	}
+	return false
 }
 
 // Min-heap of container groups prioritized by the version
 type MinVersionHeap []*ContainerGroup
 
-func (h MinVersionHeap) Len() int            { return len(h) }
-func (h MinVersionHeap) Less0(i, j int) bool { return IsVersionOlderByBuild(h[i].Image, h[j].Image) }
+func (h MinVersionHeap) Len() int { return len(h) }
 func (h MinVersionHeap) Less(i, j int) bool {
-	return IsVersionOlderByDockerRepoTags(h[i].Image, h[j].Image)
+	return CompareImages(h[i].Image, h[j].Image)
 }
 func (h MinVersionHeap) Swap(i, j int) { h[i], h[j] = h[j], h[i] }
 func (h *MinVersionHeap) Push(x interface{}) {
