@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/golang/glog"
 	"github.com/qorio/omni/rest"
-	"github.com/qorio/omni/version"
 	"net/http"
 	"os"
 	"sync"
@@ -42,11 +41,9 @@ func (this *EndPoint) ServeHTTP(resp http.ResponseWriter, request *http.Request)
 }
 
 func (this *EndPoint) GetInfo(resp http.ResponseWriter, req *http.Request) {
-	info := &Info{
-		Version:  *version.BuildInfo(),
-		Now:      time.Now(),
-		Executor: this.executor,
-	}
+	info := this.executor.GetInfo()
+	info.NowUnix = time.Now().Unix()
+	info.UptimeSeconds = time.Unix(info.NowUnix, 0).Sub(time.Unix(this.executor.StartTimeUnix, 0)).Seconds()
 
 	err := this.engine.MarshalJSON(req, info, resp)
 	if err != nil {

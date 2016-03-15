@@ -10,7 +10,9 @@ import (
 	. "github.com/infradash/dash/pkg/dash"
 	"github.com/infradash/dash/pkg/env"
 	"github.com/infradash/dash/pkg/executor"
+	"github.com/infradash/dash/pkg/proxy"
 	"github.com/infradash/dash/pkg/registry"
+	"github.com/infradash/dash/pkg/restart"
 	"github.com/infradash/dash/pkg/terraform"
 	"github.com/qorio/omni/version"
 	"os"
@@ -82,6 +84,12 @@ func main() {
 	terraform := &terraform.Terraform{Initializer: initializer}
 	terraform.BindFlags()
 
+	restart := &restart.Restart{}
+	restart.BindFlags()
+
+	proxy := &proxy.Proxy{}
+	proxy.BindFlags()
+
 	flag.Parse()
 
 	tags := strings.Split(*TagsList, ",")
@@ -98,23 +106,66 @@ func main() {
 	verb := flag.Args()[0]
 
 	regContainerEntry.Identity = *identity
-
+	regReleaseEntry.RegistryEntryBase = *regEntryBase
 	executor.Identity = *identity
 	executor.QualifyByTags.Tags = tags
 	executor.ZkSettings = *zkSettings
 	envSource.RegistryEntryBase = *regEntryBase
 	executor.EnvSource = *envSource
 	if len(flag.Args()) > 1 {
-		executor.Cmd = flag.Args()[1]
+		executor.Cmd.Path = flag.Args()[1]
 	}
 	if len(flag.Args()) > 2 {
-		executor.Args = flag.Args()[2:]
+		executor.Cmd.Args = flag.Args()[2:]
 	}
 
 	switch verb {
 
-	case "terraform":
+	case "proxy":
+		glog.Infoln(buildInfo.Notice())
 
+		proxy.Initializer = initializer
+
+		// Special argument after 'proxy' is interpreted as the config url
+		if len(flag.Args()) > 1 {
+			proxy.Initializer.ConfigUrl = flag.Args()[1]
+		}
+		proxy_done := make(chan error)
+		go func() {
+			glog.Infoln("Starting proxy:", *proxy)
+			proxy_done <- proxy.Run()
+		}()
+
+		// Make sure proxy finishes
+		err := <-proxy_done
+		if err != nil {
+			panic(err)
+		}
+
+	case "restart":
+		glog.Infoln(buildInfo.Notice())
+
+		restart.RegistryReleaseEntry = *regReleaseEntry
+		restart.ZkSettings = *zkSettings
+		restart.Initializer = initializer
+
+		// Special argument after 'proxy' is interpreted as the config url
+		if len(flag.Args()) > 1 {
+			restart.Initializer.ConfigUrl = flag.Args()[1]
+		}
+		restart_done := make(chan error)
+		go func() {
+			glog.Infoln("Starting restart:", *restart)
+			restart_done <- restart.Run()
+		}()
+
+		// Make sure restart finishes
+		err := <-restart_done
+		if err != nil {
+			panic(err)
+		}
+
+	case "terraform":
 		glog.Infoln(buildInfo.Notice())
 
 		// disable the initializer so that it's loaded by terraform instead
@@ -145,8 +196,8 @@ func main() {
 		}
 
 	case "exec":
-
 		glog.Infoln(buildInfo.Notice())
+
 		glog.Infoln("Exec:", executor, executor.Identity.String(), executor.Initializer.Context)
 		executor.Exec()
 		err := executor.Wait()
@@ -155,6 +206,7 @@ func main() {
 		}
 
 	case "agent":
+		glog.Infoln(buildInfo.Notice())
 
 		agent.RegistryContainerEntry = *regContainerEntry
 		agent.QualifyByTags.Tags = tags

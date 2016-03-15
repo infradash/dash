@@ -37,7 +37,7 @@ type ZkSettings struct {
 type EnvSource struct {
 	RegistryEntryBase
 
-	Url string `json:"url"`
+	Url string `json:"env_url,omitempty"`
 }
 
 type DockerSettings struct {

@@ -22,8 +22,10 @@ func (this *EnvSource) IsZero() bool {
 
 func (this *EnvSource) Source(authToken string, zc zk.ZK) func() ([]string, map[string]interface{}) {
 	switch {
-	case this.Url != "":
+	case strings.Index(this.Url, "http") == 0:
 		return this.EnvFromUrl(this.Url, authToken, zc)
+	case strings.Index(this.Url, "zk://") == 0:
+		return this.EnvFromZkPath(this.Url[len("zk://"):], zc)
 	default:
 		return this.EnvFromZk(zc)
 	}
@@ -46,23 +48,22 @@ func (this *EnvSource) EnvFromReader(reader io.Reader) func() ([]string, map[str
 }
 
 func (this *EnvSource) EnvFromZk(zc zk.ZK) func() ([]string, map[string]interface{}) {
+	// Path takes precedence over derived path based on domain, service, version, etc.
+	var env_path string
+	if this.Path != "" {
+		env_path = this.Path
+	} else {
+		key, _, err := RegistryKeyValue(KEnvRoot, this)
+		if err != nil {
+			panic(err)
+		}
+		env_path = key
+	}
+	return this.EnvFromZkPath(env_path, zc)
+}
+
+func (this *EnvSource) EnvFromZkPath(env_path string, zc zk.ZK) func() ([]string, map[string]interface{}) {
 	return func() ([]string, map[string]interface{}) {
-
-		if !this.CheckRequires() {
-			panic(ErrNoPath)
-		}
-
-		// Path takes precedence over derived path based on domain, service, version, etc.
-		var env_path string
-		if this.Path != "" {
-			env_path = this.Path
-		} else {
-			key, _, err := RegistryKeyValue(KEnvRoot, this)
-			if err != nil {
-				panic(err)
-			}
-			env_path = key
-		}
 
 		glog.Infoln("Loading env from", env_path)
 		root_node, err := zk.Follow(zc, registry.Path(env_path))

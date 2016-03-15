@@ -1,10 +1,15 @@
 {
 	"ImportPath": "github.com/infradash/dash",
-	"GoVersion": "go1.4.2",
+	"GoVersion": "go1.5.2",
 	"Packages": [
+		"./main/...",
 		"./pkg/..."
 	],
 	"Deps": [
+		{
+			"ImportPath": "bazil.org/fuse",
+			"Rev": "a8bc3b86317dc95ed28fdefcebc1dbce8baa88e9"
+		},
 		{
 			"ImportPath": "code.google.com/p/go-uuid/uuid",
 			"Comment": "null-15",
@@ -21,43 +26,83 @@
 			"Rev": "1d6536402dac4b2528bc23f08ecc318c295c320a"
 		},
 		{
+			"ImportPath": "github.com/conductant/gohm/pkg/auth",
+			"Comment": "v0.0.1-33-gc8901e8",
+			"Rev": "c8901e8a2381608ab77fe08b83bb307a4752c40c"
+		},
+		{
+			"ImportPath": "github.com/conductant/gohm/pkg/encoding",
+			"Comment": "v0.0.1-33-gc8901e8",
+			"Rev": "c8901e8a2381608ab77fe08b83bb307a4752c40c"
+		},
+		{
+			"ImportPath": "github.com/conductant/gohm/pkg/registry",
+			"Comment": "v0.0.1-33-gc8901e8",
+			"Rev": "c8901e8a2381608ab77fe08b83bb307a4752c40c"
+		},
+		{
+			"ImportPath": "github.com/conductant/gohm/pkg/resource",
+			"Comment": "v0.0.1-33-gc8901e8",
+			"Rev": "c8901e8a2381608ab77fe08b83bb307a4752c40c"
+		},
+		{
+			"ImportPath": "github.com/conductant/gohm/pkg/server",
+			"Comment": "v0.0.1-33-gc8901e8",
+			"Rev": "c8901e8a2381608ab77fe08b83bb307a4752c40c"
+		},
+		{
+			"ImportPath": "github.com/conductant/gohm/pkg/store",
+			"Comment": "v0.0.1-33-gc8901e8",
+			"Rev": "c8901e8a2381608ab77fe08b83bb307a4752c40c"
+		},
+		{
+			"ImportPath": "github.com/conductant/gohm/pkg/template",
+			"Comment": "v0.0.1-33-gc8901e8",
+			"Rev": "c8901e8a2381608ab77fe08b83bb307a4752c40c"
+		},
+		{
+			"ImportPath": "github.com/conductant/gohm/pkg/zk",
+			"Comment": "v0.0.1-33-gc8901e8",
+			"Rev": "c8901e8a2381608ab77fe08b83bb307a4752c40c"
+		},
+		{
 			"ImportPath": "github.com/deckarep/golang-set",
-			"Comment": "v1-26-gef32fa3",
-			"Rev": "ef32fa3046d9f249d399f98ebaf9be944430fd1d"
+			"Comment": "v1.5",
+			"Rev": "52ba7f28f319e9d560acbf47c7fcf9b9ee7aa7d3"
 		},
 		{
 			"ImportPath": "github.com/dgrijalva/jwt-go",
-			"Comment": "v2.2.0-23-g5ca8014",
-			"Rev": "5ca80149b9d3f8b863af0e2bb6742e608603bd99"
+			"Comment": "v2.4.0-4-gafef698",
+			"Rev": "afef698c326bfd906b11659432544e5aae441d44"
 		},
 		{
 			"ImportPath": "github.com/fsouza/go-dockerclient",
-			"Rev": "b0f4fa94c14794e30cf3b9176e5dc4725d9552ed"
+			"Rev": "e0d22d30691bcc996eca51f729a4777b8c7dc2a8"
 		},
 		{
 			"ImportPath": "github.com/golang/glog",
-			"Rev": "44145f04b68cf362d9c4df2182967c2275eaefed"
+			"Rev": "fca8c8854093a154ff1eb580aae10276ad6b1b5f"
 		},
 		{
 			"ImportPath": "github.com/golang/protobuf/proto",
-			"Rev": "655cdfa588ea190e901bc5590e65d5621688847c"
+			"Rev": "68415e7123da32b07eab49c96d2c4d6158360e9b"
 		},
 		{
 			"ImportPath": "github.com/gorilla/context",
-			"Rev": "215affda49addc4c8ef7e2534915df2c8c35c6cd"
+			"Rev": "1c83b3eabd45b6d76072b66b746c20815fb2872d"
 		},
 		{
 			"ImportPath": "github.com/gorilla/mux",
-			"Rev": "660d31f8602b95058fed6833debf113e85350868"
+			"Rev": "9c068cf16d982f8bd444b8c352acbeec34c4fe5b"
 		},
 		{
 			"ImportPath": "github.com/gorilla/securecookie",
-			"Rev": "8e98dd730fc43f1383f19615db6f2e702c9738e8"
+			"Rev": "e95799a481bbcc3d01c2ad5178524cb8bec9f370"
 		},
 		{
 			"ImportPath": "github.com/howeyc/fsnotify",
-			"Comment": "v0.9.0-14-g4894fe7",
-			"Rev": "4894fe7efedeeef21891033e1cce3b23b9af7ad2"
+			"Comment": "v0.9.0-16-gf0c08ee",
+			"Rev": "f0c08ee9c60704c1879025f2ae0ff3e000082c13"
 		},
 		{
 			"ImportPath": "github.com/inconshreveable/go-update",
@@ -86,79 +131,83 @@
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/circleci",
-			"Comment": "v1.0.1-1-gb1d5926",
-			"Rev": "b1d59261ca7a591d3cb2143fe279f943a751a41b"
+			"Comment": "v1.0.2-8-gb359498",
+			"Rev": "b3594982be16e2aeff0215d8d4a4d03fd563bdfb"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/docker",
-			"Comment": "v1.0.1-1-gb1d5926",
-			"Rev": "b1d59261ca7a591d3cb2143fe279f943a751a41b"
+			"Comment": "v1.0.2-8-gb359498",
+			"Rev": "b3594982be16e2aeff0215d8d4a4d03fd563bdfb"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/mqtt",
-			"Comment": "v1.0.1-1-gb1d5926",
-			"Rev": "b1d59261ca7a591d3cb2143fe279f943a751a41b"
+			"Comment": "v1.0.2-8-gb359498",
+			"Rev": "b3594982be16e2aeff0215d8d4a4d03fd563bdfb"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/pubsub",
-			"Comment": "v1.0.1-1-gb1d5926",
-			"Rev": "b1d59261ca7a591d3cb2143fe279f943a751a41b"
+			"Comment": "v1.0.2-8-gb359498",
+			"Rev": "b3594982be16e2aeff0215d8d4a4d03fd563bdfb"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/registry",
-			"Comment": "v1.0.1-1-gb1d5926",
-			"Rev": "b1d59261ca7a591d3cb2143fe279f943a751a41b"
+			"Comment": "v1.0.2-8-gb359498",
+			"Rev": "b3594982be16e2aeff0215d8d4a4d03fd563bdfb"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/task",
-			"Comment": "v1.0.1-1-gb1d5926",
-			"Rev": "b1d59261ca7a591d3cb2143fe279f943a751a41b"
+			"Comment": "v1.0.2-8-gb359498",
+			"Rev": "b3594982be16e2aeff0215d8d4a4d03fd563bdfb"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/template",
-			"Comment": "v1.0.1-1-gb1d5926",
-			"Rev": "b1d59261ca7a591d3cb2143fe279f943a751a41b"
+			"Comment": "v1.0.2-8-gb359498",
+			"Rev": "b3594982be16e2aeff0215d8d4a4d03fd563bdfb"
 		},
 		{
 			"ImportPath": "github.com/qorio/maestro/pkg/zk",
-			"Comment": "v1.0.1-1-gb1d5926",
-			"Rev": "b1d59261ca7a591d3cb2143fe279f943a751a41b"
+			"Comment": "v1.0.2-8-gb359498",
+			"Rev": "b3594982be16e2aeff0215d8d4a4d03fd563bdfb"
 		},
 		{
 			"ImportPath": "github.com/qorio/omni/api",
-			"Rev": "78e34c9a6308e4f0ad9847123516bbedcf0ef1c7"
+			"Rev": "7412f865a26f66bc88b3b8ccc05ddf63cdc540d5"
 		},
 		{
 			"ImportPath": "github.com/qorio/omni/auth",
-			"Rev": "78e34c9a6308e4f0ad9847123516bbedcf0ef1c7"
+			"Rev": "7412f865a26f66bc88b3b8ccc05ddf63cdc540d5"
 		},
 		{
 			"ImportPath": "github.com/qorio/omni/common",
-			"Rev": "78e34c9a6308e4f0ad9847123516bbedcf0ef1c7"
+			"Rev": "7412f865a26f66bc88b3b8ccc05ddf63cdc540d5"
 		},
 		{
 			"ImportPath": "github.com/qorio/omni/http",
-			"Rev": "78e34c9a6308e4f0ad9847123516bbedcf0ef1c7"
+			"Rev": "7412f865a26f66bc88b3b8ccc05ddf63cdc540d5"
 		},
 		{
 			"ImportPath": "github.com/qorio/omni/rest",
-			"Rev": "78e34c9a6308e4f0ad9847123516bbedcf0ef1c7"
+			"Rev": "7412f865a26f66bc88b3b8ccc05ddf63cdc540d5"
 		},
 		{
 			"ImportPath": "github.com/qorio/omni/runtime",
-			"Rev": "78e34c9a6308e4f0ad9847123516bbedcf0ef1c7"
+			"Rev": "7412f865a26f66bc88b3b8ccc05ddf63cdc540d5"
 		},
 		{
 			"ImportPath": "github.com/qorio/omni/version",
-			"Rev": "78e34c9a6308e4f0ad9847123516bbedcf0ef1c7"
+			"Rev": "7412f865a26f66bc88b3b8ccc05ddf63cdc540d5"
 		},
 		{
 			"ImportPath": "github.com/samuel/go-zookeeper/zk",
-			"Rev": "177002e16a0061912f02377e2dd8951a8b3551bc"
+			"Rev": "218e9c81c0dd8b3b18172b2bbfad92cc7d6db55f"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "6c89489cafabcbc76df9dbf84ebf07204673fecf"
 		},
 		{
 			"ImportPath": "gopkg.in/check.v1",
-			"Rev": "64131543e7896d5bcc6bd5a76287eb75ea96c673"
+			"Rev": "11d3bc7aa68e238947792f30573146a3231fc0f1"
 		},
 		{
 			"ImportPath": "gopkg.in/yaml.v1",

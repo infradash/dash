@@ -2,16 +2,15 @@ package executor
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"github.com/golang/glog"
 	. "github.com/infradash/dash/pkg/dash"
 	"github.com/qorio/maestro/pkg/registry"
 	"github.com/qorio/maestro/pkg/task"
-	mtemplate "github.com/qorio/maestro/pkg/template"
 	"github.com/qorio/maestro/pkg/zk"
 	"github.com/qorio/omni/common"
 	"github.com/qorio/omni/runtime"
+	"github.com/qorio/omni/version"
 	"io"
 	"net/http"
 	"os"
@@ -28,20 +27,23 @@ type Executor struct {
 	ZkSettings
 	EnvSource
 
-	Context string `json:"context,omitempty"`
+	task.Cmd
 
-	StartTimeUnix int64
+	Config *ExecutorConfig `json:"config,omitempty"`
 
-	NoSourceEnv bool
+	StartTimeUnix int64 `json:"start_time_unix"`
+
+	NoSourceEnv bool `json:"no_source_env"`
 
 	// e.g. [ 'BOOT_TIME', '{{.StartTimestamp}}']
 	// where the value is a template to apply to the state of the Exector object.
 	customVars map[string]*template.Template
 
-	Host string   `json:"host"`
-	Dir  string   `json:"dir"`
-	Cmd  string   `json:"cmd"`
-	Args []string `json:"args"`
+	Host string `json:"host"`
+
+	// Dir  string   `json:"dir"`
+	// Cmd  string   `json:"cmd"`
+	// Args []string `json:"args"`
 
 	Initializer *ConfigLoader `json:"config_loader"`
 
@@ -69,6 +71,14 @@ type Executor struct {
 	TailFileRetryWaitTime       time.Duration `json:"tail_file_retry_wait_time"`
 }
 
+func (this *Executor) GetInfo() *Info {
+	return &Info{
+		Executor: this,
+		Version:  *version.BuildInfo(),
+		Environ:  os.Environ(),
+	}
+}
+
 func must(err error) {
 	if err != nil {
 		panic(err)
@@ -92,29 +102,24 @@ func (this *Executor) Stdin() io.Reader {
 	return os.Stdin
 }
 
-func (this *Executor) load_context() (map[string]interface{}, error) {
-	if this.Context == "" {
-		return nil, nil
+// For sourcing additional environments specified in the config -- TODO - clean up this code
+func (this *Executor) source_envs(envlist []string, env map[string]interface{}) []string {
+	if this.Config == nil {
+		return envlist
 	}
-
-	if strings.Index(this.Context, "env://") == 0 {
-		err := this.connect_zk()
-		if err != nil {
-			return nil, err
+	for _, s := range this.Config.Envs {
+		es := &EnvSource{
+			Url: s,
+		}
+		vars, kv := es.Source(this.AuthToken, this.zk)()
+		for _, k := range vars {
+			value := kv[k]
+			os.Setenv(k, fmt.Sprintf("%s", value))
+			envlist = append(envlist, fmt.Sprintf("%s=%s", k, kv[k]))
+			env[k] = value
 		}
 	}
-
-	body, _, err := mtemplate.FetchUrl(this.Context, nil, this.zk)
-	if err != nil {
-		return nil, err
-	}
-
-	context := map[string]interface{}{}
-	err = json.Unmarshal([]byte(body), &context)
-	if err != nil {
-		return nil, err
-	}
-	return context, nil
+	return envlist
 }
 
 func (this *Executor) Exec() {
@@ -155,26 +160,26 @@ func (this *Executor) Exec() {
 		envlist = append(envlist, fmt.Sprintf("%s=%s", k, env[k]))
 	}
 
-	// Get any task context from a datasource url
-	taskContext, err := this.load_context()
-	if err != nil {
-		panic(err)
-	}
-
 	var taskFromInitializer *task.Task
-
 	if this.Initializer != nil {
 		glog.Infoln("Loading configuration from", this.Initializer.ConfigUrl)
-		this.Initializer.Context = this
+		this.Initializer.Context = map[string]interface{}{
+			"name":    this.Name,
+			"id":      this.Id,
+			"domain":  this.Domain,
+			"service": this.Service,
+			"version": this.Version,
+			"environ": env,
+			"now":     time.Now().Unix(),
+			"runtime": EscapeVars(
+				"id",
+				"name",
+				"start",
+				"exit",
+				"status"),
+		}
 		executorConfig := new(ExecutorConfig)
-		loaded, err := this.Initializer.Load(executorConfig, this.AuthToken, this.zk, template.FuncMap{
-			"env": func(k string) interface{} {
-				return env[k]
-			},
-			"context": func(k string) interface{} {
-				return taskContext[k]
-			},
-		})
+		loaded, err := this.Initializer.Load(executorConfig, this.AuthToken, this.zk)
 		if err != nil {
 			panic(err)
 		}
@@ -186,14 +191,15 @@ func (this *Executor) Exec() {
 				must(this.connect_zk())
 			}
 			for _, c := range executorConfig.ConfigFiles {
+
 				// Set up any watch related to config reload
-				this.HandleConfigReload(&c)
+				this.HandleConfigReload(c)
 			}
 
 			// collect the tail files and topics
 			tails := map[string]string{}
 			for _, t := range executorConfig.TailFiles {
-				this.HandleTailFile(&t)
+				this.HandleTailFile(t)
 
 				if len(t.Topic) > 0 {
 					tails[t.Path] = t.Topic.String()
@@ -213,57 +219,45 @@ func (this *Executor) Exec() {
 				if c.Init {
 					glog.Infoln("Initializing config. Url=", c.Url, "Description=", c.Description)
 					// Initialize and load the config first.
-					if err := this.Reload(&c); err != nil {
+					if err := this.Reload(c); err != nil {
 						glog.Warningln("Error initializing config", c, "Err=", err)
 						panic(err)
 					}
 				}
 			}
 
+			// mount filesystems
+			if err := StartFileMounts(executorConfig.Mounts, this.zk); err != nil {
+				panic(err)
+			}
+
+			this.Config = executorConfig
 		}
 	}
 
+	envlist = this.source_envs(envlist, env)
+	this.Cmd.Env = envlist
+
 	// Default task based on what's entered in the command line, which takes precedence.
 	target := task.Task{
-		Id: this.Id,
-		Cmd: &task.Cmd{
-			Dir:  this.Dir,
-			Path: this.Cmd,
-			Args: this.Args,
-			Env:  envlist,
-		},
+		Id:       this.Id,
+		Cmd:      &this.Cmd,
 		ExecOnly: this.ExecOnly,
 	}
 
 	if taskFromInitializer != nil {
-
 		merged, err := taskFromInitializer.Copy()
 		if err != nil {
 			panic(err)
 		}
-
-		// What's specified in the command line wins
 		merged.Id = target.Id
-
-		if this.Cmd != "" {
-			merged.Cmd = target.Cmd
+		if merged.Cmd != nil {
+			glog.Infoln("Using cmd from config:", merged.Cmd)
+		} else {
+			merged.Cmd = &this.Cmd
+			glog.Infoln("Using cmd from commadline:", merged.Cmd)
 		}
-
 		target = *merged
-	}
-
-	// One final pass of applying taskContext to the command as if the command is a template:
-	if taskContext != nil {
-		applied := task.Cmd{}
-		err := ApplyVarSubs(target.Cmd, &applied, map[string]interface{}{
-			"Task":    this,
-			"Env":     env,
-			"Context": taskContext,
-		})
-		if err != nil {
-			panic(err)
-		}
-		target.Cmd = &applied
 	}
 
 	if this.Daemon {
@@ -287,6 +281,9 @@ func (this *Executor) Exec() {
 						err = this.zk.Close()
 						glog.Infoln("Stopped zk", err)
 					}
+
+					glog.Infoln("Stopping file mounts")
+					StopFileMounts()
 
 					this.exit <- err
 					return err
@@ -325,6 +322,22 @@ func (this *Executor) Exec() {
 		}
 
 		taskRuntime.CaptureStdout()
+
+		if this.Config != nil && this.Config.Namespace != nil {
+			glog.Infoln("Annoucing in namespace", this.Config.Namespace)
+			taskRuntime.Announce() <- task.Announce{
+				Key:       "running",
+				Value:     target,
+				Ephemeral: true,
+			}
+
+			taskRuntime.Announce() <- task.Announce{
+				Key:       "info",
+				Value:     this.GetInfo(),
+				Ephemeral: false,
+			}
+
+		}
 
 		done, err := taskRuntime.Start()
 		if err != nil {
@@ -374,16 +387,21 @@ func (this *Executor) exec_wait(done chan error, timeout <-chan time.Time) {
 	}
 }
 
+// Command-line custom vars can be templates with ${var} for shell environment expansion.
+// Parse these first.
 func (this *Executor) ParseCustomVars() error {
 	this.customVars = make(map[string]*template.Template)
-
 	for _, expression := range strings.Split(this.CustomVarsCommaSeparated, ",") {
-		parts := strings.Split(expression, "=")
-		if len(parts) != 2 {
-			return ErrBadTemplate
-		}
-		key, exp := parts[0], parts[1]
-		if t, err := template.New(key).Parse(exp); err != nil {
+		mid := strings.Index(expression, "=")
+		key := expression[0:mid]
+		exp := os.ExpandEnv(expression[mid+1:]) // also expand based on environment variables
+
+		glog.Infoln("Expanded from", expression[mid+1:], "to", exp)
+		if t, err := template.New(key).Funcs(template.FuncMap{
+			"env": func(k string) interface{} {
+				return os.Getenv(k)
+			},
+		}).Parse(exp); err != nil {
 			return err
 		} else {
 			this.customVars[key] = t
@@ -392,6 +410,7 @@ func (this *Executor) ParseCustomVars() error {
 	return nil
 }
 
+// Evaluate all the custom var expressions based on the current state of the executor.
 func (this *Executor) InjectCustomVars(env map[string]interface{}) ([]string, error) {
 	for k, t := range this.customVars {
 		var buff bytes.Buffer

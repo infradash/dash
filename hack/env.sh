@@ -10,6 +10,7 @@ if [ ! -d "$HOME/go/src/$PROJECT" ]; then
     ln -s $(pwd) $HOME/go/src/${proj[0]}/${proj[1]}/${proj[2]}
 fi
 
+export GOROOT=/usr/local/go
 export GOPATH=$HOME/go
 export PATH=$HOME/go/bin:$PATH
 
@@ -27,10 +28,17 @@ if [[ "$CIRCLE_ENV" != "" ]]; then
     # Run go oracle for development golang.org/x/tools/oracle
     if [[ $(which oracle) == "" ]]; then
 	echo "Setting up go oracle for source code analysis."
-	go install golang.org/x/tools/oracle
+	go get golang.org/x/tools/cmd/oracle
     fi
 
     if [[ $(which godoc) == "" ]]; then
 	echo "Godoc not installed."
     fi
 fi
+
+
+# Docker stuff -- See DockerToolbox
+export DOCKER_CERT_PATH=${HOME}/.docker/machine/machines/default
+export DOCKER_HOST=tcp://192.168.99.100:2376
+export DOCKER_MACHINE_NAME=default
+export DOCKER_TLS_VERIFY=1

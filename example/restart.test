@@ -1,0 +1,10 @@
+{
+    "proxy_url" :"http://localhost:8888",
+    "zk_hosts": "localhost:2181",
+    "domain": "sandbox.blinker.com",
+    "controller": "blinker-controller",
+    "service": "blinker",
+    "version": "master",
+    "image" : "blinker/blinker:sandbox-9532.2573",
+    "wait" : "5s"
+}

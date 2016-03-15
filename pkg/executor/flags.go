@@ -6,7 +6,6 @@ import (
 )
 
 func (this *Executor) BindFlags() {
-	flag.StringVar(&this.Context, "context", "", "Context of this task; a json resource location.")
 	flag.IntVar(&this.Runs, "runs", 0, "Number of command executions; -1 means indefinite; > 0 is finite times.")
 	flag.BoolVar(&this.NoSourceEnv, "no_source_env", false, "True to skip sourcing env")
 	flag.BoolVar(&this.Daemon, "daemon", false, "True to start api server.")

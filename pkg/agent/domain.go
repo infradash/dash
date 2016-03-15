@@ -59,7 +59,7 @@ func (this *Domain) do_register() error {
 	}
 
 	key := registry.NewPath(this.Domain, "dash", this.Host)
-	err := zk.CreateOrSet(this.zk, key, this.agent.info(), true)
+	err := zk.CreateOrSet(this.zk, key, this.agent.GetInfo(), true)
 	glog.Infoln("Register self, key=", key, "err=", err)
 	if err == nil {
 		// Update this only on successful registration
@@ -308,10 +308,24 @@ func (this *Domain) WatchContainer(service ServiceKey, spec *MatchContainerRule)
 
 						err = entry.Remove(this.zk) // blocks
 						if err != nil {
-							glog.Warningln("Error trying to remove zk entry. Cannot sync state")
+							glog.Warningln("Error trying to remove zk entry. Cannot sync state. Entry=", entry)
+							// Go into retry...
+							maxAttempts := 10
+							retryDelay := 2 * time.Second
+							go func() {
+								for i := 0; i < maxAttempts; i++ {
+									glog.Infoln("Trying to remove entry=", entry)
+									err = entry.Remove(this.zk) // blocks
+									if err != nil {
+										glog.Warningln("Error trying to remove zk entry=", entry)
+										time.Sleep(retryDelay)
+									} else {
+										break
+									}
+								}
+							}()
 						}
 					}
-
 					// Update the tracker
 					switch action {
 					case docker.Die:

@@ -24,6 +24,26 @@ build: setup
 	echo "Building dash"
 	${GODEP} go build -o build/bin/dash -ldflags "$(LDFLAGS)" main/dash.go
 
+run-local-restart:
+	${GODEP} go run main/dash.go --logtostderr --v=500 \
+	-domain=sandbox.blinker.com -service=blinker -version=master \
+	-restart.proxy=http://localhost:8888 \
+	-restart.commit \
+	restart
+
+run-local-restart-config:
+	${GODEP} go run main/dash.go --logtostderr --v=500 \
+	restart file:///Users/david/go/src/github.com/infradash/dash/example/restart.test
+
+
+run-local-proxy:
+	${GODEP} go run main/dash.go --logtostderr --v=500 \
+	proxy file:///Users/david/go/src/github.com/infradash/dash/example/proxy.test
+
+run-local-proxy-old:
+	${GODEP} go run main/dash.go --logtostderr --v=500 \
+		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/proxy.test" \
+	proxy
 
 run-local-terraform:
 	DASH_IP=10.0.0.2 \
@@ -42,30 +62,29 @@ run-local-agent:
 	DASH_TAGS="appserver,frontend" \
 	DASH_NAME="dash" \
 	DASH_ZK_HOSTS="localhost:2181" \
-	DASH_DOCKER_PORT="tcp://192.168.59.103:2376" \
+	DASH_DOCKER_PORT="tcp://192.168.99.100:2376" \
 	${GODEP} go run main/dash.go --logtostderr --v=500 --self_register=false \
 		--ui_docroot=$(HOME)/go/src/github.com/infradash/dash/www \
-		--tlscert=$(HOME)/.boot2docker/certs/boot2docker-vm/cert.pem \
-		--tlskey=$(HOME)/.boot2docker/certs/boot2docker-vm/key.pem \
-		--tlsca=$(HOME)/.boot2docker/certs/boot2docker-vm/ca.pem \
+		--tlscert=$(HOME)/.docker/machine/machines/default/cert.pem \
+		--tlskey=$(HOME)/.docker/machine/machines/default/key.pem \
+		--tlsca=$(HOME)/.docker/machine/machines/default/ca.pem \
 		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/passport.json" \
 	agent
 
 run-local-agent-blinker:
 	DASH_HOST=`hostname` \
-	DASH_DOMAIN="dev.blinker.com" \
+	DASH_DOMAIN="dev.qoriolabs.com" \
 	DASH_VERSION="integration" \
 	DASH_TAGS="appserver" \
 	DASH_NAME="dash" \
 	DASH_ZK_HOSTS="localhost:2181" \
-	DASH_DOCKER_PORT="tcp://192.168.59.103:2376" \
+	DASH_DOCKER_PORT="tcp://192.168.99.100:2376" \
 	${GODEP} go run main/dash.go --logtostderr --v=500 --self_register=true --timeout=5s \
 		--ui_docroot=$(HOME)/go/src/github.com/infradash/dash/docker/dash/www --enable_ui=true \
-		--tlscert=$(HOME)/.boot2docker/certs/boot2docker-vm/cert.pem \
-		--tlskey=$(HOME)/.boot2docker/certs/boot2docker-vm/key.pem \
-		--tlsca=$(HOME)/.boot2docker/certs/boot2docker-vm/ca.pem \
+		--tlscert=$(HOME)/.docker/machine/machines/default/cert.pem \
+		--tlskey=$(HOME)/.docker/machine/machines/default/key.pem \
+		--tlsca=$(HOME)/.docker/machine/machines/default/ca.pem \
 		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/blinker.json" \
-		--status_topic='mqtt://{{domain_service "mqtt" }}/{{.Domain}}' \
 	agent
 
 run-exec-bash-export:
@@ -78,7 +97,7 @@ run-exec-bash-export:
 	exec
 
 run-exec-nginx:
-	DASH_DOMAIN="ops-test.blinker.com" \
+	DASH_DOMAIN="dev.qoriolabs.com" \
 	DASH_SERVICE="redpill-nginx" \
 	DASH_ZK_HOSTS="localhost:2181" \
 	${GODEP} go run main/dash.go --logtostderr -v=500 \
@@ -183,16 +202,20 @@ run-aws-cli2:
 		--context='string://{"Foo":"Bar"}' --exec_only \
 	exec echo {{.Context.Foo}}
 
-run-tty:
-	DASH_DOMAIN="test.com" \
+# 11/25/2015 -- tested with redpill
+# Note the customVars needs $$ if you want shell env variable expansion (because of Make)
+# Note the config specified the actual command to execute.
+run-task-tty-local:
+	DASH_DOMAIN="dev.qoriolabs.com" \
 	DASH_ZK_HOSTS="localhost:2181" \
-	DASH_NAME="test-tty" \
+	DASH_NAME="run-task-ttyl-local" \
 	${GODEP} go run main/dash.go --logtostderr \
-		--service=infradash --version=develop \
-		--daemon=false --exec_only --ignore_child_process_fails=true \
-		--custom_vars="EXEC_TS={{.StartTimeUnix}},EXEC_DOMAIN={{.Domain}}" \
-		--config_url="file:///Users/david/go/src/github.com/infradash/dash/example/task-tty.json" \
-	exec ${CMD}
+		--service=run-task-tty  --version=local \
+		--daemon --exec_only --ignore_child_process_fails=true --no_source_env \
+		--custom_vars='EXEC_TS={{.StartTimeUnix}},EXEC_DOMAIN={{env "DASH_DOMAIN"}},ZK_HOSTS_FROM_ENV=$$DASH_ZK_HOSTS' \
+		--config_url="file://~/go/src/github.com/infradash/dash/example/task-tty.json" \
+	exec
+
 
 # Example: copy env from v0.1.2 to v0.1.3
 run-publish-env:

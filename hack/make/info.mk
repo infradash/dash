@@ -12,9 +12,9 @@ BUILD_TIMESTAMP:=`date +"%Y-%m-%d-%H:%M"`
 DOCKER_IMAGE:=infradash/dash:$(GIT_TAG)-$(BUILD_LABEL)
 
 LDFLAGS:=\
--X github.com/qorio/omni/version.gitRepo $(GIT_REPO) \
--X github.com/qorio/omni/version.gitTag $(GIT_TAG) \
--X github.com/qorio/omni/version.gitBranch $(GIT_BRANCH) \
--X github.com/qorio/omni/version.gitCommitHash $(GIT_COMMIT_HASH) \
--X github.com/qorio/omni/version.buildTimestamp $(BUILD_TIMESTAMP) \
--X github.com/qorio/omni/version.buildNumber $(BUILD_NUMBER) \
+-X github.com/qorio/omni/version.gitRepo=$(GIT_REPO) \
+-X github.com/qorio/omni/version.gitTag=$(GIT_TAG) \
+-X github.com/qorio/omni/version.gitBranch=$(GIT_BRANCH) \
+-X github.com/qorio/omni/version.gitCommitHash=$(GIT_COMMIT_HASH) \
+-X github.com/qorio/omni/version.buildTimestamp=$(BUILD_TIMESTAMP) \
+-X github.com/qorio/omni/version.buildNumber=$(BUILD_NUMBER) \

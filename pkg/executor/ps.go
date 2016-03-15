@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-type process struct {
+type Process struct {
 	PPid       int         `json:"ppid"`
 	Pid        int         `json:"pid"`
 	Cmd        string      `json:"cmd"`
@@ -15,8 +15,8 @@ type process struct {
 	Process    *os.Process `json:"-"`
 }
 
-func children_processes() ([]process, error) {
-	children := []process{}
+func children_processes() ([]Process, error) {
+	children := []Process{}
 
 	myPid := os.Getpid()
 	pss, err := ps.Processes()
@@ -29,7 +29,7 @@ func children_processes() ([]process, error) {
 			if err != nil {
 				return nil, err
 			}
-			children = append(children, process{
+			children = append(children, Process{
 				PPid:    p.PPid(),
 				Pid:     p.Pid(),
 				Cmd:     p.Executable(),
